@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+///////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2010-2011 Esri. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+///////////////////////////////////////////////////////////////////////////
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+                   xmlns:s="library://ns.adobe.com/flex/spark"
+                   xmlns:mx="library://ns.adobe.com/flex/mx"
+                   xmlns:viewer="com.esri.viewer.*"
+                   xmlns:toc="com.esri.viewer.components.toc.*"
+                   widgetConfigLoaded="widgetConfigLoadedHandler()">
+
+    <viewer:states>
+        <s:State name="normal"/>
+        <s:State name="noBasemaps"/>
+    </viewer:states>
+
+    <fx:Script>
+        <![CDATA[
+            import com.esri.viewer.AppEvent;
+
+            import mx.collections.ArrayCollection;
+            import mx.collections.ArrayList;
+            import mx.core.FlexGlobals;
+            import mx.events.FlexEvent;
+
+            import spark.events.IndexChangeEvent;
+
+            private var hideTimer:Timer = new Timer(300, 1); // TODO - redo with transition
+
+            private var hideSuspended:Boolean = false;
+
+            [Bindable]
+            private var basemapList:ArrayList;
+
+            [Bindable]
+            private var opLayerListButtonLabel:String;
+
+            private function widgetConfigLoadedHandler():void
+            {
+                var expandLayerItems:Boolean = false;
+
+                if (configXML)
+                {
+                    opLayerListButtonLabel = configXML.layerlist.@label || getDefaultString("layerListLabel");
+                    if (configXML.layerlist.@visible[0])
+                    {
+                        if (configXML.layerlist.@visible == "true")
+                        {
+                            // check if there are any op layers
+                            AppEvent.dispatch(AppEvent.DATA_OPT_LAYERS, null, getOpLayers);
+                        }
+                    }
+                    else
+                    {
+                        // check if there are any op layers
+                        AppEvent.dispatch(AppEvent.DATA_OPT_LAYERS, null, getOpLayers);
+                    }
+                    // added in version 2.5
+                    expandLayerItems = configXML.expandlayeritems == "true";
+                }
+
+                initBasemapButtonBar();
+                if (opLayerListButton.visible) // do not initialize TOC if there are no operational layers
+                {
+                    initTOC(expandLayerItems);
+                }
+
+                hideTimer.addEventListener(TimerEvent.TIMER_COMPLETE, hideTimer_timerCompleteHandler, false, 0, true);
+
+                AppEvent.addListener(AppEvent.SUSPEND_TOC_HIDE_TIMER, suspendHideListener);
+            }
+
+            private function suspendHideListener(event:AppEvent):void
+            {
+                if (event.data)
+                {
+                    hideSuspended = true;
+                }
+                else
+                {
+                    hideSuspended = false;
+                }
+            }
+
+            private function initBasemapButtonBar():void
+            {
+                basemapList = new ArrayList();
+                var labels:Array = [];
+                for each (var basemap:Object in configData.basemaps)
+                {
+                    var label:String = basemap.label;
+                    if (labels.indexOf(label) == -1) // avoid duplicates using the labels
+                    {
+                        labels.push(label);
+                        basemapList.addItem(basemap);
+                    }
+                }
+
+                if (basemapList.length <= 1)
+                {
+                    this.currentState = "noBasemaps";
+                }
+                else
+                {
+                    setBasemapButtonBarIndexToTopmostVisibleBasemap();
+                }
+            }
+
+            private function initTOC(expandLayerItems:Boolean = false):void
+            {
+                toc.map = map;
+                toc.isMapServiceOnly = false; //gotta get this from the config file
+                toc.excludeLayers = getExcludeLayers();
+                toc.excludeGraphicsLayers = true;
+                if (expandLayerItems)
+                {
+                    toc.expandLayerItems();
+                }
+            }
+
+            private function getExcludeLayers():ArrayCollection
+            {
+                var excludeLayers:ArrayCollection = new ArrayCollection();
+
+                if (configData && configData.basemaps)
+                {
+                    // exclude basemaps
+                    for (var i:int = 0; i < configData.basemaps.length; i++)
+                    {
+                        excludeLayers.addItem(configData.basemaps[i].label);
+                    }
+                }
+
+                if (configXML)
+                {
+                    // exclude these layers
+                    var layers:XMLList = configXML.layerlist.excludelayer as XMLList;
+                    for (var j:int = 0; j < layers.length(); j++)
+                    {
+                        excludeLayers.addItem(layers[j].toString());
+                    }
+                }
+
+                return excludeLayers;
+            }
+
+            private function getOpLayers(event:AppEvent):void
+            {
+                var opLayersList:Array = event.data as Array;
+                if (opLayersList.length > 0)
+                {
+                    opLayerListButton.visible = true;
+                }
+            }
+
+            private function setBasemapButtonBarIndexToTopmostVisibleBasemap():void
+            {
+                for (var i:int; i < basemapList.length; i++)
+                {
+                    if (basemapList.getItemAt(i).visible)
+                    {
+                        basemapButtonBar.selectedIndex = i;
+                    }
+                }
+            }
+
+            private function hideTimer_timerCompleteHandler(event:TimerEvent):void
+            {
+                if (!hideSuspended)
+                {
+                    AppEvent.dispatch(AppEvent.TOC_HIDDEN);
+                    opLayersContainer.visible = false;
+                }
+            }
+
+            private function startHideTimer():void
+            {
+                hideTimer.reset();
+                hideTimer.start();
+            }
+
+            private function opLayerListButton_rollOverHandler(event:MouseEvent):void
+            {
+                opLayersContainer.visible = true;
+                hideTimer.reset();
+                updateOpLayersContainerPosition();
+            }
+
+            private function updateOpLayersContainerPosition():void
+            {
+                var opLayersContainerGlobalBottomRightPoint:Point = opLayersContainer.parent.localToGlobal(new Point(opLayersContainer.width, opLayersContainer.height));
+                positionOpLayersContainerHorizontally(opLayersContainerGlobalBottomRightPoint.x);
+                positionOpLayersContainerVertically(opLayersContainerGlobalBottomRightPoint.y);
+            }
+
+            private function positionOpLayersContainerHorizontally(x:Number):void
+            {
+                var appWidth:Number = FlexGlobals.topLevelApplication.width;
+                if (x > appWidth)
+                {
+                    opLayersContainer.x = -opLayersContainer.width + opLayerListButton.width;
+                }
+                else
+                {
+                    opLayersContainer.x = 0;
+                }
+            }
+
+            private function positionOpLayersContainerVertically(y:Number):void
+            {
+                var appHeight:Number = FlexGlobals.topLevelApplication.height;
+                if (y > appHeight)
+                {
+                    opLayersContainer.y = mapLayersContainer.y + 1 - opLayersContainer.height;
+                }
+                else
+                {
+                    opLayersContainer.y = mapLayersContainer.height - 1;
+                }
+            }
+
+            private function basemapButtonBar_changeHandler(event:IndexChangeEvent):void
+            {
+                AppEvent.dispatch(AppEvent.BASEMAP_SWITCH, basemapList.getItemAt(event.newIndex).id);
+            }
+
+            protected function opLayersContainer_creationCompleteHandler(event:FlexEvent):void
+            {
+                opLayersContainer.setStyle("backgroundColor", getStyle("contentBackgroundColor"));
+                opLayersContainer.setStyle("skinClass", FlexGlobals.topLevelApplication.getStyle("skinClass"));
+            }
+
+            protected function opLayersContainer_clickHandler(event:MouseEvent):void
+            {
+                AppEvent.dispatch(AppEvent.TOC_HIDDEN); // always hide the toc layer menu
+            }
+        ]]>
+    </fx:Script>
+
+    <s:HGroup id="mapLayersContainer" gap="9">
+        <s:Button id="opLayerListButton"
+                  label="{opLayerListButtonLabel}"
+                  rollOut="startHideTimer()"
+                  rollOver="opLayerListButton_rollOverHandler(event)"
+                  visible="false"/>
+        <s:ButtonBar id="basemapButtonBar"
+                     change="basemapButtonBar_changeHandler(event)"
+                     dataProvider="{basemapList}"
+                     excludeFrom="noBasemaps"
+                     labelField="label"
+                     requireSelection="true"/>
+    </s:HGroup>
+    <s:BorderContainer id="opLayersContainer"
+                       width="265" height="180"
+                       click="opLayersContainer_clickHandler(event)"
+                       creationComplete="opLayersContainer_creationCompleteHandler(event)"
+                       includeInLayout="false"
+                       rollOut="startHideTimer()"
+                       rollOver="hideTimer.reset()"
+                       visible="false">
+        <toc:TOC id="toc"
+                 left="2" right="2" top="3" bottom="3"/>
+    </s:BorderContainer>
+
+</viewer:BaseWidget>

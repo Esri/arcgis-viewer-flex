@@ -1,0 +1,761 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+///////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2010-2011 Esri. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+///////////////////////////////////////////////////////////////////////////
+-->
+<viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
+                   xmlns:s="library://ns.adobe.com/flex/spark"
+                   xmlns:mx="library://ns.adobe.com/flex/mx"
+                   xmlns:viewer="com.esri.viewer.*"
+                   xmlns:esri="http://www.esri.com/2008/ags"
+                   xmlns:Chart="widgets.Chart.*"
+                   preinitialize="basewidget_preinitializeHandler(event)"
+                   widgetConfigLoaded="init()">
+    <fx:Script>
+        <![CDATA[
+            import com.esri.ags.Graphic;
+            import com.esri.ags.events.DrawEvent;
+            import com.esri.ags.events.FeatureLayerEvent;
+            import com.esri.ags.events.LayerEvent;
+            import com.esri.ags.events.QueryEvent;
+            import com.esri.ags.geometry.Polygon;
+            import com.esri.ags.layers.FeatureLayer;
+            import com.esri.ags.layers.GraphicsLayer;
+            import com.esri.ags.layers.Layer;
+            import com.esri.ags.symbols.SimpleFillSymbol;
+            import com.esri.ags.symbols.SimpleLineSymbol;
+            import com.esri.ags.symbols.Symbol;
+            import com.esri.ags.tasks.supportClasses.Query;
+            import com.esri.ags.tools.DrawTool;
+            import com.esri.ags.webmap.supportClasses.PopUpFieldInfo;
+            import com.esri.ags.webmap.supportClasses.PopUpMediaInfo;
+            import com.esri.viewer.utils.PopUpInfoParser;
+
+            import mx.collections.ArrayCollection;
+            import mx.collections.ArrayList;
+            import mx.core.FlexVersion;
+            import mx.events.FlexEvent;
+            import mx.rpc.events.FaultEvent;
+
+            import spark.filters.GlowFilter;
+
+            private const ICON_URL:String = "assets/images/";
+
+            [Bindable]
+            private var selectLabel:String;
+            [Bindable]
+            private var resultsLabel:String;
+            [Bindable]
+            private var layerSelectionLabel:String;
+            [Bindable]
+            private var drawToolMenuLabel:String;
+            [Bindable]
+            private var noLayersLabel:String;
+            [Bindable]
+            private var polygonLabel:String;
+            [Bindable]
+            private var freehandPolygonLabel:String;
+            [Bindable]
+            private var rectangleLabel:String;
+            [Bindable]
+            private var circleLabel:String;
+            [Bindable]
+            private var ellipseLabel:String;
+            [Bindable]
+            private var clearLabel:String;
+            [Bindable]
+            private var noChartDataToDisplayLabel:String;
+            [Bindable]
+            private var layerSourceNotVisibleLabel:String;
+
+            [Bindable]
+            private var highlightColor:uint;
+            [Bindable]
+            private var doesChartHaveData:Boolean;
+            [Bindable]
+            private var hasChartLayerDefinitions:Boolean;
+            [Bindable]
+            private var isSourceFeatureLayerVisibleAndInScaleRange:Boolean;
+            [Bindable]
+            private var isSourceFeatureLayer:Boolean;
+
+            private var selectedDrawingIcon:Image;
+            private var ctrlPressed:Boolean;
+            private var selectionMethod:String;
+
+            private var _activeHighlightLayer:GraphicsLayer;
+            private var selectedChartLayerDefinition:ChartLayerDefinition;
+            private var sourceFeatureLayer:FeatureLayer;
+
+            private function basewidget_preinitializeHandler(event:FlexEvent):void
+            {
+                if (FlexVersion.CURRENT_VERSION >= 0x04060000)
+                {
+                    // work-around for 4.6 regression
+                    copyStyleFromParent("mx.charts.chartClasses.ChartBase");
+                    copyStyleFromParent("mx.charts.chartClasses.CartesianChart");
+                    copyStyleFromParent("mx.charts.chartClasses.PolarChart");
+                    copyStyleFromParent("mx.charts.BarChart");
+                    copyStyleFromParent("mx.charts.ColumnChart");
+                    copyStyleFromParent("mx.charts.LineChart");
+                    copyStyleFromParent("mx.charts.PieChart");
+                    copyStyleFromParent("mx.charts.AxisRenderer");
+                    copyStyleFromParent(".blockCategoryAxis");
+                    copyStyleFromParent(".blockNumericAxis");
+                    copyStyleFromParent(".linedNumericAxis");
+                    copyStyleFromParent(".dashedNumericAxis");
+                    copyStyleFromParent(".dashedCategoryAxis");
+                    copyStyleFromParent(".hangingCategoryAxis");
+                    copyStyleFromParent("mx.charts.GridLines");
+                    copyStyleFromParent(".horizontalGridLines");
+                    copyStyleFromParent("mx.charts.series.BarSeries");
+                    copyStyleFromParent("mx.charts.series.ColumnSeries");
+                    copyStyleFromParent("mx.charts.series.LineSeries");
+                    copyStyleFromParent("mx.charts.series.PieSeries");
+                }
+            }
+
+            private function copyStyleFromParent(selector:String):void
+            {
+                var chartBaseStyle:CSSStyleDeclaration = styleManager.getStyleDeclaration(selector);
+                if (!chartBaseStyle && styleManager.parent)
+                {
+                    var parentStyle:CSSStyleDeclaration = styleManager.parent.getStyleDeclaration(selector);
+                    if (parentStyle)
+                    {
+                        styleManager.setStyleDeclaration(selector, parentStyle, false);
+                    }
+                }
+            }
+
+            private function get activeHighlightLayer():GraphicsLayer
+            {
+                return _activeHighlightLayer;
+            }
+
+            private function set activeHighlightLayer(value:GraphicsLayer):void
+            {
+                if (_activeHighlightLayer != value)
+                {
+                    _activeHighlightLayer = value;
+                    clearSelectionHighlights();
+                }
+            }
+
+            private function init():void
+            {
+                if (configXML)
+                {
+                    initChartLayerOptions(configXML.layers.layer);
+                    configureLabels(configXML.labels);
+                    highlightColor = parseInt(configXML.highlightcolor[0]) || 0xFFFF00;
+                    configureViewTitlebarButtons();
+                    map.addEventListener(KeyboardEvent.KEY_UP, keyUpHandler);
+                    map.addEventListener(KeyboardEvent.KEY_DOWN, keyDownHandler);
+                }
+            }
+
+            private function initChartLayerOptions(layers:XMLList):void
+            {
+                var chartLayerDefinitions:Array = getValidChartLayerDefinitions(configXML.layers.layer);
+                hasChartLayerDefinitions = (chartLayerDefinitions.length > 0);
+                layerSelection.dataProvider = new ArrayList(chartLayerDefinitions);
+            }
+
+            private function getValidChartLayerDefinitions(layers:XMLList):Array
+            {
+                var chartLayerDefinitions:Array = [];
+                var chartLayerDefinition:ChartLayerDefinition;
+                for each (var layer:XML in layers)
+                {
+                    chartLayerDefinition = parseChartLayerDefinition(layer);
+                    removeMediasWithUnsupportedType(chartLayerDefinition.mediaInfos);
+                    if (isValidChartLayerDefinition(chartLayerDefinition))
+                    {
+                        chartLayerDefinitions.push(chartLayerDefinition);
+                    }
+                }
+
+                return chartLayerDefinitions;
+            }
+
+            private function parseChartLayerDefinition(layer:XML):ChartLayerDefinition
+            {
+                var chartLayerDefinition:ChartLayerDefinition = new ChartLayerDefinition();
+                chartLayerDefinition.label = layer.@label;
+                chartLayerDefinition.url = layer.@url;
+                chartLayerDefinition.fieldInfos = PopUpInfoParser.parsePopUpFields(layer.fields[0]);
+                chartLayerDefinition.mediaInfos = PopUpInfoParser.parsePopUpMedias(layer.medias[0]);
+                chartLayerDefinition.labelField = layer.labelfield;
+                return chartLayerDefinition;
+            }
+
+            private function removeMediasWithUnsupportedType(mediaInfos:Array):void
+            {
+                var currentMediaInfo:PopUpMediaInfo;
+                for (var i:int = (mediaInfos.length - 1); i > -1; i--)
+                {
+                    currentMediaInfo = mediaInfos[i];
+                    if (!currentMediaInfo.type || currentMediaInfo.type == PopUpMediaInfo.IMAGE)
+                    {
+                        mediaInfos.splice(i, 1);
+                    }
+                }
+            }
+
+            private function isValidChartLayerDefinition(chartLayerDefinition:ChartLayerDefinition):Boolean
+            {
+                var hasAtLeastOneChartMedia:Boolean = (chartLayerDefinition.mediaInfos && chartLayerDefinition.mediaInfos.length > 0);
+                return hasAtLeastOneChartMedia && hasValidChartDataSource(chartLayerDefinition);
+            }
+
+            private function hasValidChartDataSource(chartLayerDefinition:ChartLayerDefinition):Boolean
+            {
+                return chartLayerDefinition.url || findFeatureLayerByLabel(chartLayerDefinition.label);
+            }
+
+            private function findFeatureLayerByLabel(label:String):FeatureLayer
+            {
+                var mapLayers:ArrayCollection = map.layers as ArrayCollection;
+                var foundFeatureLayer:FeatureLayer;
+                var currentFeatureLayer:FeatureLayer;
+
+                for each (var layer:Layer in mapLayers)
+                {
+                    currentFeatureLayer = layer as FeatureLayer;
+                    if (layer && (layer.name == label))
+                    {
+                        foundFeatureLayer = currentFeatureLayer;
+                        break;
+                    }
+                }
+
+                return foundFeatureLayer;
+            }
+
+            override protected function keyDownHandler(event:KeyboardEvent):void
+            {
+                if (event.keyCode == Keyboard.CONTROL)
+                {
+                    ctrlPressed = true;
+                }
+            }
+
+            override protected function keyUpHandler(event:KeyboardEvent):void
+            {
+                if (event.keyCode == Keyboard.CONTROL)
+                {
+                    ctrlPressed = false;
+                }
+            }
+
+            private function configureLabels(labels:XMLList):void
+            {
+                selectLabel = labels.selectlabel[0] || getDefaultString("selectLabel");
+                resultsLabel = labels.resultslabel[0] || getDefaultString("resultsLabel");
+
+                layerSelectionLabel = labels.layerselectionlabel[0] || getDefaultString("layerSelectionLabel");
+                drawToolMenuLabel = labels.drawtoolmenulabel[0] || getDefaultString("drawToolMenuLabel");
+                noLayersLabel = labels.nolayerslabel[0] || getDefaultString("noLayersLabel");
+                noChartDataToDisplayLabel = labels.nochartdatatodisplaylabel[0] || getDefaultString("noChartDataToDisplayLabel");
+                layerSourceNotVisibleLabel = labels.featurelayernotvisibletext || getDefaultString("featureLayerNotVisibleText");
+
+                polygonLabel = labels.polygonlabel[0] || getDefaultString("drawPolygonLabel");
+                freehandPolygonLabel = labels.freehandpolygonlabel[0] || getDefaultString("drawFreehandPolygonLabel");
+                rectangleLabel = labels.rectanglelabel[0] || getDefaultString("drawRectangleLabel");
+                circleLabel = labels.circlelabel[0] || getDefaultString("drawCircleLabel");
+                ellipseLabel = labels.ellipselabel[0] || getDefaultString("drawEllipseLabel");
+                clearLabel = labels.clearlabel[0] || getDefaultString("clearLabel");
+            }
+
+            private function configureViewTitlebarButtons():void
+            {
+                wTemplate.addTitlebarButton(ICON_URL + "i_search.png", selectLabel, showInputView);
+                wTemplate.addTitlebarButton(ICON_URL + "i_piechart.png", resultsLabel, showChartView);
+            }
+
+            private function showInputView():void
+            {
+                currentState = "input";
+                wTemplate.selectedTitlebarButtonIndex = 0;
+            }
+
+            private function showChartView():void
+            {
+                currentState = "chart";
+                wTemplate.selectedTitlebarButtonIndex = 1;
+            }
+
+            private function activateDrawTool(event:MouseEvent):void
+            {
+                addSharedData("Deactivate_DrawTool", null); // to be able to deactivate drawTool on other widgets
+
+                // apply glow
+                selectedDrawingIcon = Image(event.currentTarget);
+                clearSelectionFilter();
+                selectedDrawingIcon.filters = [ glowFilter ];
+
+                var status:String;
+                var value:String = selectedDrawingIcon.name;
+                switch (value)
+                {
+                    case DrawTool.POLYGON:
+                    {
+                        status = polygonLabel;
+                        break;
+                    }
+                    case DrawTool.FREEHAND_POLYGON:
+                    {
+                        status = freehandPolygonLabel;
+                        break;
+                    }
+                    case DrawTool.EXTENT:
+                    {
+                        status = rectangleLabel;
+                        break;
+                    }
+                    case DrawTool.CIRCLE:
+                    {
+                        status = circleLabel;
+                        break;
+                    }
+                    case DrawTool.ELLIPSE:
+                    {
+                        status = ellipseLabel;
+                        break;
+                    }
+                }
+                var drawSymbol:Symbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, 0x3FAFDC, 0.5, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, 0x3FAFDC, 1, 2));
+                setMapAction(value, status, drawSymbol, map_drawEndHandler);
+            }
+
+            private function clearSelectionFilter():void
+            {
+                for (var i:int = 0; i < drawToolMenu.numChildren; i++)
+                {
+                    if (drawToolMenu.getChildAt(i).filters && drawToolMenu.getChildAt(i).filters.length > 0)
+                    {
+                        if (!(selectedDrawingIcon && drawToolMenu.getChildAt(i) === selectedDrawingIcon))
+                        {
+                            drawToolMenu.getChildAt(i).filters = [];
+                        }
+                    }
+                }
+            }
+
+            private function icon_rollOverHandler(event:MouseEvent):void
+            {
+                clearSelectionFilter();
+                event.target.filters = [ glowFilter ];
+            }
+
+            private function icon_rollOutHandler(event:MouseEvent):void
+            {
+                clearSelectionFilter();
+            }
+
+            private function map_drawEndHandler(event:DrawEvent):void
+            {
+                setMapAction(null, null, null, null); // deactivate drawTool
+                selectedDrawingIcon = null;
+                clearSelectionFilter();
+
+                selectionMethod = ctrlPressed ? FeatureLayer.SELECTION_ADD : FeatureLayer.SELECTION_NEW;
+                query.outFields = getChartFields();
+                query.geometry = event.graphic.geometry;
+                fetchFeatures();
+            }
+
+            private function getChartFields():Array
+            {
+                var chartFields:Array = [];
+                var selectedChartLayerDefinition:ChartLayerDefinition = (layerSelection.selectedItem as ChartLayerDefinition);
+                var chartFieldInfos:Array = selectedChartLayerDefinition.fieldInfos;
+
+                for each (var fieldInfo:PopUpFieldInfo in chartFieldInfos)
+                {
+                    chartFields.push(fieldInfo.fieldName);
+                }
+
+                return chartFields;
+            }
+
+            private function clearChartAndSelectionHighlights():void
+            {
+                setChartData(null);
+                clearSelectionHighlights();
+                showInputView();
+            }
+
+            private function setChartData(attributes:Array):void
+            {
+                chartBrowser.attributes = attributes;
+                doesChartHaveData = (attributes && attributes.length > 0);
+            }
+
+            private function clearSelectionHighlights():void
+            {
+                highlightFeatureLayer.clearSelection();
+                highlightGraphicsLayer.clear();
+                map.removeLayer(activeHighlightLayer);
+            }
+
+            private function fetchFeatures():void
+            {
+                resetChart(selectedChartLayerDefinition);
+
+                if (!selectedChartLayerDefinition.url)
+                {
+                    fetchFeaturesFromClient(sourceFeatureLayer);
+                }
+                else
+                {
+                    fetchFeaturesFromServer(selectedChartLayerDefinition.url);
+                }
+            }
+
+            private function resetChart(chartLayerDefinition:ChartLayerDefinition):void
+            {
+                chartBrowser.labelField = chartLayerDefinition.labelField;
+                chartBrowser.popUpFieldInfos = chartLayerDefinition.fieldInfos;
+                chartBrowser.popUpMediaInfos = chartLayerDefinition.mediaInfos;
+            }
+
+            private function fetchFeaturesFromClient(selectedLayer:FeatureLayer):void
+            {
+                if (selectedLayer)
+                {
+                    activeHighlightLayer = highlightFeatureLayer;
+                    map.addLayer(highlightFeatureLayer);
+                    highlightFeatureLayer.outFields = query.outFields;
+                    highlightFeatureLayer.addEventListener(FeatureLayerEvent.SELECTION_COMPLETE, highlightFeatureLayer_selectionCompleteHandler, false, 0, true);
+                    highlightFeatureLayer.addEventListener(FaultEvent.FAULT, highlightFeatureLayer_faultHandler, false, 0, true);
+
+                    if (highlightFeatureLayer.url != selectedLayer.url)
+                    {
+                        highlightFeatureLayer.addEventListener(LayerEvent.LOAD, highlightFeatureLayer_loadHandler, false, 0, true);
+                        highlightFeatureLayer.addEventListener(LayerEvent.LOAD_ERROR, highlightFeatureLayer_loadErrorHandler, false, 0, true);
+                        highlightFeatureLayer.url = selectedLayer.url;
+                    }
+                    else
+                    {
+                        highlightFeatureLayer.selectFeatures(query, selectionMethod);
+                    }
+                }
+            }
+
+            protected function highlightFeatureLayer_selectionCompleteHandler(event:FeatureLayerEvent):void
+            {
+                highlightFeatureLayer.removeEventListener(FeatureLayerEvent.SELECTION_COMPLETE, highlightFeatureLayer_selectionCompleteHandler);
+                highlightFeatureLayer.removeEventListener(FaultEvent.FAULT, highlightFeatureLayer_faultHandler);
+
+                var features:ArrayCollection = (highlightFeatureLayer.graphicProvider as ArrayCollection);
+                setChartData(getAttributes(features));
+                showChartView();
+            }
+
+            private function getAttributes(features:ArrayCollection):Array
+            {
+                var attributes:Array = [];
+
+                for each (var feature:Object in features)
+                {
+                    attributes.push(feature.attributes);
+                }
+
+                return attributes;
+            }
+
+            protected function highlightFeatureLayer_faultHandler(event:FaultEvent):void
+            {
+                highlightFeatureLayer.removeEventListener(FeatureLayerEvent.QUERY_FEATURES_COMPLETE, highlightFeatureLayer_selectionCompleteHandler);
+                highlightFeatureLayer.removeEventListener(FaultEvent.FAULT, highlightFeatureLayer_faultHandler);
+                showError("Could not retrieve layer data.");
+            }
+
+            protected function highlightFeatureLayer_loadHandler(event:LayerEvent):void
+            {
+                highlightFeatureLayer.removeEventListener(LayerEvent.LOAD, highlightFeatureLayer_loadHandler);
+                highlightFeatureLayer.removeEventListener(LayerEvent.LOAD_ERROR, highlightFeatureLayer_loadErrorHandler);
+                highlightFeatureLayer.selectFeatures(query, selectionMethod);
+            }
+
+            protected function highlightFeatureLayer_loadErrorHandler(event:LayerEvent):void
+            {
+                highlightFeatureLayer.removeEventListener(LayerEvent.LOAD, highlightFeatureLayer_loadHandler);
+                highlightFeatureLayer.removeEventListener(LayerEvent.LOAD_ERROR, highlightFeatureLayer_loadErrorHandler);
+                showError("Could not retrieve layer data.");
+            }
+
+            private function fetchFeaturesFromServer(url:String):void
+            {
+                queryTask.addEventListener(QueryEvent.EXECUTE_COMPLETE, queryTask_executeCompleteHandler, false, 0, true);
+                queryTask.addEventListener(FaultEvent.FAULT, queryTask_faultHandler, false, 0, true);
+                queryTask.url = url;
+                queryTask.execute(query);
+                activeHighlightLayer = highlightGraphicsLayer;
+                map.addLayer(highlightGraphicsLayer);
+            }
+
+            protected function queryTask_executeCompleteHandler(event:QueryEvent):void
+            {
+                queryTask.removeEventListener(QueryEvent.EXECUTE_COMPLETE, queryTask_executeCompleteHandler);
+                queryTask.removeEventListener(FaultEvent.FAULT, queryTask_faultHandler);
+
+                var attributes:Array;
+
+                if (selectionMethod == FeatureLayer.SELECTION_ADD)
+                {
+                    var currentGraphicProvider:ArrayCollection = highlightGraphicsLayer.graphicProvider as ArrayCollection;
+                    highlightGraphicsLayer.graphicProvider = currentGraphicProvider.source.concat(event.featureSet.features);
+                    attributes = getAttributes(highlightGraphicsLayer.graphicProvider as ArrayCollection);
+                }
+                else if (selectionMethod == FeatureLayer.SELECTION_NEW)
+                {
+                    attributes = event.featureSet.attributes;
+                    highlightGraphicsLayer.graphicProvider = event.featureSet.features;
+                }
+
+                applyFilterToGraphics(highlightGraphicsLayer.graphicProvider as ArrayCollection)
+                setChartData(attributes);
+                showChartView();
+            }
+
+            protected function queryTask_faultHandler(event:FaultEvent):void
+            {
+                queryTask.removeEventListener(QueryEvent.EXECUTE_COMPLETE, queryTask_executeCompleteHandler);
+                queryTask.removeEventListener(FaultEvent.FAULT, queryTask_faultHandler);
+                showError("Could not retrieve layer data.");
+            }
+
+            private function applyFilterToGraphics(features:ArrayCollection):void
+            {
+                var glowFilter:GlowFilter;
+                for each (var feature:Graphic in features)
+                {
+                    glowFilter = new GlowFilter();
+                    glowFilter.alpha = 0.6;
+                    glowFilter.blurX = 16;
+                    glowFilter.blurY = 16;
+                    glowFilter.color = highlightColor;
+                    glowFilter.inner = feature.geometry is Polygon;
+                    glowFilter.strength = 8;
+                    feature.filters = [ glowFilter ];
+                }
+            }
+
+            protected function wTemplate_closedHandler(event:Event):void
+            {
+                setMapAction(null, null, null, null); // deactivate drawTool
+                if (activeHighlightLayer)
+                {
+                    map.removeLayer(activeHighlightLayer);
+                }
+            }
+
+            protected function wTemplate_openHandler(event:Event):void
+            {
+                if (activeHighlightLayer)
+                {
+                    map.addLayer(activeHighlightLayer);
+                }
+            }
+
+            private function updateSelectedChartLayerDefinition():void
+            {
+                selectedChartLayerDefinition = (layerSelection.selectedItem as ChartLayerDefinition);
+                if (!selectedChartLayerDefinition.url)
+                {
+                    isSourceFeatureLayer = true;
+                    removeLayerListeners();
+                    sourceFeatureLayer = findFeatureLayerByLabel(selectedChartLayerDefinition.label);
+                    addLayerListeners();
+                    updateSourceFeatureLayerInclusion();
+                }
+                else
+                {
+                    isSourceFeatureLayer = false;
+                    removeLayerListeners();
+                    sourceFeatureLayer = null;
+                }
+            }
+
+            private function removeLayerListeners():void
+            {
+                if (sourceFeatureLayer)
+                {
+                    sourceFeatureLayer.removeEventListener(LayerEvent.IS_IN_SCALE_RANGE_CHANGE, selectedLayer_isInScaleRangeChangeHandler);
+                    sourceFeatureLayer.removeEventListener(FlexEvent.SHOW, selectedLayer_showHandler);
+                    sourceFeatureLayer.removeEventListener(FlexEvent.HIDE, selectedLayer_hideHandler);
+                }
+            }
+
+            private function selectedLayer_isInScaleRangeChangeHandler(event:LayerEvent):void
+            {
+                updateSourceFeatureLayerInclusion();
+            }
+
+            private function updateSourceFeatureLayerInclusion():void
+            {
+                if (sourceFeatureLayer && sourceFeatureLayer.visible && sourceFeatureLayer.isInScaleRange)
+                {
+                    isSourceFeatureLayerVisibleAndInScaleRange = true;
+                }
+                else
+                {
+                    isSourceFeatureLayerVisibleAndInScaleRange = false;
+                }
+            }
+
+            private function selectedLayer_showHandler(event:FlexEvent):void
+            {
+                updateSourceFeatureLayerInclusion();
+            }
+
+            private function selectedLayer_hideHandler(event:FlexEvent):void
+            {
+                updateSourceFeatureLayerInclusion();
+            }
+
+            private function addLayerListeners():void
+            {
+                if (sourceFeatureLayer)
+                {
+                    sourceFeatureLayer.addEventListener(LayerEvent.IS_IN_SCALE_RANGE_CHANGE, selectedLayer_isInScaleRangeChangeHandler, false, 0, true);
+                    sourceFeatureLayer.addEventListener(FlexEvent.SHOW, selectedLayer_showHandler, false, 0, true);
+                    sourceFeatureLayer.addEventListener(FlexEvent.HIDE, selectedLayer_hideHandler, false, 0, true);
+                }
+            }
+        ]]>
+    </fx:Script>
+    <fx:Declarations>
+        <s:GlowFilter id="glowFilter"
+                      alpha="1"
+                      color="{getStyle('focusColor')}"
+                      inner="true"
+                      strength="2"/>
+        <esri:Query id="query"
+                    outSpatialReference="{map.spatialReference}"
+                    returnGeometry="true"/>
+        <esri:QueryTask id="queryTask"/>
+        <esri:GraphicsLayer id="highlightGraphicsLayer"/>
+        <esri:FeatureLayer id="highlightFeatureLayer" name="hiddenLayer_chartWidgetSelectionLayer"
+                           mode="selection"
+                           selectionColor="{highlightColor}"
+                           visible="{isSourceFeatureLayer 
+                                &amp;&amp; isSourceFeatureLayerVisibleAndInScaleRange}"/>
+    </fx:Declarations>
+    <viewer:states>
+        <s:State name="input"/>
+        <s:State name="chart"/>
+    </viewer:states>
+    <viewer:WidgetTemplate id="wTemplate"
+                           width="330" height="350"
+                           closed="wTemplate_closedHandler(event)"
+                           open="wTemplate_openHandler(event)">
+        <s:Group left="10" includeIn="input">
+            <s:Label includeInLayout="{!hasChartLayerDefinitions}"
+                     text="{noLayersLabel}"
+                     visible="{!hasChartLayerDefinitions}"/>
+            <s:VGroup gap="8"
+                      includeInLayout="{hasChartLayerDefinitions}"
+                      visible="{hasChartLayerDefinitions}">
+                <s:Label text="{layerSelectionLabel}"/>
+                <mx:ComboBox id="layerSelection" valueCommit="updateSelectedChartLayerDefinition()"/>
+                <s:Label includeInLayout="{drawToolMenu.visible}"
+                         text="{drawToolMenuLabel}"
+                         visible="{drawToolMenu.visible}"/>
+                <s:HGroup id="drawToolMenu"
+                          width="100%" height="40"
+                          gap="0"
+                          includeInLayout="{!isSourceFeatureLayer || isSourceFeatureLayerVisibleAndInScaleRange}"
+                          visible="{!isSourceFeatureLayer || isSourceFeatureLayerVisibleAndInScaleRange}">
+                    <mx:Image name="{DrawTool.EXTENT}"
+                              width="40" height="40"
+                              buttonMode="true"
+                              click="activateDrawTool(event)"
+                              rollOut="icon_rollOutHandler(event)"
+                              rollOver="icon_rollOverHandler(event)"
+                              source="assets/images/i_draw_rect.png"
+                              toolTip="{rectangleLabel}"
+                              useHandCursor="true"/>
+                    <mx:Image name="{DrawTool.CIRCLE}"
+                              width="40" height="40"
+                              buttonMode="true"
+                              click="activateDrawTool(event)"
+                              rollOut="icon_rollOutHandler(event)"
+                              rollOver="icon_rollOverHandler(event)"
+                              source="assets/images/i_draw_circle.png"
+                              toolTip="{circleLabel}"
+                              useHandCursor="true"/>
+                    <mx:Image name="{DrawTool.ELLIPSE}"
+                              width="40" height="40"
+                              buttonMode="true"
+                              click="activateDrawTool(event)"
+                              rollOut="icon_rollOutHandler(event)"
+                              rollOver="icon_rollOverHandler(event)"
+                              source="assets/images/i_draw_ellipse.png"
+                              toolTip="{ellipseLabel}"
+                              useHandCursor="true"/>
+                    <mx:Image name="{DrawTool.POLYGON}"
+                              width="40" height="40"
+                              buttonMode="true"
+                              click="activateDrawTool(event)"
+                              rollOut="icon_rollOutHandler(event)"
+                              rollOver="icon_rollOverHandler(event)"
+                              source="assets/images/i_draw_poly.png"
+                              toolTip="{polygonLabel}"
+                              useHandCursor="true"/>
+                    <mx:Image name="{DrawTool.FREEHAND_POLYGON}"
+                              width="40" height="40"
+                              buttonMode="true"
+                              click="activateDrawTool(event)"
+                              rollOut="icon_rollOutHandler(event)"
+                              rollOver="icon_rollOverHandler(event)"
+                              source="assets/images/i_draw_freepoly.png"
+                              toolTip="{freehandPolygonLabel}"
+                              useHandCursor="true"/>
+                </s:HGroup>
+                <s:Label buttonMode="true"
+                         click="clearChartAndSelectionHighlights()"
+                         includeInLayout="{drawToolMenu.visible 
+                                            &amp;&amp; doesChartHaveData}"
+                         text="{clearLabel}"
+                         textDecoration="underline"
+                         visible="{(drawToolMenu.visible) 
+                                    &amp;&amp; doesChartHaveData}"/>
+                <s:Label fontStyle="italic"
+                         includeInLayout="{!drawToolMenu.visible}"
+                         maxWidth="{wTemplate.width - 50}"
+                         text="{layerSelection.selectedLabel + ' ' + layerSourceNotVisibleLabel}"
+                         visible="{!drawToolMenu.visible}"/>
+            </s:VGroup>
+        </s:Group>
+        <s:Group width="100%" height="100%"
+                 left="10"
+                 includeIn="chart"
+                 itemCreationPolicy="immediate">
+            <s:Label includeInLayout="{!doesChartHaveData}"
+                     text="{noChartDataToDisplayLabel}"
+                     visible="{!doesChartHaveData}"/>
+            <Chart:ChartBrowser id="chartBrowser"
+                                width="100%" height="100%"
+                                includeInLayout="{doesChartHaveData}"
+                                skinClass="widgets.Chart.ChartBrowserSkin"
+                                visible="{doesChartHaveData}"/>
+        </s:Group>
+    </viewer:WidgetTemplate>
+</viewer:BaseWidget>

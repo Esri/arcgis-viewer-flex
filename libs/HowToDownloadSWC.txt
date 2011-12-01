@@ -1,0 +1,3 @@
+Download the SWC (the API Library) from http://resources.arcgis.com/content/arcgis-flex-api-download
+
+More information on ArcGIS API for Flex: http://links.esri.com/flex

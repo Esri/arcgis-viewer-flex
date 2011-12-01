@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<!--
+////////////////////////////////////////////////////////////////////////////
+//
+// Read more about ArcGIS Viewer for Flex - http://links.esri.com/flexviewer
+//
+////////////////////////////////////////////////////////////////////////////
+-->
+<configuration>
+    <title>关于 ArcGIS Viewer for Flex...</title>
+    <logo>assets/images/cn.png</logo>
+    <style>
+        <colors>0xFFFFFF,0x333333,0x101010,0x000000,0xFFD700</colors>
+        <alpha>0.8</alpha>
+        <font size="14"/>
+    </style>
+    <!-- replace the following url with your own geometryservice -->
+    <geometryservice url="http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer" />
+
+    <widget left="10" top="50" config="widgets/Navigation/NavigationWidget.xml" url="widgets/Navigation/NavigationWidget.swf"/>
+    <widget right="-2" bottom="-2" config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf"/>
+    <widget right="20" top="55" config="widgets/MapSwitcher/MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf"/>
+    <widget left="0" top="0" config="apps/zh_CN/HeaderControllerWidget.xml" url="widgets/HeaderController/HeaderControllerWidget.swf"/>
+    <widget left="3" bottom="3" config="apps/zh_CN/CoordinateWidget.xml" url="widgets/Coordinate/CoordinateWidget.swf"/>
+
+    <map initialextent="8044000 1489000 15226000 7271000" top="40" wraparound180="true">
+        <basemaps>
+            <layer label="街道图" type="tiled" visible="true" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer"/>
+            <layer label="航空图" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer"/>
+            <layer label="地形图" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer"/>
+        </basemaps>
+        <operationallayers>
+            <layer label="人口统计" type="tiled" visible="false" alpha="0.5" url="http://server.arcgisonline.com/ArcGIS/rest/services/Demographics/USA_Median_Household_Income/MapServer">
+                <sublayer id="1" popupconfig="popups/PopUp_Demographics_BlockGroups.xml"/>
+                <sublayer id="2" popupconfig="popups/PopUp_Demographics_Tracts.xml"/>
+                <sublayer id="3" popupconfig="popups/PopUp_Demographics_Counties.xml"/>
+                <sublayer id="4" popupconfig="popups/PopUp_Demographics_States.xml"/>
+            </layer>
+            <layer label="边界和地点" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places_Alternate/MapServer"/>
+            <layer label="火灾" type="feature" visible="false" alpha="1.0" popupconfig="popups/PopUp_Fires.xml" url="http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/Fire/Sheep/FeatureServer/0"/>
+        </operationallayers>
+    </map>
+
+    <widgetcontainer layout="float">
+        <widget label="书签" icon="assets/images/i_bookmark.png" config="apps/zh_CN/BookmarkWidget.xml" url="widgets/Bookmark/BookmarkWidget.swf"/>
+        <widget label="查找地址" icon="assets/images/i_pin2.png" config="widgets/Locate/LocateWidget_World.xml" url="widgets/Locate/LocateWidget.swf"/>
+        <widget label="路易斯维尔警察局" icon="assets/images/i_policestation.png" config="widgets/Query/QueryWidget_Louisville_PoliceStations.xml" url="widgets/Query/QueryWidget.swf"/>
+        <widget label="搜索" icon="assets/images/i_search.png" config="widgets/Search/SearchWidget_Louisville.xml" url="widgets/Search/SearchWidget.swf"/>
+        <widget label="地震点" icon="assets/images/i_rss.png" config="widgets/GeoRSS/GeoRSSWidget.xml" url="widgets/GeoRSS/GeoRSSWidget.swf"/>
+        <widget label="绘制和测量" icon="assets/images/i_draw2.png" config="widgets/Draw/DrawWidget.xml" url="widgets/Draw/DrawWidget.swf"/>
+        <widget label="打印" icon="assets/images/i_print.png" config="widgets/Print/PrintWidget.xml" url="widgets/Print/PrintWidget.swf"/>
+    </widgetcontainer>
+
+</configuration>

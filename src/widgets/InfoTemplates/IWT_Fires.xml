@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<configuration>
+    <fields>type,description</fields>
+    <titlefield>type</titlefield>
+    <linkfield></linkfield>
+    <datefields></datefields> <!-- field in milliseconds -->
+    <zoomscale>150000</zoomscale>
+</configuration>
+
+<!--
+    See Info Popup documentation at
+    http://help.arcgis.com/en/webapps/flexviewer/help/widgets/infopopup_widgets.htm
+-->

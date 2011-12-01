@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<configuration>
+    <fields>NAME,WIND_KTS,PRESSURE,CAT,BASIN,TRACK_DATE</fields>
+    <titlefield>NAME</titlefield>
+    <datefields>TRACK_DATE</datefields>
+    <zoomscale>150000</zoomscale>
+</configuration>
+
+<!--
+    See Info Popup documentation at
+    http://help.arcgis.com/en/webapps/flexviewer/help/widgets/infopopup_widgets.htm
+-->

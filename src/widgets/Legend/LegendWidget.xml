@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<configuration label="Legend (default)">
+    <usebasemaps>false</usebasemaps>
+    <useoperationallayers>true</useoperationallayers>
+    <respectcurrentmapscale>true</respectcurrentmapscale>
+</configuration>
+
+<!--
+    See Legend widget tag reference at
+    http://links.esri.com/legendwidget
+-->

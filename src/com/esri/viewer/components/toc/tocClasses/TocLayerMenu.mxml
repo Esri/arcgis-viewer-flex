@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+///////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2010-2011 Esri. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+///////////////////////////////////////////////////////////////////////////
+-->
+<!---
+@private
+-->
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+                   xmlns:s="library://ns.adobe.com/flex/spark"
+                   xmlns:mx="library://ns.adobe.com/flex/mx"
+                   xmlns:esri="http://www.esri.com/2008/ags"
+                   width="150" height="105"
+                   backgroundColor="{getStyle('contentBackgroundColor')}"
+                   borderColor="{getStyle('accentColor')}"
+                   initialize="bordercontainer1_initializeHandler(event)"
+                   rollOut="bordercontainer1_rollOutHandler(event)"
+                   rollOver="bordercontainer1_rollOverHandler(event)">
+    <fx:Script>
+        <![CDATA[
+            import com.esri.ags.Map;
+            import com.esri.ags.events.GeometryServiceEvent;
+            import com.esri.ags.geometry.Extent;
+            import com.esri.ags.layers.FeatureLayer;
+            import com.esri.ags.layers.GraphicsLayer;
+            import com.esri.ags.layers.KMLLayer;
+            import com.esri.ags.layers.Layer;
+            import com.esri.ags.layers.OpenStreetMapLayer;
+            import com.esri.ags.layers.WMSLayer;
+            import com.esri.ags.tasks.GeometryServiceSingleton;
+            import com.esri.ags.utils.WebMercatorUtil;
+            import com.esri.viewer.AppEvent;
+            import com.esri.viewer.components.toc.TOC;
+            
+            import mx.collections.ArrayCollection;
+            import mx.core.FlexGlobals;
+            import mx.events.FlexEvent;
+            import mx.managers.PopUpManager;
+
+            private static const WEB_MERCATOR_IDS:Array = [ 102100, 3857, 102113 ];
+
+            private var _item:Object;
+            private var _layer:Layer;
+            private var _map:Map;
+            private var _transparencyMenuItem:TransparencyMenuItem;
+
+            private function bordercontainer1_initializeHandler(event:FlexEvent):void
+            {
+                if (GeometryServiceSingleton.instance.url) // using GeometryServiceSingleton
+                {
+                    geometryService.url = GeometryServiceSingleton.instance.url;
+                    geometryService.token = GeometryServiceSingleton.instance.token;
+                    geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
+                }
+            }
+
+            public function popUpForItem(parent:DisplayObject, item:Object, map:Map, atX:Number, atY:Number):void
+            {
+                AppEvent.addListener(AppEvent.LAUNCHING_TOC_LAYER_MENU, newLayerMenuLaunching);
+
+                _item = item;
+                if (_item is TocMapLayerItem)
+                {
+                    _layer = TocMapLayerItem(_item).layer;
+                    _map = map;
+                    this.x = atX;
+                    this.y = atY;
+                    PopUpManager.addPopUp(this, parent);
+
+                    if (_layer)
+                    {
+                        addOptionsForLayerByType(_layer, parent);
+                    }
+                }
+            }
+
+            private function addOptionsForLayerByType(layer:Layer, parent:DisplayObject):void
+            {
+                if (parent is TOC)
+                {
+                    var toc:TOC = TOC(parent);
+
+                    var tocMapLayerItems:ArrayCollection = toc.dataProvider as ArrayCollection;
+
+                    if (tocMapLayerItems.length == 1)
+                    {
+                        this.moveUpGroup.enabled = false;
+                        this.moveDownGroup.enabled = false;
+                    }
+                    else
+                    {
+                        if (TocMapLayerItem(tocMapLayerItems.getItemAt(0)).layer.id == layer.id)
+                        {
+                            this.moveDownGroup.enabled = true;
+                            this.moveUpGroup.enabled = false;
+                        }
+                        else if (TocMapLayerItem(tocMapLayerItems.getItemAt(tocMapLayerItems.length - 1)).layer.id == layer.id)
+                        {
+                            this.moveUpGroup.enabled = true;
+                            this.moveDownGroup.enabled = false;
+                        }
+                    }
+                    // based on layer type, add Description/Download label
+                    this.descriptionOrDownloadLabel.text = layer is KMLLayer ? resourceManager.getString("ViewerStrings", "tocMapLayerDownloadLabel") : resourceManager.getString("ViewerStrings", "tocMapLayerDescriptionLabel");
+                    this.descriptionOrDownloadLabel.enabled = !(layer is FeatureLayer && FeatureLayer(layer).featureCollection);
+                    
+                    if (!layer.initialExtent)
+                    {
+                        this.zoomToGroup.enabled = false;
+                    }
+                }
+            }
+
+            public function remove():void
+            {
+                PopUpManager.removePopUp(_transparencyMenuItem);
+                _transparencyMenuItem = null;
+                PopUpManager.removePopUp(this);
+            }
+
+            private function zoomToLabel_clickHandler(event:MouseEvent):void
+            {   
+                //remove transparency menu item
+                if (_transparencyMenuItem)
+                {
+                    PopUpManager.removePopUp(_transparencyMenuItem);
+                    _transparencyMenuItem = null;
+                }
+                
+                var layerExtent:Extent = _layer.initialExtent;
+                if (_map.extent.spatialReference.wkid != layerExtent.spatialReference.wkid)
+                {
+                    // convert client side.
+                    if (WEB_MERCATOR_IDS.indexOf(_map.extent.spatialReference.wkid) != -1 && layerExtent.spatialReference.wkid == 4326)
+                    {   
+                        // clip the layer extent, so it's not going to Infinity; otherwise gives an error
+                        layerExtent.xmin = Math.max(layerExtent.xmin, -180);
+                        layerExtent.xmax = Math.min(layerExtent.xmax, 180);
+                        layerExtent.ymin = Math.max(layerExtent.ymin, -89.99);
+                        layerExtent.ymax = Math.min(layerExtent.ymax, 89.99);
+                        layerExtent = WebMercatorUtil.geographicToWebMercator(layerExtent) as Extent;
+                        updateMapExtent(layerExtent);
+                    }
+                    else if (WEB_MERCATOR_IDS.indexOf(layerExtent.spatialReference.wkid) != -1 && _map.extent.spatialReference.wkid == 4326)
+                    {
+                        layerExtent = WebMercatorUtil.webMercatorToGeographic(layerExtent) as Extent;
+                        updateMapExtent(layerExtent);
+                    }
+                    else
+                    {
+                        // use geometryService.project()
+                        geometryService.project([ layerExtent ], _map.extent.spatialReference);
+                    }
+                }
+                else
+                {   
+                    updateMapExtent(layerExtent);
+                }
+            }
+
+            private function geometryService_projectCompleteHandler(event:GeometryServiceEvent):void
+            {
+                updateMapExtent((event.result as Array)[0] as Extent);
+            }
+
+            private function updateMapExtent(layerExtent:Extent):void
+            {
+                _layer.map.extent = layerExtent;
+                if (!_layer.map.extent.contains(layerExtent))
+                {
+                    _layer.map.level--;
+                }
+            }
+
+            private function transparencyLabel_clickHandler(event:MouseEvent):void
+            {
+                if (!_transparencyMenuItem)
+                {
+                    _transparencyMenuItem = new TransparencyMenuItem();
+
+                    _transparencyMenuItem.x = FlexGlobals.topLevelApplication.layoutDirection == "rtl" ? this.x + (_transparencyMenuItem.width - 50) : this.x - _transparencyMenuItem.width;
+                    _transparencyMenuItem.y = this.y;
+                    _transparencyMenuItem.layer = _layer;
+                    PopUpManager.addPopUp(_transparencyMenuItem, this.parent);
+                }
+                else
+                {
+                    PopUpManager.removePopUp(_transparencyMenuItem);
+                    _transparencyMenuItem = null;
+                }
+            }
+
+            private function moveUpLabel_clickHandler(event:MouseEvent):void
+            {
+                var currentIndex:Number = 0;
+                for each (var layer:Layer in getLayersAfterRemovingHiddenLayers(_map.layers as ArrayCollection))
+                {
+                    if (_layer == layer)
+                    {
+                        break;
+                    }
+                    currentIndex++;
+                }
+                _map.reorderLayer(_layer.id, currentIndex + 1);
+                remove();
+            }
+
+            private function moveDownLabel_clickHandler(event:MouseEvent):void
+            {                   
+                var currentIndex:Number = 0;
+                for each (var layer:Layer in getLayersAfterRemovingHiddenLayers(_map.layers as ArrayCollection))
+                {
+                    if (_layer == layer)
+                    {
+                        break;
+                    }
+                    currentIndex++;
+                }
+                _map.reorderLayer(_layer.id, currentIndex - 1);
+                remove();
+            }
+            
+            private function getLayersAfterRemovingHiddenLayers(layers:ArrayCollection):Array
+            {
+                var result:Array=[];
+                for (var i:int=0; i < layers.length; i++)
+                {   
+                    const layer:Layer = layers.getItemAt(i) as Layer;
+                    if (layer.name.indexOf("hiddenLayer_") != -1 || (layer is GraphicsLayer && !(layer is FeatureLayer)))
+                    {
+                        continue
+                    }
+                    result.push(layers.getItemAt(i));
+                }
+                return result; 
+            }
+
+//            private function removeLabel_clickHandler(event:MouseEvent):void
+//            {
+//                _map.removeLayer(_layer);
+//                remove();
+//            }
+
+            private function descriptionOrDownloadLabel_clickHandler(event:MouseEvent):void
+            {
+                var url:String;
+                if (_layer is OpenStreetMapLayer)
+                {
+                    url = "http://www.openstreetmap.org";
+                }
+                else if (_layer.hasOwnProperty("url"))
+                {
+                    url = Object(_layer).url;
+                    if (_layer is WMSLayer)
+                    {
+                        url += "?SERVICE=WMS&REQUEST=GetCapabilities";
+                    }
+                }
+                if (url)
+                {
+                    var request:URLRequest = new URLRequest(url);
+                    navigateToURL(request, _layer.id);
+                }
+            }
+
+            private function bordercontainer1_rollOverHandler(event:MouseEvent):void
+            {
+                AppEvent.dispatch(AppEvent.SUSPEND_TOC_HIDE_TIMER, "true");
+            }
+
+            private function bordercontainer1_rollOutHandler(event:MouseEvent):void
+            {
+                AppEvent.dispatch(AppEvent.SUSPEND_TOC_HIDE_TIMER, null);
+            }
+
+            private function label_rollOverHandler(event:MouseEvent):void
+            {
+                var label:Label = Label(event.target);
+                label.setStyle("textDecoration", "underline");
+            }
+
+            private function label_rollOutHandler(event:MouseEvent):void
+            {
+                var label:Label = Label(event.target);
+                label.setStyle("textDecoration", "");
+            }
+
+            private function newLayerMenuLaunching(event:AppEvent):void
+            {
+                this.remove();
+            }
+        ]]>
+    </fx:Script>
+    <fx:Declarations>
+        <esri:GeometryService id="geometryService"
+                              projectComplete="geometryService_projectCompleteHandler(event)"
+                              url="http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer"/>
+    </fx:Declarations>
+    <s:layout>
+        <s:VerticalLayout gap="0"/>
+    </s:layout>
+    <s:VGroup id="topGroup"
+              width="100%"
+              gap="2"
+              paddingBottom="2"
+              paddingLeft="10"
+              paddingRight="10"
+              paddingTop="2">
+        <s:HGroup id="zoomToGroup"
+                  buttonMode="true"
+                  verticalAlign="bottom">
+            <mx:Image click="zoomToLabel_clickHandler(event)" source="assets/images/LayerZoomTo16.png"/>
+            <s:Label id="zoomToLabel"
+                     click="zoomToLabel_clickHandler(event)"
+                     rollOut="label_rollOutHandler(event)"
+                     rollOver="label_rollOverHandler(event)"
+                     text="{resourceManager.getString('ViewerStrings', 'tocMapLayerZoomToLabel')}"/>
+        </s:HGroup>
+        <s:HGroup verticalAlign="bottom">
+            <mx:Image buttonMode="true"
+                      click="transparencyLabel_clickHandler(event)"
+                      source="assets/images/EffectsTransparency16.png"/>
+            <s:Label id="transparencyLabel"
+                     buttonMode="true"
+                     click="transparencyLabel_clickHandler(event)"
+                     rollOut="label_rollOutHandler(event)"
+                     rollOver="label_rollOverHandler(event)"
+                     text="{resourceManager.getString('ViewerStrings', 'tocMapLayerTransparencyLabel')}"/>
+        </s:HGroup>
+    </s:VGroup>
+    <mx:HRule width="100%"
+              strokeColor="{getStyle('accentColor')}"
+              visible="{topGroup.visible}"/>
+    <s:VGroup id="midGroup"
+              width="100%"
+              gap="2"
+              paddingBottom="2"
+              paddingLeft="10"
+              paddingRight="10"
+              paddingTop="2">
+        <s:HGroup id="moveUpGroup"
+                  buttonMode="true"
+                  verticalAlign="bottom">
+            <mx:Image id="moveUpImage"
+                      click="moveUpLabel_clickHandler(event)"
+                      source="assets/images/LayerUp16.png"/>
+            <s:Label id="moveUpLabel"
+                     click="moveUpLabel_clickHandler(event)"
+                     rollOut="label_rollOutHandler(event)"
+                     rollOver="label_rollOverHandler(event)"
+                     text="{resourceManager.getString('ViewerStrings', 'tocMapLayerMoveUpLabel')}"/>
+        </s:HGroup>
+        <s:HGroup id="moveDownGroup"
+                  buttonMode="true"
+                  verticalAlign="bottom">
+            <mx:Image id="moveDownImage"
+                      click="moveDownLabel_clickHandler(event)"
+                      source="assets/images/LayerDown16.png"/>
+            <s:Label id="moveDownLabel"
+                     click="moveDownLabel_clickHandler(event)"
+                     rollOut="label_rollOutHandler(event)"
+                     rollOver="label_rollOverHandler(event)"
+                     text="{resourceManager.getString('ViewerStrings', 'tocMapLayerMoveDownLabel')}"/>
+        </s:HGroup>
+        <!--
+        <s:HGroup buttonMode="true" verticalAlign="bottom">
+            <mx:Image click="removeLabel_clickHandler(event)" source="assets/images/LayerRemove16.png"/>
+            <s:Label id="removeLabel"
+                     click="removeLabel_clickHandler(event)"
+                     rollOut="label_rollOutHandler(event)"
+                     rollOver="label_rollOverHandler(event)"
+                     text="{resourceManager.getString('ViewerStrings', 'tocMapLayerRemoveLabel')}"/>
+        </s:HGroup>
+        -->
+    </s:VGroup>
+    <mx:HRule width="100%"
+              strokeColor="{getStyle('accentColor')}"
+              visible="{midGroup.visible}"/>
+    <s:VGroup id="bottomGroup"
+              width="100%"
+              gap="2"
+              paddingBottom="2"
+              paddingLeft="10"
+              paddingRight="10"
+              paddingTop="2">
+        <s:HGroup buttonMode="true" verticalAlign="bottom">
+            <mx:Image click="descriptionOrDownloadLabel_clickHandler(event)" source="assets/images/GenericSpatialFile16.png"/>
+            <s:Label id="descriptionOrDownloadLabel"
+                     click="descriptionOrDownloadLabel_clickHandler(event)"
+                     rollOut="label_rollOutHandler(event)"
+                     rollOver="label_rollOverHandler(event)"/>
+        </s:HGroup>
+    </s:VGroup>
+</s:BorderContainer>

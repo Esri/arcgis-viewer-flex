@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+///////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2010-2011 Esri. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+///////////////////////////////////////////////////////////////////////////
+-->
+<!---
+@private
+-->
+<s:Label xmlns:fx="http://ns.adobe.com/mxml/2009"
+         xmlns:s="library://ns.adobe.com/flex/spark"
+         xmlns:mx="library://ns.adobe.com/flex/mx"
+         initialize="label1_initializeHandler(event)"
+         lineBreak="explicit">
+    <fx:Script>
+        <![CDATA[
+            import mx.core.EventPriority;
+            import mx.core.FlexGlobals;
+            import mx.core.UITextFormat;
+            import mx.events.FlexEvent;
+
+            /**
+             * The minimal font size at which auto-shrinking stops.
+             */
+            public var minFontSize:Number = 10;
+
+            public var autoShrinking:Boolean = true;
+
+            private var _initialFontSize:Number;
+
+            private var _initDone:Boolean = false;
+
+            protected function label1_initializeHandler(event:FlexEvent):void
+            {
+                addEventListener(FlexEvent.UPDATE_COMPLETE, onUpdateComplete, false, EventPriority.DEFAULT_HANDLER);
+            }
+
+            protected function onUpdateComplete(event:FlexEvent):void
+            {
+                if (!_initDone)
+                {
+                    initFontSize();
+                    _initDone = true;
+                }
+
+                width = maxWidth;
+                constrainTextToWidth();
+
+                if (!canFit())
+                {
+                    setStyle("lineBreak", "toFit");
+                    maxDisplayedLines = 1;
+                    showTruncationTip = true;
+                }
+                else
+                {
+                    setStyle("lineBreak", "explicit");
+                    showTruncationTip = false;
+                    this.width = Math.min(maxWidth, width + 5);
+                }
+
+                invalidateSize();
+                validateNow();
+            }
+
+            private function constrainTextToWidth():void
+            {
+                if (width <= 0)
+                {
+                    return;
+                }
+
+                var topLevelStyleManager:IStyleManager2 = FlexGlobals.topLevelApplication.styleManager;
+
+                var style:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("." + styleName);
+
+                var fontSize:Number = _initialFontSize;
+                setStyle("fontSize", fontSize);
+                invalidateSize();
+                validateNow();
+
+                if (!autoShrinking)
+                {
+                    return;
+                }
+
+                while (fontSize > minFontSize && getTextWidth(text, fontSize, style) > width)
+                {
+                    fontSize = fontSize - 0.5;
+                    setStyle("fontSize", fontSize);
+                }
+            }
+
+            private function getTextWidth(text:String, fontSize:Number, style:CSSStyleDeclaration):Number
+            {
+                var textFormat:UITextFormat =
+                    new UITextFormat(
+                    FlexGlobals.topLevelApplication.systemManager,
+                    style.getStyle("fontFamily"),
+                    fontSize,
+                    null,
+                    style.getStyle("fontWeight") == "bold",
+                    style.getStyle("fontStyle") == "italic",
+                    null,
+                    null,
+                    null,
+                    null,
+                    style.getStyle("paddingLeft"),
+                    style.getStyle("paddingRight"),
+                    style.getStyle("textIndent"));
+                textFormat.antiAliasType = flash.text.AntiAliasType.ADVANCED;
+                textFormat.gridFitType = flash.text.GridFitType.PIXEL;
+                var textMetrics:TextLineMetrics = textFormat.measureText(text);
+                return textMetrics.width;
+            }
+
+            private function canFit():Boolean
+            {
+                var topLevelStyleManager:IStyleManager2 = FlexGlobals.topLevelApplication.styleManager;
+                var style:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("." + styleName);
+                var fontSize:Number = style.getStyle("fontSize") as Number;
+
+                return getTextWidth(text, fontSize, style) <= width;
+            }
+
+            private function initFontSize():void
+            {
+                var topLevelStyleManager:IStyleManager2 = FlexGlobals.topLevelApplication.styleManager;
+                var style:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("." + styleName);
+
+                _initialFontSize = style.getStyle("fontSize") as Number;
+            }
+        ]]>
+    </fx:Script>
+</s:Label>

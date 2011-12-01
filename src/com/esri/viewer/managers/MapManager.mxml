@@ -1,0 +1,1551 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+///////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2010-2011 Esri. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+///////////////////////////////////////////////////////////////////////////
+-->
+<!---
+    Class used to configure the viewer map component (including layers) and handle map navigation modes.
+-->
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+                      xmlns:s="library://ns.adobe.com/flex/spark"
+                      xmlns:mx="library://ns.adobe.com/flex/mx"
+                      width="100%" height="100%"
+                      creationComplete="this_creationCompleteHandler()"
+                      skinClass="com.esri.viewer.skins.MapManagerSkin">
+    <fx:Metadata>
+        [SkinState("decorated")]
+        [SkinState("resized")]
+        [SkinState("normal")]
+    </fx:Metadata>
+    <fx:Script>
+        <![CDATA[
+            import com.esri.ags.Graphic;
+            import com.esri.ags.Map;
+            import com.esri.ags.SpatialReference;
+            import com.esri.ags.clusterers.ESRIClusterer;
+            import com.esri.ags.events.DrawEvent;
+            import com.esri.ags.events.LayerEvent;
+            import com.esri.ags.events.MapEvent;
+            import com.esri.ags.geometry.Extent;
+            import com.esri.ags.geometry.MapPoint;
+            import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
+            import com.esri.ags.layers.ArcGISImageServiceLayer;
+            import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
+            import com.esri.ags.layers.ArcIMSMapServiceLayer;
+            import com.esri.ags.layers.FeatureLayer;
+            import com.esri.ags.layers.KMLLayer;
+            import com.esri.ags.layers.Layer;
+            import com.esri.ags.layers.OpenStreetMapLayer;
+            import com.esri.ags.layers.WMSLayer;
+            import com.esri.ags.layers.supportClasses.LayerInfoWindowRenderer;
+            import com.esri.ags.layers.supportClasses.StaticLayer_m_esriLogo;
+            import com.esri.ags.symbols.PictureMarkerSymbol;
+            import com.esri.ags.symbols.SimpleFillSymbol;
+            import com.esri.ags.symbols.SimpleLineSymbol;
+            import com.esri.ags.symbols.SimpleMarkerSymbol;
+            import com.esri.ags.symbols.Symbol;
+            import com.esri.ags.symbols.TextSymbol;
+            import com.esri.ags.tools.DrawTool;
+            import com.esri.ags.tools.NavigationTool;
+            import com.esri.ags.virtualearth.VETiledLayer;
+            import com.esri.ags.webmap.PopUpRenderer;
+            import com.esri.ags.webmap.supportClasses.PopUpFieldFormat;
+            import com.esri.ags.webmap.supportClasses.PopUpFieldInfo;
+            import com.esri.ags.webmap.supportClasses.PopUpInfo;
+            import com.esri.ags.webmap.supportClasses.PopUpMediaInfo;
+            import com.esri.viewer.AppEvent;
+            import com.esri.viewer.ConfigData;
+            import com.esri.viewer.IBaseWidget;
+            import com.esri.viewer.IInfowindowTemplate;
+            import com.esri.viewer.ViewerContainer;
+            import com.esri.viewer.components.InfoPopup;
+
+            import mx.collections.ArrayCollection;
+            import mx.collections.ArrayList;
+            import mx.containers.Canvas;
+            import mx.controls.Alert;
+            import mx.core.FlexVersion;
+            import mx.events.CloseEvent;
+            import mx.events.FlexEvent;
+            import mx.managers.CursorManagerPriority;
+            import mx.rpc.AsyncResponder;
+            import mx.rpc.AsyncToken;
+            import mx.rpc.Fault;
+            import mx.rpc.events.FaultEvent;
+            import mx.rpc.events.ResultEvent;
+            import mx.rpc.http.HTTPService;
+            import mx.utils.StringUtil;
+
+            import spark.components.Group;
+
+            private const MAP_MANAGER:String = "MapManager";
+
+            [Embed(source="/assets/images/cross_cursor.png")]
+            private var _crossCursor:Class;
+
+            private var _cursorID:int = -1;
+
+            /* skin section */
+            [SkinPart(required="false")]
+            public var managerView:Group;
+
+            [SkinPart(required="false")]
+            public var map:Map;
+
+            [Bindable]
+            public var mapLeft:Number = 0;
+
+            [Bindable]
+            public var mapRight:Number = 0;
+
+            [Bindable]
+            public var mapTop:Number = 0;
+
+            [Bindable]
+            public var mapBottom:Number = 0;
+
+            private var m_configData:ConfigData;
+
+            private var m_defaultStatus:String;
+
+            private var m_infoPopup:InfoPopup;
+
+            private var m_navTool:NavigationTool;
+
+            private var m_navigationTool:String;
+
+            private var m_navigationStatus:String;
+
+            private var m_drawTool:DrawTool;
+
+            private var m_drawEndFunction:Function;
+
+            private var m_fullExtent:Extent;
+
+            private var m_mapManagerState:String = "resized";
+
+            private var m_optLayerTable:Array = [];
+
+            private var m_osmCopyrightManager:OpenStreetMapCopyrightManager;
+
+            private var m_basemapLayerIndex:int = 0;
+
+            private var m_operationalLayerIndex:int = 0;
+
+            private var m_basemapLayers:Array = [];
+
+            private var m_operationalLayers:Array = [];
+
+            private function this_creationCompleteHandler():void
+            {
+                m_osmCopyrightManager = new OpenStreetMapCopyrightManager(map);
+
+                AppEvent.addListener(AppEvent.CONFIG_LOADED, configLoadedHandler);
+                AppEvent.addListener(AppEvent.SET_MAP_NAVIGATION, setMapNavigationHandler);
+                AppEvent.addListener(AppEvent.BASEMAP_SWITCH, basemapSwitchHandler);
+                AppEvent.addListener(AppEvent.SET_MAP_ACTION, setMapActionHandler);
+                AppEvent.addListener(AppEvent.SHOW_INFOWINDOW, showInfoWindowHandler);
+                AppEvent.addListener(AppEvent.MAP_RESIZE, mapResizeHandler);
+                AppEvent.addListener(AppEvent.DATA_OPT_LAYERS, dataOptLayersHandler);
+                AppEvent.addListener(AppEvent.MAP_LAYER_VISIBLE, mapLayerVisibleHandler);
+            }
+
+            protected override function partAdded(partName:String, instance:Object):void
+            {
+                super.partAdded(partName, instance);
+                if (instance === map)
+                {
+                    var cssStyleDeclaration:CSSStyleDeclaration = styleManager.getStyleDeclaration("com.esri.ags.components.supportClasses.InfoWindow")
+                    cssStyleDeclaration.setStyle("backgroundColor", getStyle('contentBackgroundColor'));
+                    styleManager.setStyleDeclaration("com.esri.ags.components.supportClasses.InfoWindow", cssStyleDeclaration, true);
+                }
+            }
+
+            private function setViewerVersion():void
+            {
+                var alertParent:Sprite;
+                if (FlexVersion.CURRENT_VERSION >= 0x04050000)
+                {
+                    // work-around for 4.5 regression - https://bugs.adobe.com/jira/browse/SDK-30755
+                    alertParent = ViewerContainer.getInstance();
+                }
+                var contextMenuText:String = getDefaultString("contextMenuText");
+                var aboutText:String = getDefaultString("aboutText");
+                var menuItem:ContextMenuItem = new ContextMenuItem(contextMenuText, true, true);
+                menuItem.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, function(event:ContextMenuEvent):void
+                {
+                    // save normal labels
+                    var buttonWidth:Number = Alert.buttonWidth;
+                    var yesLabel:String = Alert.yesLabel;
+                    var noLabel:String = Alert.noLabel;
+                    // change labels
+                    Alert.buttonWidth = 100;
+                    Alert.yesLabel = getDefaultString("aboutLearnMoreBtn");
+                    Alert.noLabel = getDefaultString("aboutCloseBtn");
+                    Alert.show(aboutText, contextMenuText, Alert.YES | Alert.NO, alertParent, function(event:CloseEvent):void
+                    {
+                        if (event.detail == Alert.YES)
+                        {
+                            navigateToURL(new URLRequest("http://help.arcgis.com/en/webapps/flexviewer/"));
+                        }
+                    }, StaticLayer_m_esriLogo, Alert.NO);
+                    // restore labels to normal
+                    Alert.buttonWidth = buttonWidth;
+                    Alert.yesLabel = yesLabel;
+                    Alert.noLabel = noLabel;
+                });
+                if (map.contextMenu)
+                {
+                    // call contextMenu dynamically so this will compile in AIR
+                    if (map.contextMenu["customItems"] is Array)
+                    {
+                        (map.contextMenu["customItems"] as Array).push(menuItem);
+                    }
+                    else if (map.contextMenu["addItem"])
+                    {
+                        map.contextMenu["addItem"](menuItem);
+                    }
+                }
+            }
+
+            //config
+            //TODO: Factory or builder pattern need to be used for extendability
+            private function configLoadedHandler(event:AppEvent):void
+            {
+                m_configData = event.data as ConfigData;
+
+                AppEvent.dispatch(AppEvent.MAP_LOADED, map);
+
+                var infoContainer:Canvas = new Canvas(); // TODO - make this a Group instance.
+                infoContainer.setStyle("borderSkin", null);
+
+                /* Adding these two lines removes the container that displays below the header controller in graphical theme
+                   but increases CPU usage.
+                   TODO: Need to convert see if this is needed. if yes, then could be replaced by Group
+
+                   infoContainer.x = -100
+                   infoContainer.y = -100
+                 */
+                infoContainer.percentWidth = 100;
+                infoContainer.percentHeight = 100;
+                infoContainer.horizontalScrollPolicy = "off";
+                infoContainer.verticalScrollPolicy = "off";
+                managerView.addElement(infoContainer);
+
+                m_infoPopup = new InfoPopup();
+                m_infoPopup.map = map;
+                infoContainer.addChild(m_infoPopup);
+
+                m_navTool = new NavigationTool();
+                m_navTool.map = map;
+
+                m_drawTool = new DrawTool();
+                m_drawTool.map = map;
+                m_drawTool.addEventListener(DrawEvent.DRAW_END, drawEndHandler);
+
+                configMapAttributes();
+
+                if (m_configData.webMapLayers)
+                {
+                    map.addEventListener(MapEvent.LAYER_ADD, layerloadComplete);
+                    for each (var layer:Layer in m_configData.webMapLayers)
+                    {
+                        if (layer is FeatureLayer)
+                        {
+                            layer.addEventListener(FlexEvent.HIDE, featureLayer_hideHandler);
+                        }
+                        if (layer is KMLLayer)
+                        {
+                            layer.addEventListener(FlexEvent.HIDE, kmlLayer_hideHandler);
+                        }
+                        map.addLayer(layer);
+                    }
+                    m_optLayerTable = m_configData.opLayers;
+                }
+                else
+                {
+                    configBasemaps();
+                    configOperationalLayers();
+                    configReferenceBasemaps();
+                }
+
+                setViewerVersion();
+            }
+
+            private function configMapAttributes():void
+            {
+                var spatialReference:SpatialReference;
+                var initialExtent:Extent;
+
+                for (var i:int = 0; i < m_configData.mapAttrs.length; i++)
+                {
+                    var id:String = m_configData.mapAttrs[i].id;
+
+                    if (id == "full")
+                    {
+                        var ext:String = m_configData.mapAttrs[i].extent;
+                        var extArray:Array = ext.split(" ");
+                        var extent:Extent = new Extent(Number(extArray[0]), Number(extArray[1]), Number(extArray[2]), Number(extArray[3]));
+                        m_fullExtent = extent;
+                    }
+                    else if (id == "initial")
+                    {
+                        var iext:String = m_configData.mapAttrs[i].extent;
+                        var iextArray:Array = iext.split(" ");
+                        initialExtent = new Extent(Number(iextArray[0]), Number(iextArray[1]), Number(iextArray[2]), Number(iextArray[3]));
+                    }
+                    else if (id == "center")
+                    {
+                        map.addEventListener(MapEvent.LOAD, map_loadHandler);
+                    }
+                    else if (id == "map")
+                    {
+                        var mapAttr:Object = m_configData.mapAttrs[i];
+                        if (mapAttr.left || mapAttr.right || mapAttr.top || mapAttr.bottom)
+                        {
+                            this.m_mapManagerState = "decorated";
+                            dispatchEvent(new Event(m_mapManagerState));
+                            invalidateSkinState();
+
+                            if (mapAttr.left)
+                            {
+                                this.left = mapAttr.left;
+                            }
+                            if (mapAttr.right)
+                            {
+                                this.right = mapAttr.right;
+                            }
+                            if (mapAttr.top)
+                            {
+                                this.top = mapAttr.top;
+                            }
+                            if (mapAttr.bottom)
+                            {
+                                this.bottom = mapAttr.bottom;
+                            }
+
+                            this.m_mapManagerState = "decorated";
+                            dispatchEvent(new Event(this.m_mapManagerState));
+                            invalidateSkinState();
+                        }
+                    }
+                    else if (id == "spatialref")
+                    {
+                        var wkid:Number = m_configData.mapAttrs[i].wkid;
+                        var wkt:String = m_configData.mapAttrs[i].wkt;
+
+                        if (wkid || wkt)
+                        {
+                            spatialReference = new SpatialReference(wkid, wkt);
+                        }
+
+                        m_configData.mapAttrs[i].refObj = spatialReference;
+                    }
+                    else if (id == "zoomSlider")
+                    {
+                        map.zoomSliderVisible = m_configData.mapAttrs[i].zoomSliderVisible;
+                    }
+                    else if (id == "scaleBar")
+                    {
+                        map.scaleBarVisible = m_configData.mapAttrs[i].scaleBarVisible;
+                    }
+                    else if (id == "esriLogo")
+                    {
+                        map.logoVisible = m_configData.mapAttrs[i].esriLogoVisible;
+                    }
+                    else if (id == "openHandCursor")
+                    {
+                        map.openHandCursorVisible = m_configData.mapAttrs[i].openHandCursorVisible;
+                    }
+                    else if (id == "wrapAround180")
+                    {
+                        map.wrapAround180 = m_configData.mapAttrs[i].wrapAround180;
+                    }
+                    else if (id == "panEasingFactor")
+                    {
+                        map.panEasingFactor = m_configData.mapAttrs[i].panEasingFactor;
+                    }
+                    else if (id == "units")
+                    {
+                        map.units = m_configData.mapAttrs[i].units;
+                    }
+                    else if (id == "lods")
+                    {
+                        map.lods = m_configData.mapAttrs[i].lods;
+                    }
+                }
+
+                // set size now so that only one extentChange event will be fired
+                map.percentHeight = 100;
+                map.percentWidth = 100;
+
+                if (m_fullExtent)
+                {
+                    m_fullExtent.spatialReference = spatialReference;
+                }
+                if (initialExtent)
+                {
+                    initialExtent.spatialReference = spatialReference;
+                    map.extent = initialExtent;
+                }
+            }
+
+            private function map_loadHandler(event:MapEvent):void
+            {
+                var center:String;
+                var level:Number;
+                var scale:Number;
+                for (var i:int = 0; i < m_configData.mapAttrs.length; i++)
+                {
+                    var id:String = m_configData.mapAttrs[i].id;
+
+                    if (id == "center")
+                    {
+                        center = m_configData.mapAttrs[i].center;
+                    }
+                    else if (id == "level")
+                    {
+                        level = parseInt(m_configData.mapAttrs[i].level);
+                    }
+                    else if (id == "scale")
+                    {
+                        scale = parseFloat(m_configData.mapAttrs[i].scale);
+                    }
+                }
+                if (center)
+                {
+                    var centerXY:Array = center.split(" ");
+                    if (centerXY.length == 2)
+                    {
+                        var centerPt:MapPoint = new MapPoint(centerXY[0], centerXY[1]);
+                        map.centerAt(centerPt);
+                        if (scale > 0)
+                        {
+                            map.scale = scale;
+                        }
+                        else if (level >= 0)
+                        {
+                            map.level = level;
+                        }
+                    }
+                }
+            }
+
+            private function configBasemaps():void
+            {
+                m_basemapLayers.forEach(removeLayer);
+
+                var layers:Array = m_configData.basemaps;
+                for (var i:uint = 0; i < layers.length; i++)
+                {
+                    if (!layers[i].reference)
+                    {
+                        m_basemapLayers.push(layers[i]);
+                    }
+                }
+
+                if (m_basemapLayers.length > 0)
+                {
+                    loadNextBasemapLayer();
+                }
+
+                if (layers.length > 0)
+                {
+                    map.addEventListener(MapEvent.LAYER_ADD, layerloadComplete);
+                }
+            }
+
+            private function loadNextBasemapLayer():void
+            {
+                var basemapLayerObject:Object = m_basemapLayers[m_basemapLayerIndex];
+
+                addLayerToMap(basemapLayerObject);
+                configureLayerRenderer(basemapLayerObject, false);
+            }
+
+            private function configReferenceBasemaps():void
+            {
+                var layers:Array = m_configData.basemaps;
+                for (var i:uint = 0; i < layers.length; i++)
+                {
+                    if (layers[i].reference)
+                    {
+                        addLayerToMap(layers[i]);
+                    }
+                }
+            }
+
+            private function configOperationalLayers():void
+            {
+                m_operationalLayers.forEach(removeLayer);
+
+                var layers:Array = m_configData.opLayers;
+                if (layers && layers.length > 0)
+                {
+                    for (var i:uint = 0; i < layers.length; i++)
+                    {
+                        m_operationalLayers.push(layers[i]);
+                    }
+                }
+
+                if (m_operationalLayers.length > 0)
+                {
+                    loadNextOpertionalLayer();
+                }
+            }
+
+            private function loadNextOpertionalLayer():void
+            {
+                var optLayerObject:Object = m_operationalLayers[m_operationalLayerIndex];
+
+                // add layer to map and configure popups if any
+                addLayerToMap(optLayerObject);
+                configureLayerRenderer(optLayerObject, true);
+            }
+
+            private function addLayerToMap(layerObject:Object):void
+            {
+                const alpha:Number = Number(layerObject.alpha);
+                const autoRefresh:Number = Number(layerObject.autoRefresh);
+                const bandIds:String = layerObject.bandIds;
+                const bingMapKey:String = layerObject.key;
+                const clusterer:ESRIClusterer = layerObject.clusterer;
+                const culture:String = layerObject.culture;
+                const definitionExpression:String = layerObject.definitionExpression;
+                const displayLevels:String = layerObject.displayLevels;
+                const imageFormat:String = layerObject.imageFormat;
+                const label:String = layerObject.label;
+                const maxAllowableOffset:Number = layerObject.maxAllowableOffset;
+                const mode:String = layerObject.mode;
+                const noData:Number = Number(layerObject.noData);
+                const password:String = layerObject.password;
+                const proxyUrl:String = m_configData.proxyUrl;
+                const serviceHost:String = layerObject.serviceHost;
+                const serviceName:String = layerObject.serviceName;
+                const serviceURL:String = layerObject.serviceURL;
+                const skipGetCapabilities:String = layerObject.skipGetCapabilities;
+                const style:String = layerObject.style;
+                const token:String = layerObject.token;
+                const type:String = layerObject.type;
+                const url:String = layerObject.url;
+                const useAMF:String = layerObject.useAMF;
+                const useMapTime:Boolean = layerObject.useMapTime;
+                const useProxy:Boolean = layerObject.useProxy;
+                const username:String = layerObject.username;
+                const version:String = layerObject.version;
+                const visible:Boolean = layerObject.visible;
+                const visibleLayers:String = layerObject.visibleLayers;
+                const wkid:Number = layerObject.wkid;
+
+                var i:int;
+                switch (type.toLowerCase())
+                {
+                    case "tiled":
+                    {
+                        var tiledLayer:ArcGISTiledMapServiceLayer = new ArcGISTiledMapServiceLayer(url);
+                        tiledLayer.alpha = alpha;
+                        tiledLayer.id = label;
+                        tiledLayer.name = label;
+                        tiledLayer.token = token;
+                        tiledLayer.visible = visible;
+                        if (displayLevels)
+                        {
+                            tiledLayer.displayLevels = displayLevels.split(",");
+                            for (i = 0; i < tiledLayer.displayLevels.length; i++)
+                            {
+                                tiledLayer.displayLevels[i] = Number(tiledLayer.displayLevels[i]); // convert to Numbers
+                            }
+                        }
+                        if (proxyUrl && useProxy)
+                        {
+                            tiledLayer.proxyURL = proxyUrl;
+                        }
+                        layerObject.layer = tiledLayer;
+                        tiledLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
+                        tiledLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
+                        map.addLayer(tiledLayer);
+                        break;
+                    }
+                    case "dynamic":
+                    {
+                        var dynLayer:ArcGISDynamicMapServiceLayer = new ArcGISDynamicMapServiceLayer(url);
+                        dynLayer.alpha = alpha;
+                        dynLayer.id = label;
+                        dynLayer.name = label;
+                        dynLayer.token = token;
+                        dynLayer.visible = visible;
+                        dynLayer.useMapTime = useMapTime;
+                        if (autoRefresh > 0)
+                        {
+                            setInterval(dynLayer.refresh, autoRefresh * 1000);
+                        }
+                        if (imageFormat)
+                        {
+                            dynLayer.imageFormat = imageFormat;
+                        }
+                        if (visibleLayers)
+                        {
+                            var vizLayers:Array = visibleLayers.split(",");
+                            for (i = 0; i < vizLayers.length; i++)
+                            {
+                                vizLayers[i] = Number(vizLayers[i]); // convert to Numbers
+                            }
+                            dynLayer.visibleLayers = new ArrayCollection(vizLayers);
+                        }
+                        if (proxyUrl && useProxy)
+                        {
+                            dynLayer.proxyURL = proxyUrl;
+                        }
+                        layerObject.layer = dynLayer;
+                        dynLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
+                        dynLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
+                        map.addLayer(dynLayer);
+                        break;
+                    }
+                    case "feature":
+                    {
+                        var featureLayer:FeatureLayer = new FeatureLayer(url);
+                        featureLayer.addEventListener(FlexEvent.HIDE, featureLayer_hideHandler);
+                        featureLayer.alpha = alpha;
+                        featureLayer.id = label;
+                        featureLayer.name = label;
+                        featureLayer.maxAllowableOffset = maxAllowableOffset;
+                        featureLayer.outFields = [ '*' ]; // TODO: be smarter
+                        featureLayer.token = token;
+                        featureLayer.visible = visible;
+                        featureLayer.useMapTime = useMapTime;
+                        featureLayer.clusterer = clusterer;
+                        if (useAMF)
+                        {
+                            featureLayer.useAMF = (useAMF == "true");
+                        }
+                        if (mode)
+                        {
+                            featureLayer.mode = mode;
+                        }
+                        if (definitionExpression)
+                        {
+                            featureLayer.definitionExpression = definitionExpression;
+                        }
+                        if (proxyUrl && useProxy)
+                        {
+                            featureLayer.proxyURL = proxyUrl;
+                        }
+                        // example for hard-coding layer symbology, e.g. for pre-10.0 ArcGIS Servers
+                        /* if (label == "Traffic Cameras") // the layer label in main configuration file
+                        {
+                            var picSymbol:PictureMarkerSymbol = new PictureMarkerSymbol("assets/images/i_camera.png",30,30,0,0,0);
+                            var rend:Renderer = new SimpleRenderer(picSymbol);
+                            featureLayer.renderer = rend;
+                        } */
+                        layerObject.layer = featureLayer;
+                        featureLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
+                        featureLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
+                        map.addLayer(featureLayer);
+                        break;
+                    }
+                    case "bing":
+                    {
+                        var veTiledLayer:VETiledLayer = new VETiledLayer();
+                        veTiledLayer.id = label;
+                        veTiledLayer.name = label;
+                        veTiledLayer.key = bingMapKey;
+                        veTiledLayer.visible = visible;
+                        veTiledLayer.alpha = alpha;
+                        if (style)
+                        {
+                            veTiledLayer.mapStyle = style;
+                        }
+                        if (culture)
+                        {
+                            veTiledLayer.culture = culture;
+                        }
+                        if (displayLevels)
+                        {
+                            veTiledLayer.displayLevels = displayLevels.split(",");
+                            for (i = 0; i < veTiledLayer.displayLevels.length; i++)
+                            {
+                                veTiledLayer.displayLevels[i] = Number(veTiledLayer.displayLevels[i]); // convert to Numbers
+                            }
+                        }
+                        layerObject.layer = veTiledLayer;
+                        veTiledLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
+                        veTiledLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
+                        map.addLayer(veTiledLayer);
+                        break;
+                    }
+                    case "image":
+                    {
+                        var imgLayer:ArcGISImageServiceLayer = new ArcGISImageServiceLayer(url);
+                        imgLayer.id = label;
+                        imgLayer.name = label;
+                        imgLayer.alpha = alpha;
+                        imgLayer.token = token;
+                        imgLayer.visible = visible;
+                        imgLayer.noData = noData;
+                        imgLayer.useMapTime = useMapTime;
+                        if (imageFormat)
+                        {
+                            imgLayer.imageFormat = imageFormat;
+                        }
+                        if (bandIds)
+                        {
+                            imgLayer.bandIds = bandIds.split(",");
+                            for (i = 0; i < imgLayer.bandIds.length; i++)
+                            {
+                                imgLayer.bandIds[i] = Number(imgLayer.bandIds[i]); // convert to Numbers
+                            }
+                        }
+                        if (proxyUrl && useProxy)
+                        {
+                            imgLayer.proxyURL = proxyUrl;
+                        }
+                        layerObject.layer = imgLayer;
+                        imgLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
+                        imgLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
+                        map.addLayer(imgLayer);
+                        break;
+                    }
+                    case "arcims":
+                    {
+                        var arcimsLayer:ArcIMSMapServiceLayer = new ArcIMSMapServiceLayer();
+                        arcimsLayer.alpha = alpha;
+                        arcimsLayer.id = label;
+                        arcimsLayer.name = label;
+                        arcimsLayer.visible = visible;
+                        arcimsLayer.serviceHost = serviceHost;
+                        arcimsLayer.serviceName = serviceName;
+                        if (autoRefresh > 0)
+                        {
+                            setInterval(arcimsLayer.refresh, autoRefresh * 1000);
+                        }
+                        if (imageFormat)
+                        {
+                            arcimsLayer.imageFormat = imageFormat;
+                        }
+                        if (visibleLayers)
+                        {
+                            var visLayers:Array = visibleLayers.split(",");
+                            arcimsLayer.visibleLayers = new ArrayCollection(visLayers);
+                        }
+                        if (proxyUrl && useProxy)
+                        {
+                            arcimsLayer.proxyURL = proxyUrl;
+                        }
+                        if (username && password)
+                        {
+                            arcimsLayer.username = username;
+                            arcimsLayer.password = password;
+                        }
+                        layerObject.layer = arcimsLayer;
+                        arcimsLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
+                        arcimsLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
+                        map.addLayer(arcimsLayer);
+                        break;
+                    }
+                    case "wms":
+                    {
+                        var wmsLayer:WMSLayer = new WMSLayer(url);
+                        wmsLayer.alpha = alpha;
+                        wmsLayer.id = label;
+                        wmsLayer.name = label;
+                        wmsLayer.visible = visible;
+                        if (wkid)
+                        {
+                            wmsLayer.spatialReference = new SpatialReference(wkid);
+                        }
+                        if (autoRefresh > 0)
+                        {
+                            setInterval(wmsLayer.refresh, autoRefresh * 1000);
+                        }
+                        if (imageFormat)
+                        {
+                            wmsLayer.imageFormat = imageFormat;
+                        }
+                        if (visibleLayers)
+                        {
+                            var wmsVisLayers:Array = visibleLayers.split(",");
+                            wmsLayer.visibleLayers = new ArrayList(wmsVisLayers);
+                        }
+                        if (proxyUrl && useProxy)
+                        {
+                            wmsLayer.proxyURL = proxyUrl;
+                        }
+                        if (skipGetCapabilities)
+                        {
+                            wmsLayer.skipGetCapabilities = skipGetCapabilities == "true";
+                        }
+                        if (username && password)
+                        {
+                            wmsLayer.username = username;
+                            wmsLayer.password = password;
+                        }
+                        if (version)
+                        {
+                            wmsLayer.version = version;
+                        }
+                        layerObject.layer = wmsLayer;
+                        wmsLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
+                        wmsLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
+                        map.addLayer(wmsLayer);
+                        break;
+                    }
+                    case "osm":
+                    {
+                        var osmLayer:OpenStreetMapLayer = new OpenStreetMapLayer();
+                        osmLayer.alpha = alpha;
+                        osmLayer.id = label;
+                        osmLayer.name = label;
+                        osmLayer.visible = visible;
+                        layerObject.layer = osmLayer;
+                        osmLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
+                        osmLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
+                        map.addLayer(osmLayer);
+                        break;
+                    }
+                    case "kml":
+                    {
+                        var kmlLayer:KMLLayer = new KMLLayer(url);
+                        kmlLayer.addEventListener(FlexEvent.HIDE, kmlLayer_hideHandler);
+                        kmlLayer.alpha = alpha;
+                        kmlLayer.id = label;
+                        kmlLayer.name = label;
+                        if (serviceURL)
+                        {
+                            kmlLayer.serviceURL = serviceURL;
+                        }
+                        kmlLayer.visible = visible;
+                        layerObject.layer = kmlLayer;
+                        kmlLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
+                        kmlLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
+                        map.addLayer(kmlLayer);
+                        break;
+                    }
+                    default:
+                    {
+                        var errorMessage:String = StringUtil.substitute(getDefaultString('incorrectLayerTypeText'), "'" + type + "'");
+                        AppEvent.showError(errorMessage, MAP_MANAGER);
+                        break;
+                    }
+                }
+            }
+
+            private function layer_loadErrorEvent(event:LayerEvent):void
+            {
+                event.layer.removeEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
+                event.layer.removeEventListener(LayerEvent.LOAD, layer_loadEvent);
+
+                var errorMessage:String = event.layer.name + " layer failed to load: " + makeHTMLSafe(buildFaultMessage(event.fault));
+                AppEvent.showError(errorMessage, MAP_MANAGER);
+            }
+
+            private function layer_loadEvent(event:LayerEvent):void
+            {
+                event.layer.removeEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
+                event.layer.removeEventListener(LayerEvent.LOAD, layer_loadEvent);
+            }
+
+            private function makeHTMLSafe(content:String):String
+            {
+                content = content.replace(/>/g, "&gt;");
+                content = content.replace(/</g, "&lt;");
+                return content;
+            }
+
+            private function buildFaultMessage(fault:Fault):String
+            {
+                var faultMessage:String = StringUtil.substitute(getDefaultString('faultCode'), fault.faultCode) + "\n\n";
+                faultMessage += StringUtil.substitute(getDefaultString('faultInfo'), fault.faultString) + "\n\n";
+                faultMessage += StringUtil.substitute(getDefaultString('faultDetail'), fault.faultDetail);
+                return faultMessage;
+            }
+
+            private function featureLayer_hideHandler(event:FlexEvent):void
+            {
+                const featureLayer:FeatureLayer = event.target as FeatureLayer;
+                const graphic:Graphic = map.infoWindow.contentOwner as Graphic;
+                if (map.infoWindow.visible && graphic && graphic.graphicsLayer === featureLayer)
+                {
+                    map.infoWindow.hide();
+                }
+            }
+
+            private function kmlLayer_hideHandler(event:FlexEvent):void
+            {
+                const kmlLayer:KMLLayer = event.target as KMLLayer;
+                const graphic:Graphic = map.infoWindow.contentOwner as Graphic;
+                if (map.infoWindow.visible && graphic)
+                {
+                    for (var i:int = 0; i < kmlLayer.layers.length; )
+                    {
+                        if (graphic.graphicsLayer === kmlLayer.layers[i])
+                        {
+                            map.infoWindow.hide();
+                            break;
+                        }
+                        else
+                        {
+                            i++;
+                        }
+                    }
+                }
+            }
+
+            private function configureLayerRenderer(layerObject:Object, isOperationalLayer:Boolean):void
+            {
+                if (layerObject.layer is ArcGISDynamicMapServiceLayer || layerObject.layer is ArcGISTiledMapServiceLayer)
+                {
+                    // look at the sublayers
+                    var subLayers:Array = layerObject.subLayers as Array;
+                    if ((subLayers).length > 0)
+                    {
+                        var dynamicLayer:ArcGISDynamicMapServiceLayer = layerObject.layer as ArcGISDynamicMapServiceLayer;
+                        if (dynamicLayer)
+                        {
+                            dynamicLayer.layerDefinitions = getLayerDefinitions(subLayers);
+                        }
+
+                        var arrLayerInfoWindowRenderer:Array = [];
+                        var i:int;
+                        var arrSubLayerPopUp:Array = [];
+                        var arrSubLayerInfoWinWidget:Array = [];
+                        var countPopUpOrInfoWinWidget:int = 0;
+                        for (i = 0; i < subLayers.length; i++)
+                        {
+                            if (subLayers[i].popUpConfig[0])
+                            {
+                                countPopUpOrInfoWinWidget++;
+                                arrSubLayerPopUp.push({ layer: layerObject.layer, sublayer: subLayers[i], popUpConfig: subLayers[i].popUpConfig });
+                            }
+                            else if (subLayers[i].infoConfig[0])
+                            {
+                                countPopUpOrInfoWinWidget++;
+                                arrSubLayerInfoWinWidget.push({ layer: layerObject.layer, sublayer: subLayers[i], infoConfig: subLayers[i].infoConfig, info: subLayers[i].info });
+                            }
+                        }
+                        if (countPopUpOrInfoWinWidget > 0)
+                        {
+                            // popups for sublayers
+                            if (arrSubLayerPopUp.length > 0)
+                            {
+                                configurePopUps(isOperationalLayer, arrSubLayerPopUp, true, arrLayerInfoWindowRenderer);
+                            }
+
+                            // simple info win widget for sublayers
+                            for (i = 0; i < arrSubLayerInfoWinWidget.length; i++)
+                            {
+                                var layerInfoWindowRenderer:LayerInfoWindowRenderer = new LayerInfoWindowRenderer;
+                                layerInfoWindowRenderer.layerId = arrSubLayerInfoWinWidget[i].sublayer.id;
+
+                                var sublayerData:Object = { id: arrSubLayerInfoWinWidget[i].id, url: arrSubLayerInfoWinWidget[i].info, config: arrSubLayerInfoWinWidget[i].infoConfig, layerInfoWindowRenderer: layerInfoWindowRenderer };
+                                AppEvent.dispatch(AppEvent.DATA_CREATE_INFOWIDGET, sublayerData, subLayerInfoReady);
+                            }
+
+                            function subLayerInfoReady(event:AppEvent):void
+                            {
+                                var infoTemplate:IInfowindowTemplate = event.data.infoWidget;
+                                var biWidget:IBaseWidget = infoTemplate as IBaseWidget;
+                                var infoConfigXML:XML = biWidget.configXML;
+
+                                var infoRender:ClassFactory = new ClassFactory(infoTemplate.infoClass);
+                                infoRender.properties = { infoConfig: infoConfigXML, map: map };
+
+                                event.data.layerInfoWindowRenderer.infoWindowRenderer = infoRender;
+                                arrLayerInfoWindowRenderer.push(event.data.layerInfoWindowRenderer);
+
+                                if (arrLayerInfoWindowRenderer.length == countPopUpOrInfoWinWidget)
+                                {
+                                    layerObject.layer.layerInfoWindowRenderers = arrLayerInfoWindowRenderer;
+                                    loadNextOperationalOrBasemapLayer(isOperationalLayer);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            loadNextOperationalOrBasemapLayer(isOperationalLayer);
+                        }
+                    }
+                    else
+                    {
+                        loadNextOperationalOrBasemapLayer(isOperationalLayer);
+                    }
+                }
+                else if (layerObject.popUpConfig)
+                {
+                    configurePopUps(isOperationalLayer, [{ layer: layerObject.layer, popUpConfig: layerObject.popUpConfig }], false);
+                }
+                else if (layerObject.infoUrl)
+                {
+                    var data:Object = {
+                            id: layerObject.label,
+                            url: layerObject.infoUrl,
+                            config: layerObject.infoConfig,
+                            isOptLayer: isOperationalLayer
+                        };
+                    AppEvent.dispatch(AppEvent.DATA_CREATE_INFOWIDGET, data, infoReady);
+                }
+                else
+                {
+                    loadNextOperationalOrBasemapLayer(isOperationalLayer);
+                }
+
+                function configurePopUps(isOptLayer:Boolean, arrLayerPopUp:Array, isSublayer:Boolean, arrLayerInfoWindowRenderer:Array = null):void
+                {
+                    var popUpCount:int = 0;
+                    var popUpArray:Array = [];
+                    for (i = 0; i < arrLayerPopUp.length; i++)
+                    {
+                        if (isSublayer)
+                        {
+                            var layerInfoWindowRenderer:LayerInfoWindowRenderer = new LayerInfoWindowRenderer();
+                            layerInfoWindowRenderer.layerId = arrLayerPopUp[i].sublayer.id;
+                        }
+
+                        var popUpConfigURL:String = arrLayerPopUp[i].popUpConfig;
+
+                        var responderToken:Object = {
+                                popUpConfigURL: popUpConfigURL,
+                                layer: arrLayerPopUp[i].layer,
+                                isSublayer: isSublayer,
+                                layerInfoWindowRenderer: isSublayer ? layerInfoWindowRenderer : null };
+
+                        if (popUpConfigURL.charAt(0) === "#")
+                        {
+                            var popUpConfigXML:XML = m_configData.configXML.configuration.(@id == popUpConfigURL.substr(1))[0];
+                            responderToken.popUpConfigXML = popUpConfigXML;
+                            arrPopUpPush(responderToken);
+                        }
+                        else
+                        {
+                            var configService:HTTPService = new HTTPService();
+                            configService.url = popUpConfigURL;
+                            configService.resultFormat = HTTPService.RESULT_FORMAT_TEXT;
+                            var asyncToken:AsyncToken = configService.send();
+                            asyncToken.addResponder(new AsyncResponder(configResult, configFault, responderToken));
+                        }
+                    }
+
+                    function arrPopUpPush(token:Object):void
+                    {
+                        popUpCount++;
+                        // arrPopUp.push({ popUpConfigXML: XML(event.result), layer: token.layer, isSublayer: isSublayer, layerInfoWindowRenderer: token.layerInfoWindowRenderer });
+                        popUpArray.push(token);
+                        if (popUpCount === arrLayerPopUp.length)
+                        {
+                            createPopUpRenderer(isOptLayer, popUpArray, arrLayerInfoWindowRenderer);
+                        }
+                    }
+
+                    //config result
+                    function configResult(event:ResultEvent, token:Object = null):void
+                    {
+                        try
+                        {
+                            token.popUpConfigXML = XML(event.result);
+                            arrPopUpPush(token);
+                        }
+                        catch (error:Error)
+                        {
+                            AppEvent.showError(StringUtil.substitute(getDefaultString("parseConfigErrorText"), token.popUpConfigURL + "\n" + error.message), MAP_MANAGER);
+                        }
+                    }
+
+                    //config fault
+                    function configFault(event:FaultEvent, token:Object = null):void
+                    {
+                        // happens if for example the popup config file missing or have crossdomain problem
+                        var sInfo:String = "";
+
+                        // Missing file
+                        if (event.fault.rootCause is IOErrorEvent)
+                        {
+                            var ioe:IOErrorEvent = event.fault.rootCause as IOErrorEvent;
+                            if (ioe.text.indexOf("2032: Stream Error. URL:") > -1)
+                            {
+                                sInfo += StringUtil.substitute(getDefaultString('missingConfigFileText'), ioe.text.substring(32)) + "\n\n";
+                            }
+                            else
+                            {
+                                // some other IOError
+                                sInfo += event.fault.rootCause + "\n\n";
+                            }
+                        }
+
+                        // config file with crossdomain issue
+                        if (event.fault.rootCause is SecurityErrorEvent)
+                        {
+                            var sec:SecurityErrorEvent = event.fault.rootCause as SecurityErrorEvent;
+                            if (sec.text.indexOf("Error #2048: ") > -1) // debug player
+                            {
+                                sInfo += StringUtil.substitute(getDefaultString('configFileCrossDomain'), "\n", sec.text) + "\n\n";
+                            }
+                            else if (sec.text.indexOf("Error #2048") > -1) // non-debug player
+                            {
+                                sInfo += StringUtil.substitute(getDefaultString('configFileCrossDomain'), "\n", sec.toString()) + "\n\n";
+                            }
+                            else
+                            {
+                                // some other Security error
+                                sInfo += event.fault.rootCause + "\n\n";
+                            }
+                        }
+
+                        if (event.statusCode) // e.g. 404 - Not Found - http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+                        {
+                            sInfo += StringUtil.substitute(getDefaultString('httpResponseStatus'), event.statusCode) + "\n\n";
+                        }
+
+                        sInfo += buildFaultMessage(event.fault);
+
+                        AppEvent.showError(sInfo, MAP_MANAGER);
+
+                        popUpCount++;
+                        if (popUpCount == arrLayerPopUp.length)
+                        {
+                            createPopUpRenderer(isOptLayer, popUpArray, arrLayerInfoWindowRenderer);
+                        }
+                    }
+                }
+
+                function createPopUpRenderer(isOptLayer:Boolean, arr:Array, arrLayerInfoWindowRenderer:Array = null):void
+                {
+                    for (var p:int = 0; p < arr.length; p++)
+                    {
+                        var popUpConfigXML:XML = arr[p].popUpConfigXML;
+                        var popUpInfo:PopUpInfo = new PopUpInfo();
+                        var i:int;
+                        if (popUpConfigXML.fields[0])
+                        {
+                            var fields:XMLList = popUpConfigXML.fields[0].field;
+
+                            var pFieldInfos:Array = [];
+                            for (i = 0; i < fields.length(); i++)
+                            {
+                                var pFieldInfo:PopUpFieldInfo = new PopUpFieldInfo();
+                                pFieldInfo.fieldName = fields[i].@name;
+                                if (fields[i].@alias[0])
+                                {
+                                    pFieldInfo.label = fields[i].@alias;
+                                }
+                                pFieldInfo.visible = fields[i].@visible == "true";
+
+                                pFieldInfo.format = new PopUpFieldFormat();
+                                if (fields[i].format.@dateformat[0])
+                                {
+                                    pFieldInfo.format.dateFormat = fields[i].format.@dateformat;
+                                }
+                                if (fields[i].format.@precision[0])
+                                {
+                                    pFieldInfo.format.precision = fields[i].format.@precision;
+                                }
+                                if (fields[i].format.@usethousandsseparator[0])
+                                {
+                                    pFieldInfo.format.useThousandsSeparator = fields[i].format.@usethousandsseparator == "true";
+                                }
+                                if (fields[i].format.@useutc[0])
+                                {
+                                    pFieldInfo.format.useUTC = fields[i].format.@useutc == "true";
+                                }
+                                pFieldInfos.push(pFieldInfo);
+                            }
+                            popUpInfo.popUpFieldInfos = pFieldInfos;
+                        }
+                        if (popUpConfigXML.medias[0])
+                        {
+                            var medias:XMLList = popUpConfigXML.medias[0].media;
+
+                            var pMediaInfos:Array = [];
+                            for (i = 0; i < medias.length(); i++)
+                            {
+                                var pMediaInfo:PopUpMediaInfo = new PopUpMediaInfo();
+                                pMediaInfo.caption = medias[i].@caption;
+                                pMediaInfo.title = medias[i].@title;
+                                pMediaInfo.type = medias[i].@type;
+                                pMediaInfo.imageLinkURL = medias[i].@imagelink;
+                                pMediaInfo.imageSourceURL = medias[i].@imagesource;
+
+                                if (medias[i].@chartfields[0])
+                                {
+                                    var chartFields:Array = medias[i].@chartfields.split(",");
+                                    pMediaInfo.chartFields = chartFields;
+                                }
+
+                                pMediaInfos.push(pMediaInfo);
+                            }
+                            popUpInfo.popUpMediaInfos = pMediaInfos;
+                        }
+                        popUpInfo.title = popUpConfigXML.title;
+                        popUpInfo.description = popUpConfigXML.description;
+                        if (popUpConfigXML.showattachments[0])
+                        {
+                            popUpInfo.showAttachments = popUpConfigXML.showattachments == "true";
+                        }
+
+                        var popUpRenderer:ClassFactory = new ClassFactory(PopUpRenderer);
+                        popUpRenderer.properties = { popUpInfo: popUpInfo };
+
+                        if (arr[p].isSublayer)
+                        {
+                            arr[p].layerInfoWindowRenderer.infoWindowRenderer = popUpRenderer;
+                            arrLayerInfoWindowRenderer.push(arr[p].layerInfoWindowRenderer);
+                            if (p == arr.length - 1)
+                            {
+                                arr[p].layer.layerInfoWindowRenderers = arrLayerInfoWindowRenderer;
+                            }
+                        }
+                        else
+                        {
+                            arr[p].layer.infoWindowRenderer = popUpRenderer;
+                        }
+                    }
+                    loadNextOperationalOrBasemapLayer(isOptLayer);
+                }
+            }
+
+            private function getLayerDefinitions(subLayers:Array):Array
+            {
+                var layerDefinitions:Array = [];
+
+                for each (var subLayerObject:Object in subLayers)
+                {
+                    layerDefinitions[subLayerObject.id] = subLayerObject.definitionExpression;
+                }
+
+                return layerDefinitions;
+            }
+
+            private var infoTemplate:IInfowindowTemplate;
+
+            private var infoRender:ClassFactory;
+
+            private function infoReady(event:AppEvent):void
+            {
+                var id:String = event.data.id as String;
+                var isOperationLayer:Boolean = event.data.isOptLayer;
+                var label:String = isOperationLayer ? m_operationalLayers[m_operationalLayerIndex].label : m_basemapLayers[m_basemapLayerIndex].label;
+                if (id == label)
+                {
+                    infoTemplate = event.data.infoWidget;
+                    var baseWidget:IBaseWidget = infoTemplate as IBaseWidget;
+                    var infoConfigXML:XML = baseWidget.configXML;
+                    infoRender = new ClassFactory(infoTemplate.infoClass);
+                    infoRender.properties = { infoConfig: infoConfigXML, map: map };
+
+                    if (isOperationLayer)
+                    {
+                        m_operationalLayers[m_operationalLayerIndex].layer.infoWindowRenderer = infoRender;
+                    }
+                    else
+                    {
+                        m_basemapLayers[m_basemapLayerIndex].layer.infoWindowRenderer = infoRender;
+                    }
+                    loadNextOperationalOrBasemapLayer(isOperationLayer);
+                }
+            }
+
+            private function loadNextOperationalOrBasemapLayer(isOperationalLayer:Boolean):void
+            {
+                if (isOperationalLayer)
+                {
+                    m_optLayerTable.push(m_operationalLayers[m_operationalLayerIndex]);
+                    m_operationalLayerIndex++;
+                    if (m_operationalLayerIndex < m_operationalLayers.length)
+                    {
+                        loadNextOpertionalLayer();
+                    }
+                }
+                else
+                {
+                    m_basemapLayerIndex++;
+                    if (m_basemapLayerIndex < m_basemapLayers.length)
+                    {
+                        loadNextBasemapLayer();
+                    }
+                }
+            }
+
+            private function dataOptLayersHandler(event:AppEvent):void
+            {
+                var callback:Function = event.callback as Function;
+                callback(new AppEvent(AppEvent.DATA_OPT_LAYERS, this.m_optLayerTable));
+            }
+
+            private function layerloadComplete(event:MapEvent):void
+            {
+                AppEvent.dispatch(AppEvent.LAYER_LOADED);
+            }
+
+            override protected function getCurrentSkinState():String
+            {
+                return m_mapManagerState;
+            }
+
+            //nav tool clicked
+            private function changeNavigationbyWidget(event:AppEvent):void
+            {
+                m_navigationTool = event.data ? event.data.tool : null;
+                m_navigationStatus = event.data ? event.data.status : null;
+
+                changeNavigation(m_navigationTool, m_navigationStatus);
+            }
+
+            private function setMapNavigationHandler(event:AppEvent):void
+            {
+                m_navigationTool = event.data ? event.data.tool : null;
+                m_navigationStatus = event.data ? event.data.status : null;
+
+                changeNavigation(m_navigationTool, m_navigationStatus);
+            }
+
+            private function changeNavigation(tool:String, status:String):void
+            {
+                map.removeEventListener(MouseEvent.ROLL_OVER, map_rollOverHandler);
+                map.removeEventListener(MouseEvent.ROLL_OUT, map_rollOutHandler);
+                if (tool)
+                {
+                    switch (tool)
+                    {
+                        case NavigationTool.ZOOM_IN:
+                        {
+                            // custom cursor
+                            map.addEventListener(MouseEvent.ROLL_OVER, map_rollOverHandler);
+                            map.addEventListener(MouseEvent.ROLL_OUT, map_rollOutHandler);
+
+                            m_drawTool.deactivate();
+                            m_navTool.deactivate();
+                            m_navTool.activate(tool);
+                            AppEvent.setStatus(status);
+                            break;
+                        }
+                        case NavigationTool.ZOOM_OUT:
+                        {
+                            // custom cursor
+                            map.addEventListener(MouseEvent.ROLL_OVER, map_rollOverHandler);
+                            map.addEventListener(MouseEvent.ROLL_OUT, map_rollOutHandler);
+
+                            m_drawTool.deactivate();
+                            m_navTool.deactivate();
+                            m_navTool.activate(tool);
+                            AppEvent.setStatus(status);
+                            break;
+                        }
+                        case ViewerContainer.NAVIGATION_ZOOM_FULL:
+                        {
+                            if (m_fullExtent)
+                            {
+                                map.extent = m_fullExtent
+                            }
+                            else
+                            {
+                                map.zoomToInitialExtent(); // use map.zoomToInitialExtent() as NavigationTool.zoomToFullExtent() is deprecated
+                            }
+                            AppEvent.setStatus(null);
+                            break;
+                        }
+                        case ViewerContainer.NAVIGATION_ZOOM_PREVIOUS:
+                        {
+                            m_navTool.zoomToPrevExtent();
+                            AppEvent.setStatus(null);
+                            break;
+                        }
+                        case ViewerContainer.NAVIGATION_ZOOM_NEXT:
+                        {
+                            m_navTool.zoomToNextExtent();
+                            AppEvent.setStatus(null);
+                            break;
+                        }
+                        case NavigationTool.PAN:
+                        {
+                            m_drawTool.deactivate();
+                            m_navTool.activate(tool);
+                            m_navTool.deactivate();
+                            AppEvent.setStatus(status);
+                            break;
+                        }
+                        default:
+                        {
+                            m_drawTool.deactivate();
+                            m_navTool.activate(NavigationTool.PAN);
+                            m_navTool.deactivate();
+                            AppEvent.setStatus(m_defaultStatus);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            private function map_rollOverHandler(event:MouseEvent):void
+            {
+                map.cursorManager.setCursor(_crossCursor, CursorManagerPriority.MEDIUM, -8, -8);
+            }
+
+            private function map_rollOutHandler(event:MouseEvent):void
+            {
+                map.cursorManager.removeAllCursors();
+            }
+
+            //draw tool clicked
+            private function setMapActionHandler(event:AppEvent):void
+            {
+                var data:Object = event.data;
+                var tool:String = data.tool;
+                var status:String = data.status;
+                var symbol:Symbol = data.symbol;
+                var showDrawTips:Boolean = data.showDrawTips;
+
+                if (tool)
+                {
+                    // make sure there is no custom cursor
+                    map.cursorManager.removeAllCursors();
+                    map.removeEventListener(MouseEvent.ROLL_OVER, map_rollOverHandler);
+                    map.removeEventListener(MouseEvent.ROLL_OUT, map_rollOutHandler);
+
+                    m_drawEndFunction = data.handler;
+                    m_navTool.deactivate();
+                    m_drawTool.activate(tool);
+                    // showDrawTips
+                    m_drawTool.showDrawTips = showDrawTips;
+                    // reset symbology
+                    m_drawTool.markerSymbol = new SimpleMarkerSymbol;
+                    m_drawTool.lineSymbol = new SimpleLineSymbol;
+                    m_drawTool.fillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, 0, 0.5, new SimpleLineSymbol);
+                    if (symbol)
+                    {
+                        if (symbol is TextSymbol || symbol is SimpleMarkerSymbol || symbol is PictureMarkerSymbol)
+                        {
+                            m_drawTool.markerSymbol = symbol;
+                        }
+                        else if (symbol is SimpleLineSymbol)
+                        {
+                            m_drawTool.lineSymbol = symbol;
+                        }
+                        else if (symbol is SimpleFillSymbol)
+                        {
+                            m_drawTool.fillSymbol = symbol;
+                        }
+                    }
+
+                    //map.zoomSliderVisible = true;
+                    AppEvent.setStatus(status);
+                }
+                else
+                {
+                    m_drawTool.deactivate();
+                    restoreNavigation();
+                }
+            }
+
+            private function drawEndHandler(event:DrawEvent):void
+            {
+                restoreNavigation();
+                m_drawEndFunction(event);
+            }
+
+            private function restoreNavigation():void
+            {
+                if (m_navigationTool == NavigationTool.ZOOM_IN || m_navigationTool == NavigationTool.ZOOM_OUT || m_navigationTool == NavigationTool.PAN)
+                {
+                    if (m_navigationTool != NavigationTool.PAN)
+                    {
+                        map.cursorManager.setCursor(_crossCursor, CursorManagerPriority.MEDIUM, -8, -8);
+                    }
+                    changeNavigation(m_navigationTool, m_navigationStatus);
+                }
+            }
+
+            private function mapLayerVisibleHandler(event:AppEvent):void
+            {
+                var lyrData:Object = event.data;
+
+                lyrData.layer.visible = lyrData.visible;
+
+                //ViewerContainer.publish(AppEvent.LAYER_VISIBLE_CHANGED, event.data);
+            }
+
+            //basemap menu clicked
+            private function basemapSwitchHandler(event:AppEvent):void
+            {
+                const id:String = event.data as String;
+                if (id)
+                {
+                    const configBasemaps:Array = m_configData.basemaps;
+                    var selectedLabel:String;
+                    for (var i:uint = 0; i < configBasemaps.length; i++)
+                    {
+                        if (configBasemaps[i].id == id)
+                        {
+                            selectedLabel = configBasemaps[i].label;
+                            break;
+                        }
+                    }
+                    if (selectedLabel)
+                    {
+                        // turn on the selected basemap layers (more than one layer can have the same label)
+                        var layers:ArrayCollection = map.layers as ArrayCollection;
+                        for (i = 0; i < configBasemaps.length; i++)
+                        {
+                            var basemapLabel:String = configBasemaps[i].label;
+                            for each (var layer:Layer in layers)
+                            {
+                                if (layer.id == basemapLabel)
+                                {
+                                    if (layer.id == selectedLabel)
+                                    {
+                                        layer.visible = true;
+                                    }
+                                    else
+                                    {
+                                        layer.visible = false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            private function showInfoWindowHandler(event:AppEvent):void
+            {
+                m_infoPopup.infoData = event.data;
+            }
+
+            private function mapResizeHandler(event:AppEvent):void
+            {
+                var size:Object = event.data;
+
+                mapLeft = size.left;
+                mapRight = size.right;
+                mapTop = size.top;
+                mapBottom = size.bottom;
+
+                this.m_mapManagerState = "resized";
+
+                dispatchEvent(new Event(m_mapManagerState));
+                invalidateSkinState();
+            }
+
+            private function getDefaultString(token:String):String
+            {
+                return resourceManager.getString("ViewerStrings", token);
+            }
+
+            private function removeLayer(layerObject:Object, index:int, source:Array):void
+            {
+                map.removeLayer(layerObject.layer);
+            }
+        ]]>
+    </fx:Script>
+</s:SkinnableContainer>

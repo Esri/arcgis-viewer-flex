@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<configuration label="Surface profile">
+    <description/>
+    <taskurl>http://sampleserver2.arcgisonline.com/ArcGIS/rest/services/Elevation/ESRI_Elevation_World/GPServer/ProfileService</taskurl>
+    <helpurl>http://sampleserver2.arcgisonline.com/arcgisoutput/Elevation_ESRI_Elevation_World/ProfileService.htm</helpurl>
+    <inputparams>
+        <param name="Input_Polylines"
+               geometrytype="polyline"
+               label="Transect"
+               required="true"
+               type="featurerecordset"
+               visible="true">
+            <renderer type="simple">
+                <defaultsymbol alpha="0.5"
+                               color="0xFF0000"
+                               type="simpleline">
+                    <outline width="10" color="0xFF0000"/>
+                </defaultsymbol>
+            </renderer>
+        </param>
+        <param name="Image_Width"
+               defaultvalue="500"
+               label="Image width"
+               required="true"
+               type="long"
+               visible="true"/>
+        <param name="Image_Height"
+               defaultvalue="500"
+               label="Image height"
+               required="true"
+               type="long"
+               visible="true"/>
+        <param name="Display_Segments"
+               defaultvalue="true"
+               label="Display segments"
+               required="true"
+               type="boolean"
+               visible="true"/>
+    </inputparams>
+    <outputparams>
+        <param name="Output_Profiles"
+               geometrytype="polyline"
+               label="Output Profiles"
+               required="true"
+               type="featurerecordset"
+               visible="true">
+            <popup>
+                <title>Surface Profile</title>
+                <medias>
+                    <media imagelinkurl="{profileURL}"
+                           imagesourceurl="{profileURL}"
+                           type="image"/>
+                </medias>
+            </popup>
+            <renderer type="simple">
+                <defaultsymbol alpha="0.5"
+                               color="0xFF0000"
+                               type="simpleline">
+                    <outline width="10" color="0xFF0000"/>
+                </defaultsymbol>
+            </renderer>
+        </param>
+    </outputparams>
+    <layerorder>Output_Profiles,Input_Polylines</layerorder>
+</configuration>
+
+<!--
+    See Geoprocessing widget tag reference at
+    http://links.esri.com/geoprocessingwidget
+-->

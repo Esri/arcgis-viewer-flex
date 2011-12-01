@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<configuration label="Print (default)">
+    <!-- <title>Map from a Flex Viewer application</title>  -->
+    <!-- <subtitle>Powered by ArcGIS</subtitle> -->
+    <copyright>Copyright 2011 Esri. All rights reserved.</copyright>
+</configuration>
+
+<!--
+    See Print widget tag reference at
+    http://links.esri.com/printwidget
+-->
