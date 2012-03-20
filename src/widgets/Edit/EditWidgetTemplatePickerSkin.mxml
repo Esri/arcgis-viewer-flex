@@ -42,15 +42,15 @@ Custom skin class for the TemplatePicker component.
             import com.esri.ags.components.supportClasses.Template;
             import com.esri.ags.events.LayerEvent;
             import com.esri.ags.layers.FeatureLayer;
-            
+
             import flash.text.engine.FontPosture;
-            
+
             import mx.binding.utils.ChangeWatcher;
             import mx.collections.ArrayCollection;
             import mx.controls.Label;
             import mx.controls.Text;
             import mx.events.FlexEvent;
-            
+
             import spark.components.CheckBox;
             import spark.components.List;
             import spark.events.IndexChangeEvent;
@@ -180,12 +180,12 @@ Custom skin class for the TemplatePicker component.
             }
 
             private function checkBoxSelectionChangeHandler(event:Event):void
-            {   
+            {
                 // loop through the featureLayers and make them visible
                 for (var i:Number = 0; i < hostComponent.templateCollection.length; )
-                {   
+                {
                     if (hostComponent.templateCollection[i].featureLayer.name == event.target.name)
-                    {   
+                    {
                         hostComponent.templateCollection[i].featureLayer.visible = event.target.selected;
                         break;
                     }
@@ -285,11 +285,11 @@ Custom skin class for the TemplatePicker component.
                         const list:List = List(vGrp.getElementAt(i));
                         list.visible = featureLayer.isInScaleRange && featureLayer.visible;
                         list.includeInLayout = featureLayer.isInScaleRange && featureLayer.visible;
-                    }                  
+                    }
                     if (vGrp.getElementAt(i) is CheckBox && CheckBox(vGrp.getElementAt(i)).name == layerName)
-                    {                           
+                    {
                         const checkBox:CheckBox = CheckBox(vGrp.getElementAt(i));
-                        checkBox.selected = featureLayer.isInScaleRange && featureLayer.visible;                                                 
+                        checkBox.selected = featureLayer.isInScaleRange && featureLayer.visible;
                     }
                     if (vGrp.getElementAt(i) is Label && Label(vGrp.getElementAt(i)).name == layerName)
                     {

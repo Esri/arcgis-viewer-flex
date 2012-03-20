@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<configuration>
+    <!--taskurl>http://rags2k8411r2:6080/arcgis/rest/services/Utilities/ExportWebMap/GPServer/Export%20Web%20Map%20Task</taskurl-->
+    <taskurl>http://107.20.28.73:6080/arcgis/rest/services/Utilities/ExportWebMap/GPServer/Export%20Web%20Map%20TaskXXXX</taskurl>
+</configuration>
+
+<!--
+    See Print widget tag reference at
+    http://links.esri.com/printwidget
+-->

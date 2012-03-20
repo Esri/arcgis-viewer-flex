@@ -151,12 +151,12 @@ public class UIManager extends EventDispatcher
         var subTitleFontSize:int = (configData.subTitleFont.size != 0) ? configData.subTitleFont.size : 12;
         var fontName:String = (configData.font.name != "") ? configData.font.name : defaultFontName;
         var fontSize:int = (configData.font.size != 0) ? configData.font.size : defaultFontSize;
-        var layoutDirection:String = configData.layoutDirection && (configData.layoutDirection == "ltr" || configData.layoutDirection == "rtl") ? configData.layoutDirection : defaultLayoutDirection;  
-        
+        var layoutDirection:String = configData.layoutDirection && (configData.layoutDirection == "ltr" || configData.layoutDirection == "rtl") ? configData.layoutDirection : defaultLayoutDirection;
+
         // for RTL
         cssStyleDeclarationGlobal.setStyle("layoutDirection", layoutDirection);
-        cssStyleDeclarationGlobal.setStyle("direction", layoutDirection); 
-        
+        cssStyleDeclarationGlobal.setStyle("direction", layoutDirection);
+
         styleAlpha = configData.styleAlpha;
         if (numberOfStyleColors > 4)
         {
@@ -282,7 +282,7 @@ public class UIManager extends EventDispatcher
         }
         cssStyleDeclarationInfoSymbolWindow.setStyle("borderThickness", 1);
         cssStyleDeclarationInfoSymbolWindow.setStyle("backgroundAlpha", styleAlpha);
-        topLevelStyleManager.setStyleDeclaration("com.esri.ags.components.supportClasses.InfoSymbolWindow", cssStyleDeclarationInfoSymbolWindow, false);        
+        topLevelStyleManager.setStyleDeclaration("com.esri.ags.components.supportClasses.InfoSymbolWindow", cssStyleDeclarationInfoSymbolWindow, false);
 
 
         if (numberOfStyleColors > 4)
@@ -293,6 +293,15 @@ public class UIManager extends EventDispatcher
             cssStyleDeclarationPopUpRendererLink.setStyle("linkHoverColor", titleColor);
             topLevelStyleManager.setStyleDeclaration("com.esri.ags.webmap.PopUpRenderer", cssStyleDeclarationPopUpRendererLink, false);
         }
+
+        var cssStyleDeclarationContentNavigator:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("com.esri.ags.components.ContentNavigator");
+        if (numberOfStyleColors > 4)
+        {
+            cssStyleDeclarationContentNavigator.setStyle("headerBackgroundColor", backgroundColor);
+            cssStyleDeclarationContentNavigator.setStyle("headerColor", textColor);
+        }
+        cssStyleDeclarationContentNavigator.setStyle("headerBackgroundAlpha", styleAlpha);
+        topLevelStyleManager.setStyleDeclaration("com.esri.ags.components.ContentNavigator", cssStyleDeclarationContentNavigator, false);
 
         //Style Banner title and WidgetTitle
         var cssStyleDeclarationWidgetTitle:CSSStyleDeclaration = new CSSStyleDeclaration(".WidgetTitle");

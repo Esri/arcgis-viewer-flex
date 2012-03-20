@@ -1,21 +1,27 @@
 <?xml version="1.0" ?>
 <!-- If compiling this widget, make sure to add -keep-all-type-selectors=true to your compiler arguments in the FB project properties. -->
-<configuration label="Edit (example)">
+<configuration>
+    <!--
     <createoptions>
         <polygondrawtools>polygon,freehandpolygon,extent,autocomplete</polygondrawtools>
         <polylinedrawtools>polyline,freehandpolyline,line</polylinedrawtools>
     </createoptions>
     <addfeatures>true</addfeatures>
     <deletefeatures>true</deletefeatures>
-    <toolbarvisible>false</toolbarvisible>
+    <toolbarvisible>true</toolbarvisible>
     <toolbarcutvisible>false</toolbarcutvisible>
     <toolbarmergevisible>false</toolbarmergevisible>
-    <toolbarreshapevisible>false</toolbarreshapevisible>
+    <toolbarreshapevisible>false</toolbarreshapevisible>   
     <updategeometry>true</updategeometry>
-    <updateattributes>true</updateattributes>
+    <updateattributes>false</updateattributes> 
+    <showcreatorfield>true</showcreatorfield>    
+    <showcreationdatefield>true</showcreationdatefield>    
+    <showeditorfield>true</showeditorfield>    
+    <showeditdatefield>true</showeditdatefield>    
+    -->
 </configuration>
 
 <!--
-    See Edit widget tag reference at
+    See Edit widget documentation at
     http://links.esri.com/editwidget
 -->

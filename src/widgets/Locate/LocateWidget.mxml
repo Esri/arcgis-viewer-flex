@@ -45,6 +45,7 @@
             import com.esri.ags.symbols.PictureMarkerSymbol;
             import com.esri.ags.symbols.Symbol;
             import com.esri.ags.tasks.supportClasses.AddressCandidate;
+            import com.esri.ags.tasks.supportClasses.AddressToLocationsParameters;
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.ags.virtualearth.VEGeocodeResult;
             import com.esri.ags.webmap.PopUpRenderer;
@@ -599,7 +600,9 @@
                 }
 
                 showStateResults();
-                locator.addressToLocations(data, null, new ItemResponder(locateResult, locateError));
+                var parameters:AddressToLocationsParameters = new AddressToLocationsParameters();
+                parameters.address = data;
+                locator.addressToLocations(parameters, new ItemResponder(locateResult, locateError));
                 showMessage(loadingLabel, true);
             }
 

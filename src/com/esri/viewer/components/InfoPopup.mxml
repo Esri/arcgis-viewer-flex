@@ -190,11 +190,11 @@
             {
                 if (isRtl())
                 {
-                    infoLink.source = "assets/images/w_link.png";
+                    infoLink.source = "assets/images/w_link_rtl.png";
                 }
                 else
                 {
-                    infoLink.source = "assets/images/w_link_rtl.png";
+                    infoLink.source = "assets/images/w_link.png";
                 }
             }
 

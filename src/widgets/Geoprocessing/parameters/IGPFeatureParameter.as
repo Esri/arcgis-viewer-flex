@@ -18,7 +18,7 @@ package widgets.Geoprocessing.parameters
 
 import com.esri.ags.SpatialReference;
 import com.esri.ags.layers.GraphicsLayer;
-import com.esri.ags.renderers.Renderer;
+import com.esri.ags.renderers.IRenderer;
 import com.esri.ags.symbols.Symbol;
 import com.esri.ags.webmap.supportClasses.PopUpInfo;
 
@@ -31,7 +31,7 @@ public interface IGPFeatureParameter extends IGPParameter
     function get layerNames():Array;
     function get popUpInfo():PopUpInfo;
     function get layer():GraphicsLayer;
-    function get renderer():Renderer;
+    function get renderer():IRenderer;
     function get defaultSymbol():Symbol;
     function get layerName():String;
     function get popUpRenderer():ClassFactory;
@@ -41,7 +41,7 @@ public interface IGPFeatureParameter extends IGPParameter
     function set mode(value:String):void;
     function set layerNames(value:Array):void;
     function set popUpInfo(value:PopUpInfo):void;
-    function set renderer(value:Renderer):void;
+    function set renderer(value:IRenderer):void;
     function set layerName(value:String):void;
     function set spatialReference(value:SpatialReference):void;
 }

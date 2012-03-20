@@ -32,9 +32,9 @@ import spark.components.Application;
 import spark.components.Group;
 import spark.components.SkinnableContainer;
 
-[Event(name = "open", type = "flash.events.Event")]
-[Event(name = "minimized", type = "flash.events.Event")]
-[Event(name = "closed", type = "flash.events.Event")]
+[Event(name="open", type="flash.events.Event")]
+[Event(name="minimized", type="flash.events.Event")]
+[Event(name="closed", type="flash.events.Event")]
 
 [SkinState("open")]
 [SkinState("minimized")]
@@ -42,25 +42,25 @@ import spark.components.SkinnableContainer;
 
 public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplate
 {
-    [SkinPart(required = "false")]
+    [SkinPart(required="false")]
     public var widgetFrame:Group;
 
-    [SkinPart(required = "false")]
+    [SkinPart(required="false")]
     public var header:Group;
 
-    [SkinPart(required = "false")]
+    [SkinPart(required="false")]
     public var headerToolGroup:Group;
 
-    [SkinPart(required = "false")]
+    [SkinPart(required="false")]
     public var icon:Image;
 
-    [SkinPart(required = "false")]
+    [SkinPart(required="false")]
     public var closeButton:Image;
 
-    [SkinPart(required = "false")]
+    [SkinPart(required="false")]
     public var minimizeButton:Image;
 
-    [SkinPart(required = "false")]
+    [SkinPart(required="false")]
     public var resizeButton:Image;
 
     [Bindable]
@@ -78,10 +78,10 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
     [Bindable]
     public var widgetHeight:Number;
 
-    [Embed(source = "/assets/images/w_resizecursor.png")]
+    [Embed(source="/assets/images/w_resizecursor.png")]
     public var resizeCursor:Class;
 
-    [Embed(source = "/assets/images/w_resizecursor_rtl.png")]
+    [Embed(source="/assets/images/w_resizecursor_rtl.png")]
     public var resizeCursor_rtl:Class;
 
     [Bindable]

@@ -22,153 +22,23 @@
                    xmlns:viewer="com.esri.viewer.*"
                    x="600" y="300"
                    widgetConfigLoaded="init()">
-
-    <fx:Style>
-        .PrintBox
-        {
-            color: #000000; /* for the printed page */
-        }
-    </fx:Style>
-
     <fx:Script>
         <![CDATA[
-            import mx.graphics.ImageSnapshot;
-            import mx.printing.FlexPrintJob;
-            import mx.printing.FlexPrintJobScaleType;
-
-            import spark.components.Label;
-            import spark.components.VGroup;
-            import spark.primitives.BitmapImage;
-
-            [Bindable]
-            private var title:String;
-            [Bindable]
-            private var subtitle:String;
-            private var copyright:String = "";
-
-            //labels
-            [Bindable]
-            private var titleLabel:String;
-            [Bindable]
-            private var subtitleLabel:String;
-            [Bindable]
-            private var submitLabel:String;
-
             private function init():void
             {
                 if (configXML)
                 {
-                    title = configXML.title[0] || getDefaultString("printTitle");
-                    subtitle = configXML.subtitle[0] || getDefaultString("printSubtitle");
-                    copyright = configXML.copyright[0] || getDefaultString("printCopyright");
-
-                    //labels
-                    titleLabel = configXML.labels.titlelabel[0] || getDefaultString("printTitleLabel");
-                    subtitleLabel = configXML.labels.subtitlelabel[0] || getDefaultString("printSubtitleLabel");
-                    submitLabel = configXML.labels.submitlabel[0] || getDefaultString("printSubmitLabel");
-                }
-            }
-
-            private function printMap():void
-            {
-                var zoomSliderVisibleBeforePrint:Boolean;
-                if (map.zoomSliderVisible)
-                {
-                    map.zoomSliderVisible = false;
-                    zoomSliderVisibleBeforePrint = true;
-                }
-                var printJob:FlexPrintJob = new FlexPrintJob();
-                printJob.printAsBitmap = false;
-                if (printJob.start())
-                {
-                    var h:Number = printJob.pageHeight;
-                    var w:Number = printJob.pageWidth;
-                    //VGROUP
-                    var printBox:VGroup = new VGroup();
-                    printBox.styleName = "PrintBox";
-                    printBox.width = map.width;
-                    this.addChild(printBox); // add now to workaround https://bugs.adobe.com/jira/browse/SDK-26906
-                    try
-                    {
-                        var layoutDirection:String = getStyle('layoutDirection');
-
-                        //TITLE
-                        var printTitle:Label = new Label();
-                        printTitle.text = txtTitle.text;
-                        // TODO: make fontsize specified in stylename overwrite this fontSize
-                        printTitle.setStyle("fontSize", h / 12);
-                        printTitle.percentWidth = 100;
-                        printTitle.setStyle('layoutDirection', layoutDirection);
-                        printBox.addElement(printTitle);
-                        //SUBTITLE
-                        var printSubtitle:Label = new Label();
-                        printSubtitle.text = txtSubtitle.text;
-                        // TODO: make fontsize specified in stylename overwrite this fontSize
-                        printSubtitle.setStyle("fontSize", h / 24);
-                        printSubtitle.percentWidth = 100;
-                        printSubtitle.setStyle('layoutDirection', layoutDirection);
-                        printBox.addElement(printSubtitle);
-                        //MAP
-                        var bmpMap:BitmapData = ImageSnapshot.captureBitmapData(map);
-                        var printImg:BitmapImage = new BitmapImage();
-                        printImg.smooth = true;
-                        printImg.source = bmpMap;
-                        printBox.addElement(printImg);
-                        //COPYRIGHT
-                        var now:Date = new Date();
-                        var printCopy:Label = new Label();
-                        printCopy.text = copyright + " " + now.toLocaleString() + ".";
-                        // TODO: make fontsize specified in stylename overwrite this fontSize
-                        printCopy.setStyle("fontSize", h / 48);
-                        printCopy.percentWidth = 100;
-                        printCopy.setStyle('layoutDirection', layoutDirection);
-                        printBox.addElement(printCopy);
-                        //PRINT
-                        printBox.setStyle('layoutDirection', 'ltr'); //fixes the map image layout direction.
-                        printJob.addObject(printBox, FlexPrintJobScaleType.SHOW_ALL);
-                        printJob.send();
-                        bmpMap.dispose();
-                    }
-                    catch (error:Error)
-                    {
-                        showError(error.toString());
-                    }
-                    finally
-                    {
-                        this.removeChild(printBox);
-                    }
-                }
-
-                if (zoomSliderVisibleBeforePrint)
-                {
-                    map.zoomSliderVisible = true;
+                    var hasTaskURL:Boolean = (configXML.taskurl.length() > 0);
+                    var printForm:IPrintWidgetComponent;
+                    printForm = hasTaskURL ? new ExportWebMapForm() : new ScreenPrintForm();
+                    printForm.hostBaseWidget = this;
+                    printForm.configXML = configXML;
+                    wTemplate.addElement(printForm);
                 }
             }
         ]]>
     </fx:Script>
-
     <viewer:WidgetTemplate id="wTemplate"
-                           width="300" height="180"
-                           minHeight="168"
-                           minWidth="280">
-        <mx:Form id="frmPrint"
-                 width="100%" height="100%"
-                 paddingBottom="0"
-                 verticalScrollPolicy="off">
-            <mx:FormItem width="100%" label="{titleLabel}">
-                <s:TextInput id="txtTitle"
-                             width="100%"
-                             text="{title}"/>
-            </mx:FormItem>
-            <mx:FormItem width="100%" label="{subtitleLabel}">
-                <s:TextInput id="txtSubtitle"
-                             width="100%"
-                             text="{subtitle}"/>
-            </mx:FormItem>
-            <s:HGroup width="100%" horizontalAlign="center">
-                <s:Button click="printMap()" label="{submitLabel}"/>
-            </s:HGroup>
-        </mx:Form>
-    </viewer:WidgetTemplate>
-
+                           width="355" height="260"
+                           minHeight="168"/>
 </viewer:BaseWidget>

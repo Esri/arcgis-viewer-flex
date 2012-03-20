@@ -26,14 +26,11 @@
                    widgetConfigLoaded="init()">
     <fx:Script>
         <![CDATA[
-            import com.esri.ags.Graphic;
             import com.esri.ags.events.DrawEvent;
             import com.esri.ags.events.FeatureLayerEvent;
             import com.esri.ags.events.LayerEvent;
-            import com.esri.ags.events.QueryEvent;
-            import com.esri.ags.geometry.Polygon;
+            import com.esri.ags.geometry.Geometry;
             import com.esri.ags.layers.FeatureLayer;
-            import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.layers.Layer;
             import com.esri.ags.symbols.SimpleFillSymbol;
             import com.esri.ags.symbols.SimpleLineSymbol;
@@ -53,6 +50,7 @@
             import spark.filters.GlowFilter;
 
             private const ICON_URL:String = "assets/images/";
+            private static const LAYER_DATA_ERROR_MESSAGE:String = "Could not retrieve layer data.";
 
             [Bindable]
             private var selectLabel:String;
@@ -79,6 +77,7 @@
             [Bindable]
             private var noChartDataToDisplayLabel:String;
             [Bindable]
+            private var layerNotVisibleOrOutOfScaleRangeMessage:String;
             private var layerSourceNotVisibleLabel:String;
 
             [Bindable]
@@ -88,17 +87,16 @@
             [Bindable]
             private var hasChartLayerDefinitions:Boolean;
             [Bindable]
-            private var isSourceFeatureLayerVisibleAndInScaleRange:Boolean;
-            [Bindable]
-            private var isSourceFeatureLayer:Boolean;
+            private var isHighlightFeatureLayerShown:Boolean;
 
             private var selectedDrawingIcon:Image;
             private var ctrlPressed:Boolean;
             private var selectionMethod:String;
 
-            private var _activeHighlightLayer:GraphicsLayer;
             private var selectedChartLayerDefinition:ChartLayerDefinition;
             private var sourceFeatureLayer:FeatureLayer;
+            private var isSourceLayerVisible:Boolean;
+            private var isSourceLayerInScaleRange:Boolean;
 
             private function basewidget_preinitializeHandler(event:FlexEvent):void
             {
@@ -141,20 +139,6 @@
                 }
             }
 
-            private function get activeHighlightLayer():GraphicsLayer
-            {
-                return _activeHighlightLayer;
-            }
-
-            private function set activeHighlightLayer(value:GraphicsLayer):void
-            {
-                if (_activeHighlightLayer != value)
-                {
-                    _activeHighlightLayer = value;
-                    clearSelectionHighlights();
-                }
-            }
-
             private function init():void
             {
                 if (configXML)
@@ -165,6 +149,7 @@
                     configureViewTitlebarButtons();
                     map.addEventListener(KeyboardEvent.KEY_UP, keyUpHandler);
                     map.addEventListener(KeyboardEvent.KEY_DOWN, keyDownHandler);
+                    map.addLayer(highlightFeatureLayer);
                 }
             }
 
@@ -197,9 +182,11 @@
                 var chartLayerDefinition:ChartLayerDefinition = new ChartLayerDefinition();
                 chartLayerDefinition.label = layer.@label;
                 chartLayerDefinition.url = layer.@url;
+                chartLayerDefinition.labelField = layer.labelfield;
+                chartLayerDefinition.where = layer.@where;
+                chartLayerDefinition.useMaxAllowableOffset = (layer.@usemaxallowableoffset == 'true');
                 chartLayerDefinition.fieldInfos = PopUpInfoParser.parsePopUpFields(layer.fields[0]);
                 chartLayerDefinition.mediaInfos = PopUpInfoParser.parsePopUpMedias(layer.medias[0]);
-                chartLayerDefinition.labelField = layer.labelfield;
                 return chartLayerDefinition;
             }
 
@@ -224,7 +211,13 @@
 
             private function hasValidChartDataSource(chartLayerDefinition:ChartLayerDefinition):Boolean
             {
-                return chartLayerDefinition.url || findFeatureLayerByLabel(chartLayerDefinition.label);
+                return isLayerEndpoint(chartLayerDefinition.url) || findFeatureLayerByLabel(chartLayerDefinition.label);
+            }
+
+            private function isLayerEndpoint(url:String):Boolean
+            {
+                var layerEndpoint:RegExp = /https?:\/\/.+\/rest\/services\/.+server\/[0-9]+\/?$/i;
+                return layerEndpoint.test(url);
             }
 
             private function findFeatureLayerByLabel(label:String):FeatureLayer
@@ -374,9 +367,21 @@
                 clearSelectionFilter();
 
                 selectionMethod = ctrlPressed ? FeatureLayer.SELECTION_ADD : FeatureLayer.SELECTION_NEW;
-                query.outFields = getChartFields();
-                query.geometry = event.graphic.geometry;
+                updateQuery(event.graphic.geometry);
                 fetchFeatures();
+            }
+
+            private function updateQuery(geometry:Geometry):void
+            {
+                query.outFields = getChartFields();
+                query.geometry = geometry;
+                query.where = selectedChartLayerDefinition.where;
+                query.maxAllowableOffset = selectedChartLayerDefinition.useMaxAllowableOffset ? getMaxAllowableOffset() : NaN;
+            }
+
+            private function getMaxAllowableOffset(pixelTolerance:int = 1):int
+            {
+                return Math.floor(map.extent.width / map.width) * pixelTolerance;
             }
 
             private function getChartFields():Array
@@ -393,13 +398,6 @@
                 return chartFields;
             }
 
-            private function clearChartAndSelectionHighlights():void
-            {
-                setChartData(null);
-                clearSelectionHighlights();
-                showInputView();
-            }
-
             private function setChartData(attributes:Array):void
             {
                 chartBrowser.attributes = attributes;
@@ -409,17 +407,15 @@
             private function clearSelectionHighlights():void
             {
                 highlightFeatureLayer.clearSelection();
-                highlightGraphicsLayer.clear();
-                map.removeLayer(activeHighlightLayer);
             }
 
             private function fetchFeatures():void
             {
                 resetChart(selectedChartLayerDefinition);
 
-                if (!selectedChartLayerDefinition.url)
+                if (sourceFeatureLayer)
                 {
-                    fetchFeaturesFromClient(sourceFeatureLayer);
+                    fetchFeaturesFromClient(sourceFeatureLayer.url);
                 }
                 else
                 {
@@ -434,35 +430,33 @@
                 chartBrowser.popUpMediaInfos = chartLayerDefinition.mediaInfos;
             }
 
-            private function fetchFeaturesFromClient(selectedLayer:FeatureLayer):void
+            private function fetchFeaturesFromClient(url:String):void
             {
-                if (selectedLayer)
-                {
-                    activeHighlightLayer = highlightFeatureLayer;
-                    map.addLayer(highlightFeatureLayer);
-                    highlightFeatureLayer.outFields = query.outFields;
-                    highlightFeatureLayer.addEventListener(FeatureLayerEvent.SELECTION_COMPLETE, highlightFeatureLayer_selectionCompleteHandler, false, 0, true);
-                    highlightFeatureLayer.addEventListener(FaultEvent.FAULT, highlightFeatureLayer_faultHandler, false, 0, true);
+                map.addLayer(highlightFeatureLayer);
+                highlightFeatureLayer.outFields = query.outFields;
+                highlightFeatureLayer.maxAllowableOffset = query.maxAllowableOffset;
+                highlightFeatureLayer.addEventListener(FeatureLayerEvent.SELECTION_COMPLETE, highlightFeatureLayer_selectionCompleteHandler, false, 0, true);
+                highlightFeatureLayer.addEventListener(FaultEvent.FAULT, highlightFeatureLayer_faultHandler, false, 0, true);
 
-                    if (highlightFeatureLayer.url != selectedLayer.url)
-                    {
-                        highlightFeatureLayer.addEventListener(LayerEvent.LOAD, highlightFeatureLayer_loadHandler, false, 0, true);
-                        highlightFeatureLayer.addEventListener(LayerEvent.LOAD_ERROR, highlightFeatureLayer_loadErrorHandler, false, 0, true);
-                        highlightFeatureLayer.url = selectedLayer.url;
-                    }
-                    else
-                    {
-                        highlightFeatureLayer.selectFeatures(query, selectionMethod);
-                    }
+                if (highlightFeatureLayer.url != url)
+                {
+                    highlightFeatureLayer.addEventListener(LayerEvent.LOAD, highlightFeatureLayer_loadHandler, false, 0, true);
+                    highlightFeatureLayer.addEventListener(LayerEvent.LOAD_ERROR, highlightFeatureLayer_loadErrorHandler, false, 0, true);
+                    highlightFeatureLayer.url = url;
+                }
+                else
+                {
+                    highlightFeatureLayer.selectFeatures(query, selectionMethod);
                 }
             }
 
             protected function highlightFeatureLayer_selectionCompleteHandler(event:FeatureLayerEvent):void
             {
-                highlightFeatureLayer.removeEventListener(FeatureLayerEvent.SELECTION_COMPLETE, highlightFeatureLayer_selectionCompleteHandler);
-                highlightFeatureLayer.removeEventListener(FaultEvent.FAULT, highlightFeatureLayer_faultHandler);
+                var featureLayer:FeatureLayer = event.featureLayer;
+                featureLayer.removeEventListener(FeatureLayerEvent.SELECTION_COMPLETE, highlightFeatureLayer_selectionCompleteHandler);
+                featureLayer.removeEventListener(FaultEvent.FAULT, highlightFeatureLayer_faultHandler);
 
-                var features:ArrayCollection = (highlightFeatureLayer.graphicProvider as ArrayCollection);
+                var features:ArrayCollection = featureLayer.graphicProvider as ArrayCollection;
                 setChartData(getAttributes(features));
                 showChartView();
             }
@@ -481,97 +475,76 @@
 
             protected function highlightFeatureLayer_faultHandler(event:FaultEvent):void
             {
-                highlightFeatureLayer.removeEventListener(FeatureLayerEvent.QUERY_FEATURES_COMPLETE, highlightFeatureLayer_selectionCompleteHandler);
-                highlightFeatureLayer.removeEventListener(FaultEvent.FAULT, highlightFeatureLayer_faultHandler);
-                showError("Could not retrieve layer data.");
+                var featureLayer:FeatureLayer = event.currentTarget as FeatureLayer;
+                featureLayer.removeEventListener(FeatureLayerEvent.QUERY_FEATURES_COMPLETE, highlightFeatureLayer_selectionCompleteHandler);
+                featureLayer.removeEventListener(FaultEvent.FAULT, highlightFeatureLayer_faultHandler);
+                showError(LAYER_DATA_ERROR_MESSAGE);
             }
 
             protected function highlightFeatureLayer_loadHandler(event:LayerEvent):void
             {
-                highlightFeatureLayer.removeEventListener(LayerEvent.LOAD, highlightFeatureLayer_loadHandler);
-                highlightFeatureLayer.removeEventListener(LayerEvent.LOAD_ERROR, highlightFeatureLayer_loadErrorHandler);
-                highlightFeatureLayer.selectFeatures(query, selectionMethod);
+                var featureLayer:FeatureLayer = event.currentTarget as FeatureLayer;
+                featureLayer.removeEventListener(LayerEvent.LOAD, highlightFeatureLayer_loadHandler);
+                featureLayer.removeEventListener(LayerEvent.LOAD_ERROR, highlightFeatureLayer_loadErrorHandler);
+                featureLayer.selectFeatures(query, selectionMethod);
             }
 
             protected function highlightFeatureLayer_loadErrorHandler(event:LayerEvent):void
             {
-                highlightFeatureLayer.removeEventListener(LayerEvent.LOAD, highlightFeatureLayer_loadHandler);
-                highlightFeatureLayer.removeEventListener(LayerEvent.LOAD_ERROR, highlightFeatureLayer_loadErrorHandler);
-                showError("Could not retrieve layer data.");
+                var featureLayer:FeatureLayer = event.currentTarget as FeatureLayer;
+                featureLayer.removeEventListener(LayerEvent.LOAD, highlightFeatureLayer_loadHandler);
+                featureLayer.removeEventListener(LayerEvent.LOAD_ERROR, highlightFeatureLayer_loadErrorHandler);
+                showError(LAYER_DATA_ERROR_MESSAGE);
             }
 
             private function fetchFeaturesFromServer(url:String):void
             {
-                queryTask.addEventListener(QueryEvent.EXECUTE_COMPLETE, queryTask_executeCompleteHandler, false, 0, true);
-                queryTask.addEventListener(FaultEvent.FAULT, queryTask_faultHandler, false, 0, true);
-                queryTask.url = url;
-                queryTask.execute(query);
-                activeHighlightLayer = highlightGraphicsLayer;
-                map.addLayer(highlightGraphicsLayer);
-            }
+                map.addLayer(highlightFeatureLayer);
+                highlightFeatureLayer.outFields = query.outFields;
+                highlightFeatureLayer.maxAllowableOffset = query.maxAllowableOffset;
+                highlightFeatureLayer.addEventListener(FeatureLayerEvent.SELECTION_COMPLETE, highlightFeatureLayer_selectionCompleteHandler, false, 0, true);
+                highlightFeatureLayer.addEventListener(FaultEvent.FAULT, highlightFeatureLayer_faultHandler, false, 0, true);
 
-            protected function queryTask_executeCompleteHandler(event:QueryEvent):void
-            {
-                queryTask.removeEventListener(QueryEvent.EXECUTE_COMPLETE, queryTask_executeCompleteHandler);
-                queryTask.removeEventListener(FaultEvent.FAULT, queryTask_faultHandler);
-
-                var attributes:Array;
-
-                if (selectionMethod == FeatureLayer.SELECTION_ADD)
+                if (highlightFeatureLayer.url != url)
                 {
-                    var currentGraphicProvider:ArrayCollection = highlightGraphicsLayer.graphicProvider as ArrayCollection;
-                    highlightGraphicsLayer.graphicProvider = currentGraphicProvider.source.concat(event.featureSet.features);
-                    attributes = getAttributes(highlightGraphicsLayer.graphicProvider as ArrayCollection);
+                    highlightFeatureLayer.addEventListener(LayerEvent.LOAD, highlightFeatureLayer_loadHandler, false, 0, true);
+                    highlightFeatureLayer.addEventListener(LayerEvent.LOAD_ERROR, highlightFeatureLayer_loadErrorHandler, false, 0, true);
+                    highlightFeatureLayer.url = url;
                 }
-                else if (selectionMethod == FeatureLayer.SELECTION_NEW)
+                else
                 {
-                    attributes = event.featureSet.attributes;
-                    highlightGraphicsLayer.graphicProvider = event.featureSet.features;
-                }
-
-                applyFilterToGraphics(highlightGraphicsLayer.graphicProvider as ArrayCollection)
-                setChartData(attributes);
-                showChartView();
-            }
-
-            protected function queryTask_faultHandler(event:FaultEvent):void
-            {
-                queryTask.removeEventListener(QueryEvent.EXECUTE_COMPLETE, queryTask_executeCompleteHandler);
-                queryTask.removeEventListener(FaultEvent.FAULT, queryTask_faultHandler);
-                showError("Could not retrieve layer data.");
-            }
-
-            private function applyFilterToGraphics(features:ArrayCollection):void
-            {
-                var glowFilter:GlowFilter;
-                for each (var feature:Graphic in features)
-                {
-                    glowFilter = new GlowFilter();
-                    glowFilter.alpha = 0.6;
-                    glowFilter.blurX = 16;
-                    glowFilter.blurY = 16;
-                    glowFilter.color = highlightColor;
-                    glowFilter.inner = feature.geometry is Polygon;
-                    glowFilter.strength = 8;
-                    feature.filters = [ glowFilter ];
+                    highlightFeatureLayer.selectFeatures(query, selectionMethod);
                 }
             }
 
             protected function wTemplate_closedHandler(event:Event):void
             {
                 setMapAction(null, null, null, null); // deactivate drawTool
-                if (activeHighlightLayer)
-                {
-                    map.removeLayer(activeHighlightLayer);
-                }
+                map.removeLayer(highlightFeatureLayer);
             }
 
             protected function wTemplate_openHandler(event:Event):void
             {
-                if (activeHighlightLayer)
-                {
-                    map.addLayer(activeHighlightLayer);
-                }
+                map.addLayer(highlightFeatureLayer);
+            }
+
+            protected function layerSelection_valueCommitHandler(event:FlexEvent):void
+            {
+                updateLayerSelectionMessage();
+                clearChartAndSelectionHighlights()
+                updateSelectedChartLayerDefinition();
+            }
+
+            private function updateLayerSelectionMessage():void
+            {
+                layerNotVisibleOrOutOfScaleRangeMessage = (layerSelection.selectedLabel + ' ' + layerSourceNotVisibleLabel);
+            }
+
+            private function clearChartAndSelectionHighlights():void
+            {
+                setChartData(null);
+                clearSelectionHighlights();
+                showInputView();
             }
 
             private function updateSelectedChartLayerDefinition():void
@@ -579,17 +552,26 @@
                 selectedChartLayerDefinition = (layerSelection.selectedItem as ChartLayerDefinition);
                 if (!selectedChartLayerDefinition.url)
                 {
-                    isSourceFeatureLayer = true;
-                    removeLayerListeners();
                     sourceFeatureLayer = findFeatureLayerByLabel(selectedChartLayerDefinition.label);
-                    addLayerListeners();
-                    updateSourceFeatureLayerInclusion();
+                    updateHighlightFeatureLayerInclusion();
+                    highlightFeatureLayer.url = sourceFeatureLayer.url;
                 }
                 else
                 {
-                    isSourceFeatureLayer = false;
-                    removeLayerListeners();
                     sourceFeatureLayer = null;
+                    highlightFeatureLayer.url = selectedChartLayerDefinition.url;
+                }
+            }
+
+            private function updateHighlightFeatureLayerInclusion():void
+            {
+                if (sourceFeatureLayer)
+                {
+                    isHighlightFeatureLayerShown = (sourceFeatureLayer.visible && sourceFeatureLayer.isInScaleRange);
+                }
+                else
+                {
+                    isHighlightFeatureLayerShown = highlightFeatureLayer.isInScaleRange;
                 }
             }
 
@@ -605,39 +587,20 @@
 
             private function selectedLayer_isInScaleRangeChangeHandler(event:LayerEvent):void
             {
-                updateSourceFeatureLayerInclusion();
+                isSourceLayerInScaleRange = event.isInScaleRange;
+                updateHighlightFeatureLayerInclusion();
             }
 
-            private function updateSourceFeatureLayerInclusion():void
+            private function selectedLayer_showHandler():void
             {
-                if (sourceFeatureLayer && sourceFeatureLayer.visible && sourceFeatureLayer.isInScaleRange)
-                {
-                    isSourceFeatureLayerVisibleAndInScaleRange = true;
-                }
-                else
-                {
-                    isSourceFeatureLayerVisibleAndInScaleRange = false;
-                }
+                isSourceLayerVisible = true;
+                updateHighlightFeatureLayerInclusion();
             }
 
-            private function selectedLayer_showHandler(event:FlexEvent):void
+            private function selectedLayer_hideHandler():void
             {
-                updateSourceFeatureLayerInclusion();
-            }
-
-            private function selectedLayer_hideHandler(event:FlexEvent):void
-            {
-                updateSourceFeatureLayerInclusion();
-            }
-
-            private function addLayerListeners():void
-            {
-                if (sourceFeatureLayer)
-                {
-                    sourceFeatureLayer.addEventListener(LayerEvent.IS_IN_SCALE_RANGE_CHANGE, selectedLayer_isInScaleRangeChangeHandler, false, 0, true);
-                    sourceFeatureLayer.addEventListener(FlexEvent.SHOW, selectedLayer_showHandler, false, 0, true);
-                    sourceFeatureLayer.addEventListener(FlexEvent.HIDE, selectedLayer_hideHandler, false, 0, true);
-                }
+                isSourceLayerVisible = false;
+                updateHighlightFeatureLayerInclusion();
             }
         ]]>
     </fx:Script>
@@ -650,13 +613,13 @@
         <esri:Query id="query"
                     outSpatialReference="{map.spatialReference}"
                     returnGeometry="true"/>
-        <esri:QueryTask id="queryTask"/>
-        <esri:GraphicsLayer id="highlightGraphicsLayer"/>
         <esri:FeatureLayer id="highlightFeatureLayer" name="hiddenLayer_chartWidgetSelectionLayer"
+                           hide="updateHighlightFeatureLayerInclusion()"
+                           isInScaleRangeChange="updateHighlightFeatureLayerInclusion()"
+                           load="updateHighlightFeatureLayerInclusion()"
                            mode="selection"
                            selectionColor="{highlightColor}"
-                           visible="{isSourceFeatureLayer 
-                                &amp;&amp; isSourceFeatureLayerVisibleAndInScaleRange}"/>
+                           show="updateHighlightFeatureLayerInclusion()"/>
     </fx:Declarations>
     <viewer:states>
         <s:State name="input"/>
@@ -674,15 +637,15 @@
                       includeInLayout="{hasChartLayerDefinitions}"
                       visible="{hasChartLayerDefinitions}">
                 <s:Label text="{layerSelectionLabel}"/>
-                <mx:ComboBox id="layerSelection" valueCommit="updateSelectedChartLayerDefinition()"/>
-                <s:Label includeInLayout="{drawToolMenu.visible}"
+                <mx:ComboBox id="layerSelection" valueCommit="layerSelection_valueCommitHandler(event)"/>
+                <s:Label includeInLayout="{isHighlightFeatureLayerShown}"
                          text="{drawToolMenuLabel}"
-                         visible="{drawToolMenu.visible}"/>
+                         visible="{isHighlightFeatureLayerShown}"/>
                 <s:HGroup id="drawToolMenu"
                           width="100%" height="40"
                           gap="0"
-                          includeInLayout="{!isSourceFeatureLayer || isSourceFeatureLayerVisibleAndInScaleRange}"
-                          visible="{!isSourceFeatureLayer || isSourceFeatureLayerVisibleAndInScaleRange}">
+                          includeInLayout="{isHighlightFeatureLayerShown}"
+                          visible="{isHighlightFeatureLayerShown}">
                     <mx:Image name="{DrawTool.EXTENT}"
                               width="40" height="40"
                               buttonMode="true"
@@ -740,7 +703,7 @@
                 <s:Label fontStyle="italic"
                          includeInLayout="{!drawToolMenu.visible}"
                          maxWidth="{wTemplate.width - 50}"
-                         text="{layerSelection.selectedLabel + ' ' + layerSourceNotVisibleLabel}"
+                         text="{layerNotVisibleOrOutOfScaleRangeMessage}"
                          visible="{!drawToolMenu.visible}"/>
             </s:VGroup>
         </s:Group>

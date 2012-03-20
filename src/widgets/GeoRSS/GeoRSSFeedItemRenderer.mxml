@@ -99,11 +99,11 @@
             {
                 if (isRtl())
                 {
-                    feedLink.source = "assets/images/w_link.png";
+                    feedLink.source = "assets/images/w_link_rtl.png";
                 }
                 else
                 {
-                    feedLink.source = "assets/images/w_link_rtl.png";
+                    feedLink.source = "assets/images/w_link.png";
                 }
             }
 

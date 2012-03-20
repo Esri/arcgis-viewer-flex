@@ -81,6 +81,10 @@
 
             private var controlContainer:Group;
 
+            // setting securityDomain is not allowed on non-REMOTE sandboxes
+            private var securityDomain:SecurityDomain =
+                Security.sandboxType == Security.REMOTE ? SecurityDomain.currentDomain : null;
+
             /**
              * Gets the widget by the widget ID.
              * Returns the widget by ID if the widget has been loaded.
@@ -237,7 +241,7 @@
                 ctnInfo.data = ctn;
                 ctnInfo.addEventListener(ModuleEvent.READY, onContainerReady);
                 ctnInfo.addEventListener(ModuleEvent.ERROR, moduleErrorHandler);
-                ctnInfo.load(null, null, null, moduleFactory);
+                ctnInfo.load(null, securityDomain, null, moduleFactory);
             }
 
             private function onContainerReady(event:ModuleEvent):void
@@ -307,7 +311,7 @@
                 ctlInfo.data = ctl;
                 ctlInfo.addEventListener(ModuleEvent.READY, moduleReadyHandler);
                 ctlInfo.addEventListener(ModuleEvent.ERROR, moduleErrorHandler);
-                ctlInfo.load(null, null, null, moduleFactory);
+                ctlInfo.load(null, securityDomain, null, moduleFactory);
             }
 
             private function moduleReadyHandler(event:ModuleEvent):void
@@ -506,7 +510,7 @@
                     };
                 wgtInfo.addEventListener(ModuleEvent.READY, widgetReadyHandler);
                 wgtInfo.addEventListener(ModuleEvent.ERROR, moduleErrorHandler);
-                wgtInfo.load(null, null, null, moduleFactory);
+                wgtInfo.load(null, securityDomain, null, moduleFactory);
                 this.cursorManager.setBusyCursor();
             }
 
@@ -649,7 +653,7 @@
                     };
                 m_infoWidgetInfo.addEventListener(ModuleEvent.READY, infoWidgetReadyHandler);
                 m_infoWidgetInfo.addEventListener(ModuleEvent.ERROR, moduleErrorHandler);
-                m_infoWidgetInfo.load(null, null, null, moduleFactory);
+                m_infoWidgetInfo.load(null, securityDomain, null, moduleFactory);
             }
 
             private function infoWidgetReadyHandler(event:ModuleEvent):void

@@ -39,7 +39,10 @@
     <fx:Script>
         <![CDATA[
             import com.esri.ags.components.supportClasses.AttachmentRemoveEvent;
+            import com.esri.ags.layers.FeatureLayer;
             import com.esri.ags.layers.supportClasses.AttachmentInfo;
+            import com.esri.ags.layers.supportClasses.FeatureLayerDetails;
+            import com.esri.ags.layers.supportClasses.FeatureTableDetails;
             import com.esri.ags.skins.supportClasses.AttachmentMouseEvent;
 
             import mx.binding.utils.ChangeWatcher;
@@ -154,6 +157,27 @@
             {
                 dispatchEvent(new Event("attributeGroupClicked", true, true));
             }
+
+            private function isAddingAttachmentAllowed(featureLayer:FeatureLayer):Boolean
+            {
+                var result:Boolean;
+
+                if (featureLayer.layerDetails is FeatureLayerDetails)
+                {
+                    result = (featureLayer.layerDetails as FeatureLayerDetails).isCreateAllowed;
+                }
+                else if (featureLayer.tableDetails is FeatureTableDetails)
+                {
+                    result = (featureLayer.layerDetails as FeatureTableDetails).isCreateAllowed;
+                }
+                if (!result)
+                {
+                    // check if update is allowed, as adding attachments is also considered an update
+                    result = featureLayer.isUpdateAllowed(hostComponent.feature);
+                }
+
+                return result;
+            }
         ]]>
     </fx:Script>
     <s:states>
@@ -191,7 +215,7 @@
                                            caretChange="attachmentInfoList_caretChangeHandler(event)"
                                            click="attachmentInfoList_clickHandler(event)"
                                            dataProvider="{hostComponent.attachmentInfos}"
-                                           deleteEnabled="{hostComponent.deleteEnabled}"
+                                           deleteEnabled="{hostComponent.deleteEnabled &amp;&amp; hostComponent.featureLayer.isUpdateAllowed(hostComponent.feature)}"
                                            doubleClick="attachmentInfoList_clickHandler(event)"
                                            doubleClickEnabled="true"
                                            enabled.disabled="false"
@@ -219,9 +243,9 @@
               enabled.disabled="false"
               enabled.queryAttachmentInfos="false"
               excludeFrom="loadState"
-              includeInLayout="{hostComponent.featureLayer.isEditable &amp;&amp; hostComponent.addEnabled}"
+              includeInLayout="{hostComponent.featureLayer.isEditable &amp;&amp; hostComponent.addEnabled &amp;&amp; isAddingAttachmentAllowed(hostComponent.featureLayer)}"
               label="{chooseFileText}"
-              visible="{hostComponent.featureLayer.isEditable &amp;&amp; hostComponent.addEnabled}"/>
+              visible="{hostComponent.featureLayer.isEditable &amp;&amp; hostComponent.addEnabled &amp;&amp; isAddingAttachmentAllowed(hostComponent.featureLayer)}"/>
     <s:HGroup includeIn="loadState" verticalAlign="middle">
         <s:Label text="{hostComponent.attachmentName}"/>
         <s:Label text="{numberFormatter.format(hostComponent.attachmentSize / 1024.0)+' '+resourceManager.getString('ESRIMessages', 'attachmentInspectorKiloBytes')}"/>

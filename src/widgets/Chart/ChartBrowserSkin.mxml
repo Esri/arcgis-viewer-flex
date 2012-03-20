@@ -4,8 +4,8 @@
              xmlns:mx="library://ns.adobe.com/flex/mx">
     <!-- host component -->
     <fx:Metadata>
-		[HostComponent("widgets.Chart.ChartBrowser")]
-	</fx:Metadata>
+        [HostComponent("widgets.Chart.ChartBrowser")]
+    </fx:Metadata>
 
     <fx:Script>
         <![CDATA[

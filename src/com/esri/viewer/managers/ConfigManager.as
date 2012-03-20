@@ -30,6 +30,7 @@ import com.esri.ags.layers.KMLLayer;
 import com.esri.ags.layers.Layer;
 import com.esri.ags.layers.OpenStreetMapLayer;
 import com.esri.ags.layers.WMSLayer;
+import com.esri.ags.layers.WMTSLayer;
 import com.esri.ags.layers.supportClasses.LOD;
 import com.esri.ags.symbols.Symbol;
 import com.esri.ags.tasks.GeometryServiceSingleton;
@@ -66,6 +67,7 @@ import mx.utils.StringUtil;
 public class ConfigManager extends EventDispatcher
 {
     private const CONFIG_MANAGER:String = "ConfigManager";
+    private const DEFAULT_GEOMETRY_SERVICE_URL:String = "http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer";
 
     public function ConfigManager()
     {
@@ -181,15 +183,13 @@ public class ConfigManager extends EventDispatcher
                 configData.geometryService.token = geometryService.@token[0] ? String(geometryService.@token[0]) : "";
                 configData.geometryService.useproxy = geometryService.@useproxy[0] == "true";
 
-                if (configData.geometryService.url)
+                GeometryServiceSingleton.instance.token = configData.geometryService.token;
+                if (configData.geometryService.useproxy)
                 {
-                    GeometryServiceSingleton.instance.url = configData.geometryService.url;
-                    GeometryServiceSingleton.instance.token = configData.geometryService.token;
-                    if (configData.geometryService.useproxy)
-                    {
-                        GeometryServiceSingleton.instance.proxyURL = configData.proxyUrl;
-                    }
+                    GeometryServiceSingleton.instance.proxyURL = configData.proxyUrl;
                 }
+                var geometryServiceURL:String = configData.geometryService.url ? configData.geometryService.url : DEFAULT_GEOMETRY_SERVICE_URL;
+                GeometryServiceSingleton.instance.url = geometryServiceURL;
             }
 
             //================================================
@@ -242,7 +242,7 @@ public class ConfigManager extends EventDispatcher
                     size: int(styleSubTitleFontSize)
                 };
             configData.subTitleFont = subTitleFont;
-            
+
             //================================================
             //layoutDirection configuration
             //================================================
@@ -251,7 +251,7 @@ public class ConfigManager extends EventDispatcher
             {
                 configData.layoutDirection = layoutDirection;
             }
-            
+
             //================================================
             //user interface
             //================================================
@@ -1110,7 +1110,8 @@ public class ConfigManager extends EventDispatcher
         var useAMF:String = obj.@useamf[0] ? obj.@useamf : "";
         var token:String = obj.@token[0] ? obj.@token : "";
         var mode:String = obj.@mode[0] ? obj.@mode : "";
-        var icon:String = obj.@icon[0] ? obj.@icon : "";
+        var icon:String = isSupportedImageType(obj.@icon[0]) ? obj.@icon : 'assets/images/defaultBasemapIcon.png';
+        var layerId:String = obj.@layerid[0];
         var imageFormat:String = obj.@imageformat;
         var visibleLayers:String = obj.@visiblelayers;
         var displayLevels:String = obj.@displaylevels;
@@ -1119,6 +1120,7 @@ public class ConfigManager extends EventDispatcher
         var version:String = obj.@version[0];
         var url:String = obj.@url;
         var serviceURL:String = obj.@serviceurl[0];
+        var serviceMode:String = obj.@servicemode[0];
         var username:String = obj.@username;
         var password:String = obj.@password;
 
@@ -1141,6 +1143,7 @@ public class ConfigManager extends EventDispatcher
 
         // definitionExpression for featurelayer
         var definitionExpression:String = obj.@definitionexpression[0] ? obj.@definitionexpression : "";
+        var gdbVersion:String = obj.@gdbversion[0];
 
         //sublayers
         var subLayers:Array = [];
@@ -1163,16 +1166,19 @@ public class ConfigManager extends EventDispatcher
                 clusterer: clusterer,
                 definitionExpression: definitionExpression,
                 displayLevels: displayLevels,
+                gdbVersion: gdbVersion,
                 icon: icon,
                 imageFormat: imageFormat,
                 key: key,
                 label: label,
+                layerId: layerId,
                 maxAllowableOffset: maxAllowableOffset,
                 mode: mode,
                 noData: noData,
                 password: password,
                 serviceHost: serviceHost,
                 serviceName: serviceName,
+                serviceMode: serviceMode,
                 serviceURL: serviceURL,
                 skipGetCapabilities: skipGetCapabilities,
                 style: style,
@@ -1205,6 +1211,12 @@ public class ConfigManager extends EventDispatcher
         }
 
         return resultObject;
+    }
+
+    private function isSupportedImageType(filePath:String):Boolean
+    {
+        var endsWithSupportedImageFileType:RegExp = /\.(png|gif|jpg)$/i;
+        return endsWithSupportedImageFileType.test(filePath);
     }
 
     private function getDefaultString(token:String):String

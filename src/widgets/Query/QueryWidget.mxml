@@ -60,15 +60,13 @@
             import com.esri.ags.webmap.PopUpRenderer;
             import com.esri.ags.webmap.supportClasses.PopUpInfo;
             import com.esri.ags.webmap.supportClasses.PopUpMediaInfo;
-            import com.esri.viewer.AppEvent;
-            import com.esri.viewer.ViewerContainer;
 
             import mx.collections.ArrayCollection;
-            import mx.core.UIComponent;
             import mx.events.FlexEvent;
             import mx.events.ModuleEvent;
             import mx.formatters.DateFormatter;
             import mx.rpc.AsyncResponder;
+            import mx.utils.StringUtil;
 
             import spark.components.supportClasses.ItemRenderer;
 
@@ -99,18 +97,16 @@
             private var dateFormatter:DateFormatter = new DateFormatter();
             private var textDirection:String;
 
-            //labels
             private var loadingLabel:String;
             private var textFilterClear:String;
             private var textFilterLabel:String;
+            private var noResultLabel:String;
+            private var featuresFoundLabel:String;
             [Bindable]
             private var filterButtonLabel:String;
             [Bindable]
             private var clearButtonLabel:String;
-            [Bindable]
-            private var noResultLabel:String;
 
-            // symbols
             private var resultMarkerSymbol:Symbol;
             private var resultLineSymbol:Symbol;
             private var resultFillSymbol:Symbol;
@@ -123,13 +119,13 @@
                 {
                     textDirection = getStyle("direction");
 
-                    //labels
                     loadingLabel = configXML.labels.loading || configXML.labels.loadinglabel || getDefaultString("loadingLabel"); // other widgets use "loadinglabel" in their xml and so should this, but since 2.1 was released with "loading", we'll keep QueryWidget slightly inconsistent
                     textFilterLabel = configXML.labels.filterresults || getDefaultString("filterTitleBarTooltip");
                     textFilterClear = configXML.labels.filterclear || getDefaultString("showallTitleBarTooltip");
                     filterButtonLabel = configXML.labels.filterbuttonlabel || getDefaultString("filterButtonLabel");
                     clearButtonLabel = configXML.labels.clearbuttonlabel || getDefaultString("clearButtonLabel");
                     noResultLabel = configXML.labels.noresultlabel || getDefaultString("noFeatures");
+                    featuresFoundLabel = configXML.labels.featuresfoundlabel || getDefaultString("featuresFoundLabel");
 
                     filterField = configXML.filterfield.name;
                     filterFieldAlias = configXML.filterfield.alias || configXML.filterfield.name;
@@ -318,6 +314,10 @@
                             if (queryResultAC.length < 1)
                             {
                                 showMessage(noResultLabel, false);
+                            }
+                            else
+                            {
+                                showMessage(StringUtil.substitute(featuresFoundLabel, queryResultAC.length), false);
                             }
                         }
                         catch (error:Error)
@@ -836,7 +836,7 @@
                 }
                 else
                 {
-                    clearMessage();
+                    showMessage(StringUtil.substitute(featuresFoundLabel, queryResultAC.length), false);
                 }
             }
 

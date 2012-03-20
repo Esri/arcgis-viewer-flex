@@ -166,7 +166,7 @@ public class TocMapLayerItem extends TocItem
         {
             ArcGISDynamicMapServiceLayer(layer).visibleLayers = new ArrayCollection(visLayers);
             ArcGISDynamicMapServiceLayer(layer).visibleLayers.removeEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);
-            ArcGISDynamicMapServiceLayer(layer).visibleLayers.addEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);              
+            ArcGISDynamicMapServiceLayer(layer).visibleLayers.addEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);
         }
         else if (layer is ArcIMSMapServiceLayer)
         {
@@ -181,24 +181,25 @@ public class TocMapLayerItem extends TocItem
     //--------------------------------------------------------------------------
 
     private function visibleLayersChangeHandler(event:CollectionEvent):void
-    {   
+    {
         if (layer.visible)
-        {   
-            var layerInfos:Array=[];           
-            // get the actual visible layers           
+        {
+            var layerInfos:Array = [];
+            // get the actual visible layers       
+            var copyLayerInfos:Array = ArcGISDynamicMapServiceLayer(layer).dynamicLayerInfos ? ArcGISDynamicMapServiceLayer(layer).dynamicLayerInfos : ArcGISDynamicMapServiceLayer(layer).layerInfos;
             var actualVisibleLayers:Array = getActualVisibleLayers(ArcGISDynamicMapServiceLayer(layer).visibleLayers.toArray(), ArcGISDynamicMapServiceLayer(layer).layerInfos.slice());
             for each (var child:TocLayerInfoItem in children)
-            {   
-                updateTOCItemVisibility(child, actualVisibleLayers);                              
-            }            
+            {
+                updateTOCItemVisibility(child, actualVisibleLayers);
+            }
         }
     }
-    
+
     private function updateTOCItemVisibility(item:TocLayerInfoItem, actualVisibleLayers:Array):void
     {
         if (item.isGroupLayer())
-        {   
-            item.visible = actualVisibleLayers.indexOf(item.layerInfo.id) != -1;
+        {
+            item.visible = actualVisibleLayers.indexOf(item.layerInfo.layerId) != -1;
             for each (var child:TocLayerInfoItem in item.children)
             {
                 updateTOCItemVisibility(child, actualVisibleLayers);
@@ -206,10 +207,10 @@ public class TocMapLayerItem extends TocItem
         }
         else
         {
-            item.visible = actualVisibleLayers.indexOf(item.layerInfo.id) != -1;
+            item.visible = actualVisibleLayers.indexOf(item.layerInfo.layerId) != -1;
         }
-    } 
-    
+    }
+
     private function accumVisibleLayers(item:TocItem, accum:Array, useLayerInfoName:Boolean = false):void
     {
         if (item.isGroupLayer())
@@ -233,7 +234,7 @@ public class TocMapLayerItem extends TocItem
                 if (item is TocLayerInfoItem)
                 {
                     var layer:TocLayerInfoItem = TocLayerInfoItem(item);
-                    accum.push(useLayerInfoName ? layer.layerInfo.name : layer.layerInfo.id);
+                    accum.push(useLayerInfoName ? layer.layerInfo.name : layer.layerInfo.layerId);
                 }
             }
         }
@@ -276,14 +277,15 @@ public class TocMapLayerItem extends TocItem
         {
             var arcGISDynamicMapServiceLayer:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(layer);
             // TODO - watch for visibleLayers property change
+            var copyLayerInfos:Array = arcGISDynamicMapServiceLayer.dynamicLayerInfos ? arcGISDynamicMapServiceLayer.dynamicLayerInfos : arcGISDynamicMapServiceLayer.layerInfos;
             if (_isVisibleLayersSet)
             {
                 layerInfos = [];
                 // get the actual visible layers
-                var actualVisibleLayers:Array = getActualVisibleLayers(arcGISDynamicMapServiceLayer.visibleLayers.toArray(), arcGISDynamicMapServiceLayer.layerInfos);
-                for each (var layerInfo:LayerInfo in arcGISDynamicMapServiceLayer.layerInfos.slice())
+                var actualVisibleLayers:Array = getActualVisibleLayers(arcGISDynamicMapServiceLayer.visibleLayers.toArray(), copyLayerInfos);
+                for each (var layerInfo:LayerInfo in copyLayerInfos)
                 {
-                    if (actualVisibleLayers.indexOf(layerInfo.id) != -1)
+                    if (actualVisibleLayers.indexOf(layerInfo.layerId) != -1)
                     {
                         layerInfo.defaultVisibility = true;
                     }
@@ -296,7 +298,7 @@ public class TocMapLayerItem extends TocItem
             }
             else
             {
-                layerInfos = arcGISDynamicMapServiceLayer.layerInfos;
+                layerInfos = copyLayerInfos;
             }
         }
         else if (layer is ArcIMSMapServiceLayer)
@@ -331,7 +333,7 @@ public class TocMapLayerItem extends TocItem
             // replace group layers with their sub layers
             for each (layerInfo in layerInfos)
             {
-                layerIdIndex = layerIds.indexOf(layerInfo.id);
+                layerIdIndex = layerIds.indexOf(layerInfo.layerId);
                 if (layerInfo.subLayerIds && layerIdIndex != -1)
                 {
                     layerIds.splice(layerIdIndex, 1); // remove the group layer id
@@ -342,9 +344,12 @@ public class TocMapLayerItem extends TocItem
                 }
             }
 
-            for each (layerInfo in layerInfos.reverse())
+            //copying layerInfos as Array#reverse() is destructive.
+            var reversedLayerInfos:Array = layerInfos.concat();
+            reversedLayerInfos.reverse();
+            for each (layerInfo in reversedLayerInfos)
             {
-                if (layerIds.indexOf(layerInfo.id) != -1 && layerIds.indexOf(layerInfo.parentLayerId) == -1 && layerInfo.parentLayerId != -1)
+                if (layerIds.indexOf(layerInfo.layerId) != -1 && layerIds.indexOf(layerInfo.parentLayerId) == -1 && layerInfo.parentLayerId != -1)
                 {
                     layerIds.push(layerInfo.parentLayerId);
                 }
@@ -440,7 +445,7 @@ public class TocMapLayerItem extends TocItem
     {
         for each (var layerInfo:LayerInfo in layerInfos)
         {
-            if (id == layerInfo.id)
+            if (id == layerInfo.layerId)
             {
                 return layerInfo;
             }

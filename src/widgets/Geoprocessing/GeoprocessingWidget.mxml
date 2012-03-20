@@ -27,17 +27,16 @@
         <![CDATA[
             import com.esri.ags.FeatureSet;
             import com.esri.ags.Graphic;
-            import com.esri.ags.clusterers.supportClasses.SimpleClusterSymbol;
             import com.esri.ags.events.DrawEvent;
-            import com.esri.ags.events.EditEvent;
             import com.esri.ags.events.GeoprocessorEvent;
             import com.esri.ags.events.GraphicEvent;
             import com.esri.ags.events.GraphicsLayerEvent;
             import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.Geometry;
-            import com.esri.ags.geometry.Polygon;
-            import com.esri.ags.geometry.Polyline;
+            import com.esri.ags.layers.GPResultImageLayer;
             import com.esri.ags.layers.GraphicsLayer;
+            import com.esri.ags.layers.supportClasses.ImageParameters;
+            import com.esri.ags.layers.supportClasses.MapImage;
             import com.esri.ags.renderers.SimpleRenderer;
             import com.esri.ags.symbols.SimpleFillSymbol;
             import com.esri.ags.symbols.SimpleLineSymbol;
@@ -46,29 +45,26 @@
             import com.esri.ags.tasks.supportClasses.DataFile;
             import com.esri.ags.tasks.supportClasses.JobInfo;
             import com.esri.ags.tasks.supportClasses.ParameterValue;
-            import com.esri.ags.tools.EditTool;
-            import com.esri.ags.utils.GeometryUtil;
+            import com.esri.ags.tasks.supportClasses.ProjectParameters;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.utils.GenericJSONTask;
-            
+
             import flashx.textLayout.conversion.TextConverter;
-            
+
             import mx.collections.ArrayList;
             import mx.controls.Alert;
             import mx.events.CloseEvent;
             import mx.rpc.AsyncResponder;
             import mx.rpc.Fault;
             import mx.rpc.events.FaultEvent;
-            import mx.utils.ObjectUtil;
-            
-            import spark.components.RichEditableText;
-            
+
             import widgets.Geoprocessing.parameters.GPParameterTypes;
             import widgets.Geoprocessing.parameters.IGPFeatureParameter;
             import widgets.Geoprocessing.parameters.IGPParameter;
             import widgets.Geoprocessing.supportClasses.FeatureInputParamEvent;
             import widgets.Geoprocessing.supportClasses.FileDownloader;
             import widgets.Geoprocessing.supportClasses.GPParamHandler;
+            import widgets.Geoprocessing.supportClasses.GraphicEditor;
             import widgets.Geoprocessing.supportClasses.LayerOrderer;
             import widgets.Geoprocessing.supportClasses.VisibleGraphicsLayersWatcher;
 
@@ -89,9 +85,11 @@
             private var totalProjectedFeatures:int
             private var asyncResultMap:Dictionary;
             private var outputGraphicsLayers:Array;
-            private var editGraphic:Graphic;
-            private var lastActiveEditType:String;
-            private var isEditing:Boolean;
+            private var resultImageLayersOnMap:Array;
+            private var hasResultMapServer:Boolean;
+            private var hasUseAMFBeenSet:Boolean;
+            private var largestResultImageLayerExtent:Extent;
+            private var graphicEditor:GraphicEditor;
 
             [Bindable]
             private var submitLabel:String;
@@ -136,11 +134,10 @@
                         if (configXML.useamf.length() > 0)
                         {
                             gp.useAMF = (configXML.useamf == "true");
+                            hasUseAMFBeenSet = true;
                         }
-                        else
-                        {
-                            checkAMFSupport();
-                        }
+
+                        fetchGPServerDescription();
 
                         submitLabel = configXML.labels.submitlabel || getDefaultString('gpSubmitLabel');
                         clearFeatureLabel = configXML.labels.clearfeaturelabel || getDefaultString("clearLabel");
@@ -152,6 +149,7 @@
 
                         initGraphicContextMenu();
                         drawTool.map = map;
+                        graphicEditor = new GraphicEditor(map);
 
                         visibleGraphicsLayersWatcher.map = map;
                         visibleGraphicsLayersWatcher.startWatching();
@@ -194,36 +192,51 @@
                 dispatchErrorMessage("Could not determine Geoprocessor execution type:" + fault.toString());
             }
 
-            private function checkAMFSupport():void
+            private function fetchGPServerDescription():void
             {
-                var gpServiceInspector:GenericJSONTask = new GenericJSONTask();
+                var gpServerInspector:GenericJSONTask = new GenericJSONTask();
                 var urlVars:URLVariables = new URLVariables();
                 urlVars.f = "json";
-                gpServiceInspector.url = getGPServiceURL(gp.url);
-                gpServiceInspector.proxyURL = gp.proxyURL;
-                gpServiceInspector.execute(urlVars, new AsyncResponder(gpServiceInspector_resultHandler, gpServiceInspector_faultHandler));
+                gpServerInspector.url = getGPServerURL(gp.url);
+                gpServerInspector.proxyURL = gp.proxyURL;
+                gpServerInspector.execute(urlVars, new AsyncResponder(gpServerInspector_resultHandler, gpServerInspector_faultHandler));
             }
 
-            private function getGPServiceURL(url:String):String
+            private function getGPServerURL(url:String):String
             {
                 var lastPathIndex:int = url.search(/[\w]+[^\/]*$/g);
                 return url.substr(0, lastPathIndex);
             }
 
-            private function gpServiceInspector_resultHandler(serviceDescription:Object, token:Object = null):void
+            private function gpServerInspector_resultHandler(gpServerDescription:Object, token:Object = null):void
             {
-                if (serviceDescription.currentVersion)
+                if (!hasUseAMFBeenSet)
                 {
-                    if (serviceDescription.currentVersion >= 10.1)
-                    {
-                        gp.useAMF = true;
-                    }
+                    checkAMFSupport(gpServerDescription);
+                }
+                checkResultMapServerSupport(gpServerDescription);
+            }
+
+            private function checkAMFSupport(gpServerDescription:Object):void
+            {
+                var version:Number = gpServerDescription.currentVersion;
+                if (version >= 10.1)
+                {
+                    gp.useAMF = true;
                 }
             }
 
-            private function gpServiceInspector_faultHandler(fault:Fault, token:Object = null):void
+            private function checkResultMapServerSupport(gpServerDescription:Object):void
             {
-                //Could not determine Geoprocessor AMF support
+                if (gpServerDescription.resultMapServerName)
+                {
+                    hasResultMapServer = true;
+                }
+            }
+
+            private function gpServerInspector_faultHandler(fault:Fault, token:Object = null):void
+            {
+                //Could not fetch service capabilities
             }
 
             private function buildUI(config:XML):void
@@ -276,7 +289,7 @@
 
                 var drawnGraphic:Graphic = event.graphic;
                 drawnGraphic.contextMenu = graphicContextMenu;
-                drawnGraphic.addEventListener(MouseEvent.CLICK, graphic_clickHandler);
+                graphicEditor.makeGraphicEditable(event.graphic);
 
                 //only point, polyline and polygon supported by gp tasks
                 if (drawnGraphic.geometry.type == Geometry.EXTENT)
@@ -297,172 +310,6 @@
                 if (autoSubmit)
                 {
                     runGPIfRequiredParamsComplete();
-                }
-            }
-
-            private function graphic_clickHandler(event:MouseEvent):void
-            {
-                if (editGraphic !== Graphic(event.currentTarget))
-                {
-                    editGraphic = Graphic(event.currentTarget);
-                    lastActiveEditType = "none"; // make sure move and edit vertices is the 1st mode
-                }
-                if (editGraphic.geometry is Polyline || editGraphic.geometry is Polygon)
-                {
-                    if (lastActiveEditType == "none")
-                    {
-                        isEditing = true;
-                        lastActiveEditType = "moveEditVertices";
-                        editTool.activate(EditTool.MOVE | EditTool.EDIT_VERTICES, [ editGraphic ]);
-                    }
-                    else if (lastActiveEditType == "moveEditVertices")
-                    {
-                        isEditing = true;
-                        lastActiveEditType = "moveRotateScale";
-                        editTool.activate(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, [ editGraphic ]);
-                    }
-                    else if (lastActiveEditType == "moveRotateScale")
-                    {
-                        isEditing = false;
-                        editGraphic = null;
-                        lastActiveEditType = "none";
-                        editTool.deactivate();
-                    }
-                }
-                else if (editGraphic.geometry is Extent)
-                {
-                    if (lastActiveEditType == "none")
-                    {
-                        isEditing = true;
-                        lastActiveEditType = "moveScale";
-                        editTool.activate(EditTool.MOVE | EditTool.SCALE, [ editGraphic ]);
-                    }
-                    else
-                    {
-                        isEditing = false;
-                        editGraphic = null;
-                        lastActiveEditType = "none";
-                        editTool.deactivate();
-                    }
-                }
-                else
-                {
-                    if (lastActiveEditType == "none")
-                    {
-                        isEditing = true;
-                        lastActiveEditType = "moveEditVertices";
-                        editTool.activate(EditTool.EDIT_VERTICES | EditTool.MOVE, [ editGraphic ]);
-                    }
-                    else
-                    {
-                        isEditing = false;
-                        editGraphic = null;
-                        lastActiveEditType = "none";
-                        editTool.deactivate();
-                    }
-                }
-            }
-
-            private function removeEditToolEventListeners():void
-            {
-                editTool.removeEventListener(EditEvent.VERTEX_ADD, editTool_vertexAddDeleteHandler);
-                editTool.removeEventListener(EditEvent.VERTEX_DELETE, editTool_vertexAddDeleteHandler);
-                editTool.removeEventListener(EditEvent.VERTEX_MOVE_STOP, editTool_vertexMoveStopHandler);
-
-                editTool.removeEventListener(EditEvent.GRAPHICS_MOVE_STOP, editTool_graphicsMoveStopHandler);
-                editTool.removeEventListener(EditEvent.GRAPHIC_ROTATE_STOP, editTool_graphicRotateStopHandler);
-                editTool.removeEventListener(EditEvent.GRAPHIC_SCALE_STOP, editTool_graphicScaleStopHandler);
-            }
-
-            private function addEditToolEventListeners():void
-            {
-                editTool.addEventListener(EditEvent.VERTEX_ADD, editTool_vertexAddDeleteHandler);
-                editTool.addEventListener(EditEvent.VERTEX_DELETE, editTool_vertexAddDeleteHandler);
-                editTool.addEventListener(EditEvent.VERTEX_MOVE_STOP, editTool_vertexMoveStopHandler);
-
-                editTool.addEventListener(EditEvent.GRAPHICS_MOVE_STOP, editTool_graphicsMoveStopHandler);
-                editTool.addEventListener(EditEvent.GRAPHIC_ROTATE_STOP, editTool_graphicRotateStopHandler);
-                editTool.addEventListener(EditEvent.GRAPHIC_SCALE_STOP, editTool_graphicScaleStopHandler);
-            }
-
-            private function editTool_vertexAddDeleteHandler(event:EditEvent):void
-            {
-                if (map.wrapAround180)
-                {
-                    normalizeGraphicGeometry(event.graphic);
-                }
-            }
-
-            private function editTool_vertexMoveStopHandler(event:EditEvent):void
-            {
-                if (map.wrapAround180)
-                {
-                    normalizeGraphicGeometry(event.graphic);
-                }
-            }
-
-            private function editTool_graphicsMoveStopHandler(event:EditEvent):void
-            {
-                if (map.wrapAround180)
-                {
-                    normalizeGraphicGeometry(event.graphics[0]);
-                }
-            }
-
-            private function editTool_graphicRotateStopHandler(event:EditEvent):void
-            {
-                if (map.wrapAround180)
-                {
-                    normalizeGraphicGeometry(event.graphic);
-                }
-            }
-
-            private function editTool_graphicScaleStopHandler(event:EditEvent):void
-            {
-                if (map.wrapAround180)
-                {
-                    normalizeGraphicGeometry(event.graphic);
-                }
-            }
-
-            private function normalizeGraphicGeometry(graphic:Graphic):void
-            {
-                // normalize
-                GeometryUtil.normalizeCentralMeridian([ graphic.geometry ], GeometryServiceSingleton.instance, new AsyncResponder(getNormalizedGeometryFunction, faultFunction));
-                function getNormalizedGeometryFunction(item:Object, token:Object = null):void
-                {
-                    var normalizedGeometries:Array = item as Array;
-                    graphic.geometry = normalizedGeometries[0];
-                    isEditing = true;
-                    if (graphic.geometry is Polyline || graphic.geometry is Polygon)
-                    {
-                        if (lastActiveEditType == "moveEditVertices")
-                        {
-                            editTool.activate(EditTool.MOVE | EditTool.EDIT_VERTICES, [ graphic ]);
-                        }
-                        else if (lastActiveEditType == "moveRotateScale")
-                        {
-                            editTool.activate(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, [ graphic ]);
-                        }
-                    }
-                    else if (graphic.geometry is Extent)
-                    {
-                        if (lastActiveEditType == "moveScale")
-                        {
-                            editTool.activate(EditTool.MOVE | EditTool.SCALE, [ graphic ]);
-                        }
-                    }
-                    else
-                    {
-                        if (lastActiveEditType == "moveEditVertices")
-                        {
-                            editTool.activate(EditTool.EDIT_VERTICES | EditTool.MOVE, [ graphic ]);
-                        }
-                    }
-                }
-                function faultFunction(fault:Fault, token:Object = null):void
-                {
-                    dispatchEvent(new FaultEvent(FaultEvent.FAULT, false, false, fault));
                 }
             }
 
@@ -529,7 +376,10 @@
                 {
                     inputParam = gpParamHandler.findInputParamByName(key) as IGPFeatureParameter;
                     featureSet = requestObject[key];
-                    GeometryServiceSingleton.instance.project(inputGeometryMap[key], inputParam.spatialReference, new AsyncResponder(projectionResultHandler, projectionFaultHandler, inputParam))
+                    const projectParameters:ProjectParameters = new ProjectParameters;
+                    projectParameters.geometries = inputGeometryMap[key];
+                    projectParameters.outSpatialReference = inputParam.spatialReference;
+                    GeometryServiceSingleton.instance.project(projectParameters, new AsyncResponder(projectionResultHandler, projectionFaultHandler, inputParam))
                 }
 
                 function projectionResultHandler(geometries:Array, inputParameter:IGPFeatureParameter):void
@@ -680,19 +530,60 @@
                     {
                         setOutputState();
                     }
+
                     processAllAsyncResultsInOrder();
                 }
             }
 
             private function processAllAsyncResultsInOrder():void
             {
+                if (hasResultMapServer)
+                {
+                    hideAllResultImageLayers();
+                    resultImageLayersOnMap = [];
+                }
+
                 var outputParams:Array = gpParamHandler.outputParams;
+                var paramName:String;
                 for each (var param:IGPParameter in outputParams)
                 {
-                    if (asyncResultMap[param.name])
+                    paramName = param.name;
+                    if (asyncResultMap[paramName])
                     {
-                        processResult(asyncResultMap[param.name]);
+                        if (hasResultMapServer)
+                        {
+                            processResultImageLayer(paramName);
+                        }
+                        else
+                        {
+                            processResult(asyncResultMap[paramName]);
+                        }
                     }
+                }
+
+                if (resultImageLayersOnMap)
+                {
+                    showOutputFeaturesClearButton();
+                    extractLargestResultImageLayerExtent();
+                }
+            }
+
+            private function processResultImageLayer(paramName:String):void
+            {
+                var lastExecutedJob:JobInfo = gp.submitJobLastResult;
+                var resultImageLayer:GPResultImageLayer = gp.getResultImageLayer(lastExecutedJob.jobId, paramName);
+                resultImageLayer.id = paramName;
+                resultImageLayer.name = ("hiddenLayer_" + paramName);
+                resultImageLayersOnMap.push(resultImageLayer);
+                map.addLayer(resultImageLayer);
+                layerOrderer.orderLayers();
+            }
+
+            private function hideAllResultImageLayers():void
+            {
+                for each (var resultImageLayer:GPResultImageLayer in resultImageLayersOnMap)
+                {
+                    map.removeLayer(resultImageLayer);
                 }
             }
 
@@ -725,7 +616,7 @@
                     var resultFeatures:Array = (parameterValue.value as FeatureSet).features;
                     graphicsLayer.graphicProvider = resultFeatures;
                     // if renderer is null, set the renderer based on result geometry
-                    if (!graphicsLayer.renderer && resultFeatures && resultFeatures.length) 
+                    if (!graphicsLayer.renderer && resultFeatures && resultFeatures.length)
                     {
                         var geometryType:String = Graphic(resultFeatures[0]).geometry.type;
                         var renderer:SimpleRenderer = new SimpleRenderer;
@@ -737,7 +628,7 @@
                                 break;
                             }
                             case Geometry.POLYLINE:
-                            {                                   
+                            {
                                 renderer.symbol = new SimpleLineSymbol;
                                 break;
                             }
@@ -745,12 +636,11 @@
                             {
                                 renderer.symbol = new SimpleFillSymbol;
                                 break;
-                            }                                
+                            }
                         }
                         graphicsLayer.renderer = renderer;
                     }
                     addContextMenuToGraphics(resultFeatures);
-                    disableAutoMoveToTopFromGraphics(resultFeatures)
 
                     if (!graphicsLayer.map)
                     {
@@ -835,25 +725,10 @@
                 }
             }
 
-            private function disableAutoMoveToTopFromGraphics(graphics:Array):void
-            {
-                for each (var graphic:Graphic in graphics)
-                {
-                    graphic.autoMoveToTop = false;
-                }
-            }
-
             private function zoomToOutputFeatures():void
             {
                 var outputFeaturesExtent:Extent = gpParamHandler.getOutputFeaturesExtent();
-                if (outputFeaturesExtent)
-                {
-                    map.extent = outputFeaturesExtent;
-                    if (!map.extent.contains(outputFeaturesExtent))
-                    {
-                        map.level--;
-                    }
-                }
+                updateMapExtent(outputFeaturesExtent);
             }
 
             protected function menuItem_contextMenuDeleteHandler(event:ContextMenuEvent):void
@@ -867,7 +742,14 @@
             {
                 if (event.jobInfo.jobStatus == JobInfo.STATUS_SUCCEEDED)
                 {
-                    getResultDataForEachOutputParam(event.jobInfo.jobId);
+                    if (gpParamHandler.outputParams.length > 0)
+                    {
+                        getResultDataForEachOutputParam(event.jobInfo.jobId);
+                    }
+                    else
+                    {
+                        busyAnimation.visible = false;
+                    }
                 }
                 else
                 {
@@ -914,6 +796,11 @@
                 deactivateDrawTool();
                 visibleGraphicsLayersWatcher.stopWatching();
 
+                if (hasResultMapServer)
+                {
+                    hideAllResultImageLayers();
+                }
+
                 if (gpParamHandler)
                 {
                     gpParamHandler.hideFeatureLayers();
@@ -945,15 +832,108 @@
             private function wTemplate_openHandler(event:Event):void
             {
                 visibleGraphicsLayersWatcher.startWatching();
+
+                if (hasResultMapServer)
+                {
+                    showAllResultImageLayers();
+                    layerOrderer.orderLayers();
+                }
+
                 if (gpParamHandler)
                 {
                     gpParamHandler.showFeatureLayers();
                 }
             }
 
-            private function clearAllOutputFeatures():void
+            private function clearAllOutputGraphics():void
             {
-                gpParamHandler.clearOutputFeatures();
+                if (hasResultMapServer)
+                {
+                    clearResultMapLayers();
+                    hideOutputFeaturesClearButton();
+                    setInputState();
+                }
+                else
+                {
+                    gpParamHandler.clearOutputFeatures();
+                }
+            }
+
+            private function clearResultMapLayers():void
+            {
+                for each (var resultImageLayer:GPResultImageLayer in resultImageLayersOnMap)
+                {
+                    map.removeLayer(resultImageLayer);
+                }
+
+                resultImageLayersOnMap = null;
+            }
+
+            private function zoomToResultImageLayers():void
+            {
+                updateMapExtent(largestResultImageLayerExtent);
+            }
+
+            private function extractLargestResultImageLayerExtent():void
+            {
+                largestResultImageLayerExtent = null;
+                var remainingResultImages:int = resultImageLayersOnMap.length;
+
+                var imageParams:ImageParameters = new ImageParameters();
+                imageParams.imageSpatialReference = map.spatialReference;
+
+                for each (var resultImageLayer:GPResultImageLayer in resultImageLayersOnMap)
+                {
+                    gp.getResultImage(resultImageLayer.jobId, resultImageLayer.parameterName, imageParams, new AsyncResponder(resultImageSuccess, resultImageFailure, resultImageLayer));
+
+                    function resultImageSuccess(paramValue:ParameterValue, resultImageLayer:GPResultImageLayer):void
+                    {
+                        var resultImage:MapImage = paramValue.value as MapImage;
+                        aggregateExtent(resultImage.extent);
+                        remainingResultImages--;
+                        if (remainingResultImages == 0)
+                        {
+                            zoomToResultImageLayers();
+                        }
+                    }
+
+                    function aggregateExtent(extent:Extent):void
+                    {
+                        if (largestResultImageLayerExtent)
+                        {
+                            largestResultImageLayerExtent = extent.union(largestResultImageLayerExtent);
+                        }
+                        else
+                        {
+                            largestResultImageLayerExtent = extent;
+                        }
+                    }
+
+                    function resultImageFailure(fault:Fault, token:Object):void
+                    {
+                        //Swallow error
+                    }
+                }
+            }
+
+            private function updateMapExtent(newExtent:Extent):void
+            {
+                if (newExtent)
+                {
+                    map.extent = newExtent;
+                    if (!map.extent.contains(newExtent))
+                    {
+                        map.level--;
+                    }
+                }
+            }
+
+            private function showAllResultImageLayers():void
+            {
+                for each (var resultImageLayer:GPResultImageLayer in resultImageLayersOnMap)
+                {
+                    map.addLayer(resultImageLayer);
+                }
             }
         ]]>
     </fx:Script>
@@ -1011,7 +991,7 @@
                       source="assets/images/loader.swf"
                       visible="false"/>
             <s:Button id="clearOutputFeaturesButton"
-                      click="clearAllOutputFeatures()"
+                      click="clearAllOutputGraphics()"
                       includeIn="output"
                       includeInLayout="false"
                       label="{clearFeatureLabel}"

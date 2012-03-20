@@ -253,16 +253,16 @@ public class TocItemRenderer extends TreeItemRenderer
             {
                 originPoint.x -= _tocLayerMenu.width;
             }
-            var globalPoint:Point = localToGlobal(originPoint);            
+            var globalPoint:Point = localToGlobal(originPoint);
             _tocLayerMenu.popUpForItem(this.parent.parent, data, TOC(this.parent.parent).map, globalPoint.x, globalPoint.y + this.height);
 
             AppEvent.addListener(AppEvent.TOC_HIDDEN, onRemovalFromStage);
         }
     }
-    
+
     private function onLayerMenuImageDoubleClick(event:MouseEvent):void
     {
-        event.stopPropagation();       
+        event.stopPropagation();
     }
 
     /**

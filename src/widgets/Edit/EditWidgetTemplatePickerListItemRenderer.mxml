@@ -58,67 +58,15 @@
                     templateLabel.text = value.featureTemplate.name;
                     toolTip = (value.featureTemplate.description != "") ? value.featureTemplate.name + ": " + value.featureTemplate.description : value.featureTemplate.name;
                 }
-
-                if (value.featureLayer.renderer)
+                var symbol:Symbol = value.symbol;
+                if (symbol)
                 {
-                    var symbol:Symbol = value.featureLayer.renderer.getSymbol(value.featureTemplate.prototype);
-                    if (symbol)
-                    {
-                        if (symbol is CompositeSymbol)
-                        {
-                            // get default symbol based on geometry type as composite symbols do not support createSwatch()
-                            contentGroup.addElement(IVisualElement(getDefaultSymbolBasedOnGeometry(value.featureLayer).createSwatch(contentGroup.width, contentGroup.height)));
-                        }
-                        else
-                        {
-                            contentGroup.addElement(IVisualElement(symbol.createSwatch(contentGroup.width, contentGroup.height)));
-                        }
-                    }
-                    else
-                    {
-                        enabled = false;
-                    }
-                }
-                else if (value.featureLayer.symbol)
-                {
-                    if (value.featureLayer.symbol is CompositeSymbol)
-                    {
-                        // get default symbol based on geometry type as composite symbols do not support createSwatch()
-                        contentGroup.addElement(IVisualElement(getDefaultSymbolBasedOnGeometry(value.featureLayer).createSwatch(contentGroup.width, contentGroup.height)));
-                    }
-                    else
-                    {
-                        contentGroup.addElement(IVisualElement(Symbol(value.featureLayer.symbol).createSwatch(contentGroup.width, contentGroup.height)));
-                    }
+                    contentGroup.addElement(IVisualElement(symbol.createSwatch(contentGroup.width, contentGroup.height)));
                 }
                 else
                 {
-                    contentGroup.addElement(IVisualElement(getDefaultSymbolBasedOnGeometry(value.featureLayer).createSwatch(contentGroup.width, contentGroup.height)));
+                    enabled = false;
                 }
-            }
-
-            private function getDefaultSymbolBasedOnGeometry(fLayer:FeatureLayer):Symbol
-            {
-                var sym:Symbol;
-                switch (fLayer.layerDetails.geometryType)
-                {
-                    case Geometry.MAPPOINT:
-                    {
-                        sym = new SimpleMarkerSymbol();
-                        break;
-                    }
-                    case Geometry.POLYLINE:
-                    {
-                        sym = new SimpleLineSymbol();
-                        break;
-                    }
-                    case Geometry.POLYGON:
-                    {
-                        sym = new SimpleFillSymbol();
-                        break;
-                    }
-                }
-                return sym;
             }
         ]]>
     </fx:Script>

@@ -26,7 +26,7 @@
                    width="200" height="65"
                    backgroundColor="{getStyle('contentBackgroundColor')}"
                    borderColor="{getStyle('accentColor')}"
-                   initialize="transparencyBorderContainer_initializeHandler(event)"                   
+                   initialize="transparencyBorderContainer_initializeHandler(event)"
                    rollOut="transparencyBorderContainer_rollOutHandler(event)"
                    rollOver="transparencyBorderContainer_rollOverHandler(event)">
     <fx:Script>
@@ -35,12 +35,12 @@
 
             import mx.events.FlexEvent;
             import mx.events.SliderEvent;
-            
+
             protected function transparencyBorderContainer_initializeHandler(event:FlexEvent):void
             {
-                transparencySlider.value = (1.0 - layer.alpha) * 100;                
+                transparencySlider.value = (1.0 - layer.alpha) * 100;
             }
-            
+
             protected function transparencySlider_changeHandler(event:SliderEvent):void
             {
                 layer.alpha = 1.0 - (transparencySlider.value / 100.0);
@@ -54,7 +54,7 @@
             protected function transparencyBorderContainer_rollOutHandler(event:MouseEvent):void
             {
                 AppEvent.dispatch(AppEvent.SUSPEND_TOC_HIDE_TIMER, null);
-            }           
+            }
         ]]>
     </fx:Script>
     <fx:Declarations>

@@ -62,14 +62,24 @@
         <s:VerticalLayout horizontalAlign="center"/>
     </s:layout>
 
-    <!--- Form to display the attributes of the active feature. -->
-    <mx:Form id="form"
-             width="100%" height="100%"
-             enabled.disabled="false"
-             horizontalScrollPolicy="off"
-             maxHeight="{hostComponent.getStyle('formMaxHeight')}"
-             verticalScrollPolicy="auto">
-    </mx:Form>
+    <!--- List to display the attributes of the active feature. -->
+    <s:List id="list"
+            width="100%" height="100%"
+            borderVisible="false"
+            enabled.disabled="false"
+            horizontalScrollPolicy="off"
+            itemRenderer="com.esri.ags.skins.supportClasses.AttributeInspectorRenderer"
+            maxHeight="{hostComponent.getStyle('formMaxHeight')}"
+            useVirtualLayout="false"
+            verticalScrollPolicy="auto">
+        <s:layout>
+            <s:FormLayout gap="0"
+                          paddingBottom="10"
+                          paddingLeft="10"
+                          paddingRight="10"
+                          paddingTop="10"/>
+        </s:layout>
+    </s:List>
 
     <s:HGroup verticalAlign="middle">
         <!--- Button to delete the active feature. -->
@@ -83,7 +93,7 @@
                   label="{okLabel}"/>
     </s:HGroup>
     <s:HGroup id="attachmentGroup"
-              width="100%" height="100%"
+              width="100%"
               horizontalAlign="right"
               includeInLayout="{FeatureLayer(hostComponent.activeFeature.graphicsLayer).layerDetails.hasAttachments}"
               verticalAlign="middle"

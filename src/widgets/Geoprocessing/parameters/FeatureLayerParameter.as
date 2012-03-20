@@ -20,7 +20,7 @@ import com.esri.ags.FeatureSet;
 import com.esri.ags.SpatialReference;
 import com.esri.ags.layers.GraphicsLayer;
 import com.esri.ags.renderers.ClassBreaksRenderer;
-import com.esri.ags.renderers.Renderer;
+import com.esri.ags.renderers.IRenderer;
 import com.esri.ags.renderers.SimpleRenderer;
 import com.esri.ags.renderers.UniqueValueRenderer;
 import com.esri.ags.symbols.Symbol;
@@ -150,14 +150,14 @@ public class FeatureLayerParameter extends BaseParameter implements IGPFeaturePa
     //  renderer
     //----------------------------------
 
-    private var _renderer:Renderer;
+    private var _renderer:IRenderer;
 
-    public function get renderer():Renderer
+    public function get renderer():IRenderer
     {
         return _renderer;
     }
 
-    public function set renderer(value:Renderer):void
+    public function set renderer(value:IRenderer):void
     {
         _renderer = value;
         _layer.renderer = value;

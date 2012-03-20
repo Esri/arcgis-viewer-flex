@@ -203,11 +203,16 @@
 
             private function loadSplash(splash:Object):void
             {
+                // setting securityDomain is not allowed on non-REMOTE sandboxes
+                var securityDomain:SecurityDomain =
+                    Security.sandboxType == Security.REMOTE ? SecurityDomain.currentDomain : null;
+
                 m_moduleInfo = ModuleManager.getModule(splash.url);
                 m_moduleInfo.data = splash;
                 m_moduleInfo.addEventListener(ModuleEvent.READY, splashModule_readyHandler);
                 m_moduleInfo.addEventListener(ModuleEvent.ERROR, splashModule_errorHandler);
-                m_moduleInfo.load();
+                m_moduleInfo.load(null, securityDomain);
+
                 this.cursorManager.setBusyCursor();
             }
 

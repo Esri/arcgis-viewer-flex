@@ -42,13 +42,14 @@
             import com.esri.ags.symbols.SimpleLineSymbol;
             import com.esri.ags.symbols.SimpleMarkerSymbol;
             import com.esri.ags.symbols.TextSymbol;
+            import com.esri.ags.tasks.GeometryService;
             import com.esri.ags.tasks.GeometryServiceSingleton;
+            import com.esri.ags.tasks.supportClasses.ProjectParameters;
             import com.esri.ags.tools.DrawTool;
             import com.esri.ags.utils.GeometryUtil;
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.AppEvent;
 
-            import mx.controls.Alert;
             import mx.rpc.AsyncResponder;
             import mx.rpc.Fault;
             import mx.rpc.events.FaultEvent;
@@ -181,16 +182,9 @@
 
                 if (configXML)
                 {
-                    if (GeometryServiceSingleton.instance.url) // using GeometryServiceSingleton
-                    {
-                        geometryService.url = GeometryServiceSingleton.instance.url;
-                        geometryService.token = GeometryServiceSingleton.instance.token;
-                        geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
-                    }
-                    else if (configXML.geometryservice.length() > 0) // look in widget's config if not using GeometryServiceSingleton
-                    {
-                        geometryService.url = configXML.geometryservice;
-                    }
+                    geometryService.url = GeometryServiceSingleton.instance.url;
+                    geometryService.token = GeometryServiceSingleton.instance.token;
+                    geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
 
                     graphicsLayer.name = configXML.layername || widgetTitle;
 
@@ -562,7 +556,6 @@
                 event.target.deactivate();
 
                 lastDrawnGraphic = event.graphic;
-                lastDrawnGraphic.autoMoveToTop = false;
 
                 var customContextMenu:ContextMenu = new ContextMenu();
                 customContextMenu.hideBuiltInItems();
@@ -926,7 +919,10 @@
                 else
                 {
                     var geographicSpatialReference:SpatialReference = new SpatialReference(EPSG_GEOGRAPHIC);
-                    geometryService.project([ geom ], geographicSpatialReference);
+                    const projectParameters:ProjectParameters = new ProjectParameters;
+                    projectParameters.geometries = [ geom ];
+                    projectParameters.outSpatialReference = geographicSpatialReference;
+                    geometryService.project(projectParameters);
                 }
             }
 
@@ -1095,7 +1091,6 @@
                     graphicsLayer.remove(getMeasurementGraphic(lastDrawnGraphic));
                     gra.name = lastDrawnGraphic.id;
                 }
-                gra.autoMoveToTop = false;
                 gra.symbol = txtSym;
                 gra.mouseEnabled = false;
                 gra.mouseChildren = false;
@@ -1150,8 +1145,7 @@
         <esri:GeometryService id="geometryService"
                               fault="geometryService_faultHandler(event)"
                               projectComplete="geometryService_projectCompleteHandler(event)"
-                              simplifyComplete="geometryService_simplifyCompleteHandler(event)"
-                              url="http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer"/>
+                              simplifyComplete="geometryService_simplifyCompleteHandler(event)"/>
         <mx:NumberFormatter id="numFormatter"
                             precision="2"
                             useThousandsSeparator="true"/>

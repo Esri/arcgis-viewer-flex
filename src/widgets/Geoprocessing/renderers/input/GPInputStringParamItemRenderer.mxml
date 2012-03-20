@@ -19,6 +19,7 @@
 <s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
                 xmlns:s="library://ns.adobe.com/flex/spark"
                 xmlns:mx="library://ns.adobe.com/flex/mx"
+                width="100%"
                 autoDrawBackground="false">
     <fx:Script>
         <![CDATA[
@@ -64,11 +65,13 @@
     <mx:FormItem width="100%"
                  label="{data.label}"
                  required="{data.required}">
-        <s:TextInput includeInLayout="{!hasChoiceList}"
+        <s:TextInput width="70%"
+                     includeInLayout="{!hasChoiceList}"
                      text="@{data.defaultValue}"
                      toolTip="{data.toolTip}"
                      visible="{!hasChoiceList}"/>
         <mx:ComboBox id="choiceSelection"
+                     width="70%"
                      change="updateDefaultValueWithChoice()"
                      includeInLayout="{hasChoiceList}"
                      visible="{hasChoiceList}"/>

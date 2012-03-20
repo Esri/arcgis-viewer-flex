@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<configuration>
+    <taskurl>http://107.20.28.73:6080/arcgis/rest/services/Utilities/ExportWebMap/GPServer/Export%20Web%20Map%20Task</taskurl>
+    <layouttemplates defaultvalue="Landscape A0"/>
+    <formats defaultvalue="PDF"/>>
+    <title visible="false"/>
+    <author visible="false"/>
+    <usescale visible="false"/>
+    <labels>
+        <submitlabel>Save map</submitlabel>
+    </labels>
+</configuration>
+
+<!--
+    See Print widget tag reference at
+    http://links.esri.com/printwidget
+-->

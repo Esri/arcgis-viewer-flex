@@ -552,9 +552,23 @@ public class TOC extends Tree
             setLayerFadeEffect(layer);
         }
 
-        // Add a new top-level TOC item at the beginning of the list (reverse rendering order)
         var tocItem:TocMapLayerItem = new TocMapLayerItem(layer, _labelFunction, _isMapServiceOnly);
-        _tocRoots.addItemAt(tocItem, 0);
+        // need to get the true index of this layer in the map, removing any graphics layers from the equation if necessary as well as any exclude layers
+        var trueMapLayerIndex:Number = 0;
+        for each (var mapLayer:Layer in this.map.layers)
+        {
+            if (mapLayer == layer)
+            {
+                break;
+            }
+
+            if (!filterOutLayer(mapLayer)) // only increase the index if this layer is in the TOC
+            {
+                trueMapLayerIndex++;
+            }
+        }
+        // now add at the correct index       
+        _tocRoots.addItemAt(tocItem, _tocRoots.length - trueMapLayerIndex);
     }
 
     private function setLayerFadeEffect(layer:Layer):void

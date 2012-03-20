@@ -1,9 +1,9 @@
 ==========================
-ArcGIS Viewer for Flex 2.5
-build date 2011-11-30
+ArcGIS Viewer for Flex 3.0Prerelease
+build date 2012-03-15
 ==========================
 
-This file contains the complete source code for the ArcGIS Viewer for Flex 2.5.
+This file contains the complete source code for the ArcGIS Viewer for Flex 3.0Prerelease.
 
 ============================
 Getting Started - Developers
@@ -15,7 +15,7 @@ See http://links.esri.com/flexviewer-gettingstarted-developers
 
 2. Keeping "File" option selected, click "Browse..." button.
 
-3. Select flexviewer-2.5-src.zip downloaded in step 1, e.g. "C:\Documents and Settings\jack\My Documents\flexviewer-2.5-src.zip".
+3. Select flexviewer-3.0Prerelease-src.zip downloaded in step 1, e.g. "C:\Documents and Settings\jack\My Documents\flexviewer-3.0Prerelease-src.zip".
 
 4. "Extract new project to:" textbox will be automatically set to location where the project source will reside,
     e.g. "C:\Documents and Settings\jack\Adobe Flash Builder 4\FlexViewer.

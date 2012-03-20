@@ -36,6 +36,7 @@
             import com.esri.ags.geometry.Polygon;
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.symbols.Symbol;
+            import com.esri.ags.tasks.GeometryService;
             import com.esri.ags.tasks.GeometryServiceSingleton;
             import com.esri.ags.tasks.supportClasses.GPMessage;
             import com.esri.ags.tasks.supportClasses.JobInfo;
@@ -44,7 +45,6 @@
             import com.esri.ags.utils.GeometryUtil;
             import com.esri.ags.utils.GraphicUtil;
             import com.esri.viewer.AppEvent;
-            import com.esri.viewer.ViewerContainer;
             import com.esri.viewer.utils.ErrorMessageUtil;
             import com.esri.viewer.utils.GenericJSONTask;
 
@@ -124,12 +124,9 @@
 
                 if (configXML)
                 {
-                    if (GeometryServiceSingleton.instance.url) // using GeometryServiceSingleton
-                    {
-                        geometryService.url = GeometryServiceSingleton.instance.url;
-                        geometryService.token = GeometryServiceSingleton.instance.token;
-                        geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
-                    }
+                    geometryService.url = GeometryServiceSingleton.instance.url;
+                    geometryService.token = GeometryServiceSingleton.instance.token;
+                    geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
 
                     // TODO: check for non-existance
                     gpURL = String(configXML.dataextractionservice);
@@ -707,16 +704,15 @@
 
         <esri:GeometryService id="geometryService"
                               fault="geometryService_faultHandler(event)"
-                              simplifyComplete="geometryService_simplifyHandler(event)"
-                              url="http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer"/>
-        <!-- GP -->
+                              simplifyComplete="geometryService_simplifyHandler(event)"/>
+
         <esri:Geoprocessor id="gp"
                            concurrency="last"
                            fault="gp_faultHandler(event)"
                            getResultDataComplete="gp_getResultDataCompleteHandler(event)"
                            jobComplete="gp_jobCompleteHandler(event)"
                            url="{gpURL}"/>
-        <!-- Effects and Filters-->
+
         <s:GlowFilter id="glowFilter"
                       alpha="1"
                       color="{getStyle('focusColor')}"

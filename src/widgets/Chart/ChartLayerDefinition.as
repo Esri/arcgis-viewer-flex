@@ -21,6 +21,8 @@ public class ChartLayerDefinition
     public var label:String;
     public var url:String;
     public var labelField:String;
+    public var where:String;
+    public var useMaxAllowableOffset:Boolean;
     public var fieldInfos:Array;
     public var mediaInfos:Array;
 }

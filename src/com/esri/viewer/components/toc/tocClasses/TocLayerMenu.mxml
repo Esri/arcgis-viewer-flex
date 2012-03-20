@@ -41,12 +41,12 @@
             import com.esri.ags.layers.OpenStreetMapLayer;
             import com.esri.ags.layers.WMSLayer;
             import com.esri.ags.tasks.GeometryServiceSingleton;
+            import com.esri.ags.tasks.supportClasses.ProjectParameters;
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.components.toc.TOC;
-            
+
             import mx.collections.ArrayCollection;
-            import mx.core.FlexGlobals;
             import mx.events.FlexEvent;
             import mx.managers.PopUpManager;
 
@@ -59,12 +59,9 @@
 
             private function bordercontainer1_initializeHandler(event:FlexEvent):void
             {
-                if (GeometryServiceSingleton.instance.url) // using GeometryServiceSingleton
-                {
-                    geometryService.url = GeometryServiceSingleton.instance.url;
-                    geometryService.token = GeometryServiceSingleton.instance.token;
-                    geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
-                }
+                geometryService.url = GeometryServiceSingleton.instance.url;
+                geometryService.token = GeometryServiceSingleton.instance.token;
+                geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
             }
 
             public function popUpForItem(parent:DisplayObject, item:Object, map:Map, atX:Number, atY:Number):void
@@ -114,9 +111,15 @@
                         }
                     }
                     // based on layer type, add Description/Download label
-                    this.descriptionOrDownloadLabel.text = layer is KMLLayer ? resourceManager.getString("ViewerStrings", "tocMapLayerDownloadLabel") : resourceManager.getString("ViewerStrings", "tocMapLayerDescriptionLabel");
-                    this.descriptionOrDownloadLabel.enabled = !(layer is FeatureLayer && FeatureLayer(layer).featureCollection);
-                    
+                    if (layer is KMLLayer)
+                    {
+                        this.descriptionOrDownloadLabel.text = resourceManager.getString("ViewerStrings", "tocMapLayerDownloadLabel");
+                    }
+                    else
+                    {
+                        this.descriptionOrDownloadLabel.text = resourceManager.getString("ViewerStrings", "tocMapLayerDescriptionLabel");
+                    }
+
                     if (!layer.initialExtent)
                     {
                         this.zoomToGroup.enabled = false;
@@ -132,20 +135,20 @@
             }
 
             private function zoomToLabel_clickHandler(event:MouseEvent):void
-            {   
+            {
                 //remove transparency menu item
                 if (_transparencyMenuItem)
                 {
                     PopUpManager.removePopUp(_transparencyMenuItem);
                     _transparencyMenuItem = null;
                 }
-                
+
                 var layerExtent:Extent = _layer.initialExtent;
                 if (_map.extent.spatialReference.wkid != layerExtent.spatialReference.wkid)
                 {
                     // convert client side.
                     if (WEB_MERCATOR_IDS.indexOf(_map.extent.spatialReference.wkid) != -1 && layerExtent.spatialReference.wkid == 4326)
-                    {   
+                    {
                         // clip the layer extent, so it's not going to Infinity; otherwise gives an error
                         layerExtent.xmin = Math.max(layerExtent.xmin, -180);
                         layerExtent.xmax = Math.min(layerExtent.xmax, 180);
@@ -161,12 +164,14 @@
                     }
                     else
                     {
-                        // use geometryService.project()
-                        geometryService.project([ layerExtent ], _map.extent.spatialReference);
+                        const projectParameters:ProjectParameters = new ProjectParameters;
+                        projectParameters.geometries = [ layerExtent ];
+                        projectParameters.outSpatialReference = _map.extent.spatialReference
+                        geometryService.project(projectParameters);
                     }
                 }
                 else
-                {   
+                {
                     updateMapExtent(layerExtent);
                 }
             }
@@ -191,8 +196,8 @@
                 {
                     _transparencyMenuItem = new TransparencyMenuItem();
 
-                    _transparencyMenuItem.x = FlexGlobals.topLevelApplication.layoutDirection == "rtl" ? this.x + (_transparencyMenuItem.width - 50) : this.x - _transparencyMenuItem.width;
-                    _transparencyMenuItem.y = this.y;
+                    _transparencyMenuItem.x = this.x - _transparencyMenuItem.width;
+                    _transparencyMenuItem.y = event.stageY - (_transparencyMenuItem.height / 2); // allign with the layer option popup
                     _transparencyMenuItem.layer = _layer;
                     PopUpManager.addPopUp(_transparencyMenuItem, this.parent);
                 }
@@ -219,7 +224,7 @@
             }
 
             private function moveDownLabel_clickHandler(event:MouseEvent):void
-            {                   
+            {
                 var currentIndex:Number = 0;
                 for each (var layer:Layer in getLayersAfterRemovingHiddenLayers(_map.layers as ArrayCollection))
                 {
@@ -232,27 +237,21 @@
                 _map.reorderLayer(_layer.id, currentIndex - 1);
                 remove();
             }
-            
+
             private function getLayersAfterRemovingHiddenLayers(layers:ArrayCollection):Array
             {
-                var result:Array=[];
-                for (var i:int=0; i < layers.length; i++)
-                {   
+                var result:Array = [];
+                for (var i:int = 0; i < layers.length; i++)
+                {
                     const layer:Layer = layers.getItemAt(i) as Layer;
                     if (layer.name.indexOf("hiddenLayer_") != -1 || (layer is GraphicsLayer && !(layer is FeatureLayer)))
                     {
-                        continue
+                        continue;
                     }
                     result.push(layers.getItemAt(i));
                 }
-                return result; 
+                return result;
             }
-
-//            private function removeLabel_clickHandler(event:MouseEvent):void
-//            {
-//                _map.removeLayer(_layer);
-//                remove();
-//            }
 
             private function descriptionOrDownloadLabel_clickHandler(event:MouseEvent):void
             {
@@ -305,9 +304,7 @@
         ]]>
     </fx:Script>
     <fx:Declarations>
-        <esri:GeometryService id="geometryService"
-                              projectComplete="geometryService_projectCompleteHandler(event)"
-                              url="http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer"/>
+        <esri:GeometryService id="geometryService" projectComplete="geometryService_projectCompleteHandler(event)"/>
     </fx:Declarations>
     <s:layout>
         <s:VerticalLayout gap="0"/>
@@ -375,16 +372,6 @@
                      rollOver="label_rollOverHandler(event)"
                      text="{resourceManager.getString('ViewerStrings', 'tocMapLayerMoveDownLabel')}"/>
         </s:HGroup>
-        <!--
-        <s:HGroup buttonMode="true" verticalAlign="bottom">
-            <mx:Image click="removeLabel_clickHandler(event)" source="assets/images/LayerRemove16.png"/>
-            <s:Label id="removeLabel"
-                     click="removeLabel_clickHandler(event)"
-                     rollOut="label_rollOutHandler(event)"
-                     rollOver="label_rollOverHandler(event)"
-                     text="{resourceManager.getString('ViewerStrings', 'tocMapLayerRemoveLabel')}"/>
-        </s:HGroup>
-        -->
     </s:VGroup>
     <mx:HRule width="100%"
               strokeColor="{getStyle('accentColor')}"

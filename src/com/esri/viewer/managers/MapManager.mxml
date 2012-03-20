@@ -17,7 +17,7 @@
 ///////////////////////////////////////////////////////////////////////////
 -->
 <!---
-    Class used to configure the viewer map component (including layers) and handle map navigation modes.
+Class used to configure the viewer map component (including layers) and handle map navigation modes.
 -->
 <s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
                       xmlns:s="library://ns.adobe.com/flex/spark"
@@ -50,8 +50,12 @@
             import com.esri.ags.layers.Layer;
             import com.esri.ags.layers.OpenStreetMapLayer;
             import com.esri.ags.layers.WMSLayer;
+            import com.esri.ags.layers.WMTSLayer;
+            import com.esri.ags.layers.supportClasses.Field;
+            import com.esri.ags.layers.supportClasses.LayerDetails;
             import com.esri.ags.layers.supportClasses.LayerInfoWindowRenderer;
             import com.esri.ags.layers.supportClasses.StaticLayer_m_esriLogo;
+            import com.esri.ags.layers.supportClasses.TableDetails;
             import com.esri.ags.symbols.PictureMarkerSymbol;
             import com.esri.ags.symbols.SimpleFillSymbol;
             import com.esri.ags.symbols.SimpleLineSymbol;
@@ -90,6 +94,7 @@
             import mx.utils.StringUtil;
 
             import spark.components.Group;
+            import spark.globalization.SortingCollator;
 
             private const MAP_MANAGER:String = "MapManager";
 
@@ -149,8 +154,14 @@
 
             private var m_operationalLayers:Array = [];
 
+            private var m_sortingCollator:SortingCollator;
+
             private function this_creationCompleteHandler():void
             {
+                // for ordering popup fields
+                m_sortingCollator = new SortingCollator;
+                m_sortingCollator.setStyle("locale", resourceManager.localeChain[0]);
+
                 m_osmCopyrightManager = new OpenStreetMapCopyrightManager(map);
 
                 AppEvent.addListener(AppEvent.CONFIG_LOADED, configLoadedHandler);
@@ -233,12 +244,12 @@
                 infoContainer.setStyle("borderSkin", null);
 
                 /* Adding these two lines removes the container that displays below the header controller in graphical theme
-                   but increases CPU usage.
-                   TODO: Need to convert see if this is needed. if yes, then could be replaced by Group
+                but increases CPU usage.
+                TODO: Need to convert see if this is needed. if yes, then could be replaced by Group
 
-                   infoContainer.x = -100
-                   infoContainer.y = -100
-                 */
+                infoContainer.x = -100
+                infoContainer.y = -100
+                */
                 infoContainer.percentWidth = 100;
                 infoContainer.percentHeight = 100;
                 infoContainer.horizontalScrollPolicy = "off";
@@ -377,10 +388,6 @@
                     else if (id == "panEasingFactor")
                     {
                         map.panEasingFactor = m_configData.mapAttrs[i].panEasingFactor;
-                    }
-                    else if (id == "units")
-                    {
-                        map.units = m_configData.mapAttrs[i].units;
                     }
                     else if (id == "lods")
                     {
@@ -526,8 +533,10 @@
                 const culture:String = layerObject.culture;
                 const definitionExpression:String = layerObject.definitionExpression;
                 const displayLevels:String = layerObject.displayLevels;
+                const gdbVersion:String = layerObject.gdbVersion;
                 const imageFormat:String = layerObject.imageFormat;
                 const label:String = layerObject.label;
+                const layerId:String = layerObject.layerId;
                 const maxAllowableOffset:Number = layerObject.maxAllowableOffset;
                 const mode:String = layerObject.mode;
                 const noData:Number = Number(layerObject.noData);
@@ -535,6 +544,7 @@
                 const proxyUrl:String = m_configData.proxyUrl;
                 const serviceHost:String = layerObject.serviceHost;
                 const serviceName:String = layerObject.serviceName;
+                const serviceMode:String = layerObject.serviceMode;
                 const serviceURL:String = layerObject.serviceURL;
                 const skipGetCapabilities:String = layerObject.skipGetCapabilities;
                 const style:String = layerObject.style;
@@ -609,6 +619,10 @@
                         {
                             dynLayer.proxyURL = proxyUrl;
                         }
+                        if (gdbVersion)
+                        {
+                            dynLayer.gdbVersion = gdbVersion;
+                        }
                         layerObject.layer = dynLayer;
                         dynLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
                         dynLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
@@ -628,6 +642,10 @@
                         featureLayer.visible = visible;
                         featureLayer.useMapTime = useMapTime;
                         featureLayer.clusterer = clusterer;
+                        if (gdbVersion)
+                        {
+                            featureLayer.gdbVersion = gdbVersion;
+                        }
                         if (useAMF)
                         {
                             featureLayer.useAMF = (useAMF == "true");
@@ -647,9 +665,9 @@
                         // example for hard-coding layer symbology, e.g. for pre-10.0 ArcGIS Servers
                         /* if (label == "Traffic Cameras") // the layer label in main configuration file
                         {
-                            var picSymbol:PictureMarkerSymbol = new PictureMarkerSymbol("assets/images/i_camera.png",30,30,0,0,0);
-                            var rend:Renderer = new SimpleRenderer(picSymbol);
-                            featureLayer.renderer = rend;
+                        var picSymbol:PictureMarkerSymbol = new PictureMarkerSymbol("assets/images/i_camera.png",30,30,0,0,0);
+                        var rend:Renderer = new SimpleRenderer(picSymbol);
+                        featureLayer.renderer = rend;
                         } */
                         layerObject.layer = featureLayer;
                         featureLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
@@ -803,6 +821,35 @@
                         map.addLayer(wmsLayer);
                         break;
                     }
+                    case "wmts":
+                    {
+                        var wmtsLayer:WMTSLayer = new WMTSLayer(url);
+                        wmtsLayer.alpha = alpha;
+                        wmtsLayer.id = label;
+                        wmtsLayer.name = label;
+                        wmtsLayer.visible = visible;
+                        if (imageFormat)
+                        {
+                            wmtsLayer.imageFormat = imageFormat;
+                        }
+                        if (proxyUrl && useProxy)
+                        {
+                            wmtsLayer.proxyURL = proxyUrl;
+                        }
+                        if (serviceMode)
+                        {
+                            wmtsLayer.serviceMode = serviceMode;
+                        }
+                        if (layerId)
+                        {
+                            wmtsLayer.layerId = layerId;
+                        }
+                        layerObject.layer = wmtsLayer;
+                        wmtsLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
+                        wmtsLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
+                        map.addLayer(wmtsLayer);
+                        break;
+                    }
                     case "osm":
                     {
                         var osmLayer:OpenStreetMapLayer = new OpenStreetMapLayer();
@@ -827,6 +874,10 @@
                         {
                             kmlLayer.serviceURL = serviceURL;
                         }
+                        if (autoRefresh > 0)
+                        {
+                            setInterval(kmlLayer.refresh, autoRefresh * 1000);
+                        }
                         kmlLayer.visible = visible;
                         layerObject.layer = kmlLayer;
                         kmlLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
@@ -848,8 +899,11 @@
                 event.layer.removeEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
                 event.layer.removeEventListener(LayerEvent.LOAD, layer_loadEvent);
 
-                var errorMessage:String = event.layer.name + " layer failed to load: " + makeHTMLSafe(buildFaultMessage(event.fault));
-                AppEvent.showError(errorMessage, MAP_MANAGER);
+                if (event.fault.faultString != "LOGIN ABORTED")
+                {
+                    var errorMessage:String = event.layer.name + " layer failed to load: " + makeHTMLSafe(buildFaultMessage(event.fault));
+                    AppEvent.showError(errorMessage, MAP_MANAGER);
+                }
             }
 
             private function layer_loadEvent(event:LayerEvent):void
@@ -908,7 +962,7 @@
             {
                 if (layerObject.layer is ArcGISDynamicMapServiceLayer || layerObject.layer is ArcGISTiledMapServiceLayer)
                 {
-                    // look at the sublayers
+                    // look at the sublayers                   
                     var subLayers:Array = layerObject.subLayers as Array;
                     if ((subLayers).length > 0)
                     {
@@ -1122,97 +1176,276 @@
 
                 function createPopUpRenderer(isOptLayer:Boolean, arr:Array, arrLayerInfoWindowRenderer:Array = null):void
                 {
-                    for (var p:int = 0; p < arr.length; p++)
+                    var index:int = 0;
+                    parseArray(index, isOptLayer, arr, arrLayerInfoWindowRenderer);
+                }
+
+                function parseArray(index:int, isOptLayer:Boolean, arr:Array, arrLayerInfoWindowRenderer:Array):void
+                {
+                    if (index < arr.length)
                     {
-                        var popUpConfigXML:XML = arr[p].popUpConfigXML;
+                        var popUpConfigXML:XML = arr[index].popUpConfigXML;
                         var popUpInfo:PopUpInfo = new PopUpInfo();
                         var i:int;
                         if (popUpConfigXML.fields[0])
                         {
                             var fields:XMLList = popUpConfigXML.fields[0].field;
+                            var fieldsOrder:String = popUpConfigXML.fields[0].@order;
 
                             var pFieldInfos:Array = [];
-                            for (i = 0; i < fields.length(); i++)
+                            var arrFields:Array = [];
+                            if (fieldsOrder && (fieldsOrder == "alphabetical" || fieldsOrder == "default"))
                             {
-                                var pFieldInfo:PopUpFieldInfo = new PopUpFieldInfo();
-                                pFieldInfo.fieldName = fields[i].@name;
-                                if (fields[i].@alias[0])
+                                // get the fields from the layer
+                                var fieldNames:Array = [];
+                                var layer:Layer = arr[index].layer;
+                                if (layer is ArcGISDynamicMapServiceLayer || layer is ArcGISTiledMapServiceLayer)
                                 {
-                                    pFieldInfo.label = fields[i].@alias;
+                                    if (arr[index].isSublayer)
+                                    {
+                                        var layerId:Number = arr[index].layerInfoWindowRenderer.layerId;
+                                        if (layer is ArcGISDynamicMapServiceLayer)
+                                        {
+                                            ArcGISDynamicMapServiceLayer(layer).getDetails(layerId, new AsyncResponder(myResultFunction, myFaultFunction));
+                                        }
+                                        else
+                                        {
+                                            ArcGISTiledMapServiceLayer(layer).getDetails(layerId, new AsyncResponder(myResultFunction, myFaultFunction));
+                                        }
+                                    }
                                 }
-                                pFieldInfo.visible = fields[i].@visible == "true";
+                                else if (layer is FeatureLayer)
+                                {
+                                    if (FeatureLayer(layer).layerDetails)
+                                    {
+                                        for each (var field:Field in FeatureLayer(layer).layerDetails.fields)
+                                        {
+                                            fieldNames.push(field.name);
+                                        }
+                                    }
+                                    else if (FeatureLayer(layer).tableDetails)
+                                    {
+                                        for each (var field1:Field in FeatureLayer(layer).tableDetails.fields)
+                                        {
+                                            fieldNames.push(field1.name);
+                                        }
+                                    }
+                                    for (i = 0; i < fields.length(); i++)
+                                    {
+                                        var order:int;
+                                        if (fieldsOrder == "default")
+                                        {
+                                            order = getFormItemOrderBasedOnFields(fields[i].@name, fieldNames)
+                                        }
+                                        arrFields.push({ label: fields[i].@alias[0] ? fields[i].@alias : fields[i].@name, order: order, fieldXML: fields[i]});
+                                    }
+                                    arrFields.sort(compareFunction);
+                                    parseArrFields(arrFields);
+                                    parseRestPopUpConfig(popUpConfigXML);
+
+                                    var popUpRenderer:ClassFactory = new ClassFactory(PopUpRenderer);
+                                    popUpRenderer.properties = { popUpInfo: popUpInfo };
+
+                                    arr[index].layer.infoWindowRenderer = popUpRenderer;
+                                }
+
+                                function myResultFunction(result:Object, token:Object = null):void
+                                {
+                                    if (result is LayerDetails)
+                                    {
+                                        for each (var field:Field in LayerDetails(result).fields)
+                                        {
+                                            fieldNames.push(field.name);
+                                        }
+                                    }
+                                    else if (result is TableDetails)
+                                    {
+                                        for each (var field1:Field in LayerDetails(result).fields)
+                                        {
+                                            fieldNames.push(field1.name);
+                                        }
+                                    }
+
+                                    for (i = 0; i < fields.length(); i++)
+                                    {
+                                        var order:int;
+                                        if (fieldsOrder == "fields")
+                                        {
+                                            order = getFormItemOrderBasedOnFields(fields[i].@name, fieldNames)
+                                        }
+                                        arrFields.push({ label: fields[i].@alias[0] ? fields[i].@alias : fields[i].@name, order: order, fieldXML: fields[i]});
+                                    }
+                                    arrFields.sort(compareFunction);
+                                    parseArrFields(arrFields);
+                                    parseRestPopUpConfig(popUpConfigXML);
+
+                                    var popUpRenderer:ClassFactory = new ClassFactory(PopUpRenderer);
+                                    popUpRenderer.properties = { popUpInfo: popUpInfo };
+                                    arr[index].layerInfoWindowRenderer.infoWindowRenderer = popUpRenderer;
+                                    arrLayerInfoWindowRenderer.push(arr[index].layerInfoWindowRenderer);
+                                    if (index == arr.length - 1)
+                                    {
+                                        arr[index].layer.layerInfoWindowRenderers = arrLayerInfoWindowRenderer;
+                                    }
+
+                                    index++;
+                                    parseArray(index, isOptLayer, arr, arrLayerInfoWindowRenderer);
+                                }
+
+                                function myFaultFunction(fault:Fault):void
+                                {
+                                    index++;
+                                    parseArray(index, isOptLayer, arr, arrLayerInfoWindowRenderer);
+                                }
+                            }
+                            else
+                            {
+                                for (i = 0; i < fields.length(); i++)
+                                {
+                                    arrFields.push({ fieldXML: fields[i]});
+                                }
+                                parseArrFields(arrFields);
+                                parseRestPopUpConfig(popUpConfigXML);
+                                setPopUpRendererOnLayer();
+
+                                index++;
+                                parseArray(index, isOptLayer, arr, arrLayerInfoWindowRenderer);
+                            }
+                        }
+                        else
+                        {
+                            parseRestPopUpConfig(popUpConfigXML);
+                            setPopUpRendererOnLayer();
+
+                            index++;
+                            parseArray(index, isOptLayer, arr, arrLayerInfoWindowRenderer);
+                        }
+
+                        function parseArrFields(arrFields:Array):void
+                        {
+                            for (i = 0; i < arrFields.length; i++)
+                            {
+                                var field:XML = arrFields[i].fieldXML;
+
+                                var pFieldInfo:PopUpFieldInfo = new PopUpFieldInfo();
+                                pFieldInfo.fieldName = field.@name;
+                                if (field.@alias[0])
+                                {
+                                    pFieldInfo.label = field.@alias;
+                                }
+                                pFieldInfo.visible = field.@visible == "true";
 
                                 pFieldInfo.format = new PopUpFieldFormat();
-                                if (fields[i].format.@dateformat[0])
+                                if (field.format.@dateformat[0])
                                 {
-                                    pFieldInfo.format.dateFormat = fields[i].format.@dateformat;
+                                    pFieldInfo.format.dateFormat = field.format.@dateformat;
                                 }
-                                if (fields[i].format.@precision[0])
+                                if (field.format.@precision[0])
                                 {
-                                    pFieldInfo.format.precision = fields[i].format.@precision;
+                                    pFieldInfo.format.precision = field.format.@precision;
                                 }
-                                if (fields[i].format.@usethousandsseparator[0])
+                                if (field.format.@usethousandsseparator[0])
                                 {
-                                    pFieldInfo.format.useThousandsSeparator = fields[i].format.@usethousandsseparator == "true";
+                                    pFieldInfo.format.useThousandsSeparator = field.format.@usethousandsseparator == "true";
                                 }
-                                if (fields[i].format.@useutc[0])
+                                if (field.format.@useutc[0])
                                 {
-                                    pFieldInfo.format.useUTC = fields[i].format.@useutc == "true";
+                                    pFieldInfo.format.useUTC = field.format.@useutc == "true";
                                 }
                                 pFieldInfos.push(pFieldInfo);
                             }
                             popUpInfo.popUpFieldInfos = pFieldInfos;
                         }
-                        if (popUpConfigXML.medias[0])
+
+                        function parseRestPopUpConfig(popUpConfigXML:XML):void
                         {
-                            var medias:XMLList = popUpConfigXML.medias[0].media;
-
-                            var pMediaInfos:Array = [];
-                            for (i = 0; i < medias.length(); i++)
+                            if (popUpConfigXML.medias[0])
                             {
-                                var pMediaInfo:PopUpMediaInfo = new PopUpMediaInfo();
-                                pMediaInfo.caption = medias[i].@caption;
-                                pMediaInfo.title = medias[i].@title;
-                                pMediaInfo.type = medias[i].@type;
-                                pMediaInfo.imageLinkURL = medias[i].@imagelink;
-                                pMediaInfo.imageSourceURL = medias[i].@imagesource;
+                                var medias:XMLList = popUpConfigXML.medias[0].media;
 
-                                if (medias[i].@chartfields[0])
+                                var pMediaInfos:Array = [];
+                                for (i = 0; i < medias.length(); i++)
                                 {
-                                    var chartFields:Array = medias[i].@chartfields.split(",");
-                                    pMediaInfo.chartFields = chartFields;
+                                    var pMediaInfo:PopUpMediaInfo = new PopUpMediaInfo();
+                                    pMediaInfo.caption = medias[i].@caption;
+                                    pMediaInfo.title = medias[i].@title;
+                                    pMediaInfo.type = medias[i].@type;
+                                    pMediaInfo.imageLinkURL = medias[i].@imagelink;
+                                    pMediaInfo.imageSourceURL = medias[i].@imagesource;
+
+                                    if (medias[i].@chartfields[0])
+                                    {
+                                        var chartFields:Array = medias[i].@chartfields.split(",");
+                                        pMediaInfo.chartFields = chartFields;
+                                    }
+
+                                    pMediaInfos.push(pMediaInfo);
                                 }
-
-                                pMediaInfos.push(pMediaInfo);
+                                popUpInfo.popUpMediaInfos = pMediaInfos;
                             }
-                            popUpInfo.popUpMediaInfos = pMediaInfos;
-                        }
-                        popUpInfo.title = popUpConfigXML.title;
-                        popUpInfo.description = popUpConfigXML.description;
-                        if (popUpConfigXML.showattachments[0])
-                        {
-                            popUpInfo.showAttachments = popUpConfigXML.showattachments == "true";
-                        }
-
-                        var popUpRenderer:ClassFactory = new ClassFactory(PopUpRenderer);
-                        popUpRenderer.properties = { popUpInfo: popUpInfo };
-
-                        if (arr[p].isSublayer)
-                        {
-                            arr[p].layerInfoWindowRenderer.infoWindowRenderer = popUpRenderer;
-                            arrLayerInfoWindowRenderer.push(arr[p].layerInfoWindowRenderer);
-                            if (p == arr.length - 1)
+                            popUpInfo.title = popUpConfigXML.title;
+                            popUpInfo.description = popUpConfigXML.description;
+                            if (popUpConfigXML.showattachments[0])
                             {
-                                arr[p].layer.layerInfoWindowRenderers = arrLayerInfoWindowRenderer;
+                                popUpInfo.showAttachments = popUpConfigXML.showattachments == "true";
                             }
                         }
-                        else
+
+                        function setPopUpRendererOnLayer():void
                         {
-                            arr[p].layer.infoWindowRenderer = popUpRenderer;
+                            var popUpRenderer1:ClassFactory = new ClassFactory(PopUpRenderer);
+                            popUpRenderer1.properties = { popUpInfo: popUpInfo };
+                            if (arr[index].isSublayer)
+                            {
+                                arr[index].layerInfoWindowRenderer.infoWindowRenderer = popUpRenderer1;
+                                arrLayerInfoWindowRenderer.push(arr[index].layerInfoWindowRenderer);
+                                if (index == arr.length - 1)
+                                {
+                                    arr[index].layer.layerInfoWindowRenderers = arrLayerInfoWindowRenderer;
+                                }
+                            }
+                            else
+                            {
+                                arr[index].layer.infoWindowRenderer = popUpRenderer1;
+                            }
                         }
                     }
                     loadNextOperationalOrBasemapLayer(isOptLayer);
                 }
+            }
+
+            private function getFormItemOrderBasedOnFields(fieldName:String, fieldNames:Array):int
+            {
+                var result:int;
+
+                for (var i:int = 0; i < fieldNames.length; )
+                {
+                    if (fieldName == fieldNames[i])
+                    {
+                        result = i + 1; // make sure that 0 is never returned
+                        break;
+                    }
+                    else
+                    {
+                        i++
+                    }
+                }
+
+                return result;
+            }
+
+
+            private function compareFunction(lhs:Object, rhs:Object):Number
+            {
+                if (lhs.order < rhs.order)
+                {
+                    return -1;
+                }
+                if (lhs.order > rhs.order)
+                {
+                    return 1;
+                }
+                return m_sortingCollator.compare(lhs.label, rhs.label);
             }
 
             private function getLayerDefinitions(subLayers:Array):Array

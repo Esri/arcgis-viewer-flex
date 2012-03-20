@@ -31,7 +31,7 @@
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.layers.KMLLayer;
             import com.esri.ags.layers.Layer;
-            
+
             import mx.collections.ArrayCollection;
 
             private var legendLayers:Array;
@@ -123,7 +123,7 @@
             private function isLayerShownInLegend(layer:Layer):Boolean
             {
                 // filter layers which can't be shown in legend
-                if (!(layer.name.indexOf("hiddenLayer_") == -1 && 
+                if (!(layer.name.indexOf("hiddenLayer_") == -1 &&
                     (layer is FeatureLayer || layer is ArcGISDynamicMapServiceLayer || layer is ArcGISTiledMapServiceLayer || layer is KMLLayer)))
                 {
                     return false;

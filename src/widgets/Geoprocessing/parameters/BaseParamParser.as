@@ -17,7 +17,7 @@ package widgets.Geoprocessing.parameters
 {
 
 import com.esri.ags.renderers.ClassBreaksRenderer;
-import com.esri.ags.renderers.Renderer;
+import com.esri.ags.renderers.IRenderer;
 import com.esri.ags.renderers.SimpleRenderer;
 import com.esri.ags.renderers.UniqueValueRenderer;
 import com.esri.ags.renderers.supportClasses.ClassBreakInfo;
@@ -35,9 +35,9 @@ public class BaseParamParser
         throw new Error("Abstract class - must be implemented by subclasses.");
     }
 
-    protected function parseRenderer(rendererXML:XML, geometryType:String):Renderer
-    {   
-        var renderer:Renderer
+    protected function parseRenderer(rendererXML:XML, geometryType:String):IRenderer
+    {
+        var renderer:IRenderer
 
         if (rendererXML)
         {
@@ -85,15 +85,15 @@ public class BaseParamParser
     private function parseSymbol(symbolXML:XML, geometryType:String):Symbol
     {
         var symbol:Symbol;
-        var symbolType:String = symbolXML.@type;        
-       
+        var symbolType:String = symbolXML.@type;
+
         switch (geometryType)
         {
             case FeatureLayerParameter.POINT:
             {
                 if (symbolType == FeatureLayerParameter.SIMPLE_MARKER || symbolType == FeatureLayerParameter.PICTURE_MARKER)
                 {
-                    symbol = symbolType == FeatureLayerParameter.SIMPLE_MARKER ? parseSimpleMarkerSymbol(symbolXML) : parsePictureMarkerSymbol(symbolXML); 
+                    symbol = symbolType == FeatureLayerParameter.SIMPLE_MARKER ? parseSimpleMarkerSymbol(symbolXML) : parsePictureMarkerSymbol(symbolXML);
                 }
                 else
                 {
@@ -103,15 +103,15 @@ public class BaseParamParser
             }
             case FeatureLayerParameter.POLYLINE:
             {
-                symbol =  symbolType == FeatureLayerParameter.SIMPLE_LINE ? parseSimpleLineSymbol(symbolXML) : createDefaultSymbolFromGeometry(geometryType);
+                symbol = symbolType == FeatureLayerParameter.SIMPLE_LINE ? parseSimpleLineSymbol(symbolXML) : createDefaultSymbolFromGeometry(geometryType);
                 break;
             }
             case FeatureLayerParameter.POLYGON:
             {
-                symbol =  symbolType == FeatureLayerParameter.SIMPLE_FILL ? parseSimpleFillSymbol(symbolXML) : createDefaultSymbolFromGeometry(geometryType);
+                symbol = symbolType == FeatureLayerParameter.SIMPLE_FILL ? parseSimpleFillSymbol(symbolXML) : createDefaultSymbolFromGeometry(geometryType);
                 break;
-            }                             
-        }                  
+            }
+        }
 
         return symbol;
     }
@@ -185,7 +185,7 @@ public class BaseParamParser
             simpleLineSymbol.alpha = symbolXML.@alpha;
         }
         if (symbolXML.outline.@color[0])
-        {   
+        {
             simpleLineSymbol.color = symbolXML.outline.@color;
         }
         if (symbolXML.outline.@width[0])

@@ -1,10 +1,6 @@
 <?xml version="1.0"?>
 <configuration label="Charts (example)">
     <highlightcolor>0x336699</highlightcolor>
-    <labels>
-        <layerselectionlabel>Select layer</layerselectionlabel>
-        <drawtoolmenulabel>Select draw tool</drawtoolmenulabel>
-    </labels>
     <layers>
         <!-- The label of this layers refer to a layer added in the main configuration file-->
         <layer label="USA Diversity Index">

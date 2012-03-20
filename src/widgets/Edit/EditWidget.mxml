@@ -39,6 +39,8 @@
     <fx:Script>
         <![CDATA[
             import com.esri.ags.Graphic;
+            import com.esri.ags.components.IdentityManager;
+            import com.esri.ags.events.AttributeInspectorEvent;
             import com.esri.ags.events.FeatureLayerEvent;
             import com.esri.ags.events.LayerEvent;
             import com.esri.ags.events.MapEvent;
@@ -51,9 +53,9 @@
             import com.esri.ags.layers.supportClasses.LayerInfo;
             import com.esri.ags.skins.supportClasses.AttachmentMouseEvent;
             import com.esri.ags.tasks.GeometryServiceSingleton;
-            import com.esri.ags.utils.JSON;
+            import com.esri.ags.utils.JSONUtil;
             import com.esri.viewer.AppEvent;
-            
+
             import mx.binding.utils.ChangeWatcher;
             import mx.collections.ArrayCollection;
             import mx.core.FlexGlobals;
@@ -94,6 +96,7 @@
             private var noEditableLayersText:String;
 
             private var visibleLayersChangeWatcher:ChangeWatcher;
+            private var activeFeatureChangeWatcher:ChangeWatcher;
 
             private function basewidget_widgetConfigLoaded(event:Event):void
             {
@@ -113,8 +116,7 @@
                         geometryService.url = configXML.geometryservice;
                     }
 
-                    const configToolbarVisible:Boolean = configXML.toolbarvisible == "true";
-                    editor.toolbarVisible = configToolbarVisible;
+                    editor.toolbarVisible = configXML.toolbarvisible == "true";
 
                     const configToolbarCutVisible:Boolean = configXML.toolbarcutvisible == "true";
                     editor.toolbarCutVisible = configToolbarCutVisible;
@@ -185,6 +187,30 @@
                     }
                     editor.updateGeometryEnabled = updateGeometry;
 
+                    // showCreatorField
+                    if (configXML.showcreatorfield.length() > 0)
+                    {
+                        editor.attributeInspector.showCreatorField = configXML.showcreatorfield == "true";
+                    }
+
+                    // showCreationDateField
+                    if (configXML.showcreationdatefield.length() > 0)
+                    {
+                        editor.attributeInspector.showCreationDateField = configXML.showcreationdatefield == "true";
+                    }
+
+                    // showEditorField
+                    if (configXML.showeditorfield.length() > 0)
+                    {
+                        editor.attributeInspector.showEditorField = configXML.showeditorfield == "true";
+                    }
+
+                    // showEditDateField
+                    if (configXML.showeditdatefield.length() > 0)
+                    {
+                        editor.attributeInspector.showEditDateField = configXML.showeditdatefield == "true";
+                    }
+
                     //labels
                     attributesLabel = configXML.labels.attributeslabel[0] || getDefaultString("attributesLabel");
                     attachmentsLabel = configXML.labels.attachmentslabel[0] || getDefaultString("attachmentsLabel");
@@ -213,21 +239,16 @@
             }
 
             private function basewidget_creationCompleteHandler(event:FlexEvent):void
-            {   
-                // do not show the template swatch for RTL
+            {
+                // do not show template swatch for RTL
                 editor.showTemplateSwatchOnCursor = FlexGlobals.topLevelApplication.layoutDirection != "rtl";
-                
+
                 editor.attributeInspector.setStyle("skinClass", EditWidgetAttributeInspectorSkin);
                 editor.attributeInspector.addEventListener("attachmentGroupClicked", attachmentGroupClickedHandler);
                 editor.attributeInspector.addEventListener("okButtonClicked", okButtonClickHandler);
+                editor.attributeInspector.addEventListener(AttributeInspectorEvent.SHOW_FEATURE, attributeInspector_showFeatureHandler);
 
                 attachmentInspector.addEventListener("attributeGroupClicked", attributeGroupClickedHandler);
-
-                //store the renderer info for each layer on map
-                for each (var layer:Layer in map.layers)
-                {
-                    storeInfoWindowRenderer(layer);
-                }
             }
 
             private function getOplayers(event:AppEvent):void
@@ -240,14 +261,19 @@
                 // all the layers except basemaps                
                 var result:Array = [];
                 var includeLayer:Boolean;
+                var dynamicBaseMapLayers:Array = [];
                 for (var i:int = layers.length - 1; i >= 0; i--)
                 {
                     includeLayer = true;
-                    var layer:Layer = layers.getItemAt(i) as Layer
+                    var layer:Layer = layers.getItemAt(i) as Layer;
                     for (var n:int = 0; n < configData.basemaps.length; )
                     {
                         if (configData.basemaps[n].label == layer.id)
                         {
+                            if (layer is ArcGISDynamicMapServiceLayer)
+                            {
+                                dynamicBaseMapLayers.push(layer);
+                            }
                             includeLayer = false;
                             break;
                         }
@@ -256,12 +282,16 @@
                             n++;
                         }
                     }
-                    if (includeLayer && !isLayerPartOfExcludeLayers(layer))
+                    if (includeLayer && !isLayerPartOfExcludeLayers(layer) && (layer is FeatureLayer || layer is ArcGISDynamicMapServiceLayer))
                     {
-                        if (layer is FeatureLayer || layer is ArcGISDynamicMapServiceLayer)
-                        {
-                            result.push(layer);
-                        }
+                        result.push(layer);
+                    }
+                }
+                for each (var dynamicBaseMapLayer:ArcGISDynamicMapServiceLayer in dynamicBaseMapLayers.reverse())
+                {
+                    if (!isLayerPartOfExcludeLayers(dynamicBaseMapLayer))
+                    {
+                        result.push(dynamicBaseMapLayer);
                     }
                 }
                 return result;
@@ -283,27 +313,40 @@
                 if (index < arrLayers.length)
                 {
                     var layer:Layer = arrLayers[index] as Layer;
-                    // only add if it is a feature layer and is editable and does not have featureCollection
-                    if ((layer is FeatureLayer && layer.name.indexOf("hiddenLayer_") == -1) && FeatureLayer(layer).isEditable && !FeatureLayer(layer).featureCollection)
+                    if (layer.loaded)
                     {
-                        // always turn the layer on by default
-                        changeOplListObjectVisibility(layer);
-                        layer.removeEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete);
-                        layer.addEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete, false, 1);
-                        featureLayers.push(layer);
-                        arrFinalLayers.push(layer);
+                        if ((layer is FeatureLayer && layer.name.indexOf("hiddenLayer_") == -1) && FeatureLayer(layer).isEditable && !FeatureLayer(layer).featureCollection)
+                        {
+                            // always turn the layer on by default
 
+                            changeOplListObjectVisibility(layer);
+                            layer.removeEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete);
+                            layer.addEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete, false, 1);
+                            featureLayers.push(layer);
+                            arrFinalLayers.push(layer);
+
+                            index++;
+                            getAllFeatureLayers(index, featureLayers);
+                        }
+                        else if (layer is ArcGISDynamicMapServiceLayer && layer.name.indexOf("hiddenLayer_") == -1)
+                        {
+                            createFeatureLayersFromDynamicMapService(ArcGISDynamicMapServiceLayer(layer), index);
+                        }
+                        else
+                        {
+                            index++;
+                            getAllFeatureLayers(index, featureLayers);
+                        }
+                    }
+                    else if (layer.loadFault)
+                    {
                         index++;
                         getAllFeatureLayers(index, featureLayers);
-                    }
-                    else if (layer is ArcGISDynamicMapServiceLayer && layer.name.indexOf("hiddenLayer_") == -1)
-                    {
-                        createFeatureLayersFromDynamicMapService(ArcGISDynamicMapServiceLayer(layer), index);
                     }
                     else
                     {
-                        index++;
-                        getAllFeatureLayers(index, featureLayers);
+                        // listen for load
+                        layer.addEventListener(LayerEvent.LOAD, layerLoadHandler);
                     }
                 }
                 else
@@ -311,9 +354,13 @@
                     deactivateEditor();
                     if (featureLayers.length > 0)
                     {
+                        noLayers.visible = noLayers.includeInLayout = false;
+                        selectTemplateLabel.visible = selectTemplateLabel.includeInLayout = true;
+
+                        //store the renderer info for each layer on map
+                        storeInfoWindowRenderer();
                         editor.map = map;
                         editor.featureLayers = featureLayers;
-
                         // infowindowLabel on the AttributeInspetor
                         editor.attributeInspector.infoWindowLabel = attributesLabel;
                     }
@@ -326,10 +373,16 @@
                 }
             }
 
+            private function layerLoadHandler(event:LayerEvent):void
+            {
+                getAllFeatureLayers(arrLayers.indexOf(event.layer), featureLayers);
+            }
+
             private function createFeatureLayersFromDynamicMapService(layer:ArcGISDynamicMapServiceLayer, index:int, onMapLayerAdd:Boolean = false):void
             {
                 // look at the url
-                var serviceURL:String = ArcGISDynamicMapServiceLayer(layer).url;
+                var serviceURL:String = layer.url;
+                var gdbVersion:String = ArcGISDynamicMapServiceLayer(layer).gdbVersion;
                 var featureServiceURL:String = serviceURL.replace("MapServer", "FeatureServer");
 
                 // send the resonse to see if it has featurelayers
@@ -337,6 +390,10 @@
                 params.f = 'json';
                 const hs:HTTPService = new HTTPService();
                 hs.url = featureServiceURL;
+                if (IdentityManager.instance.findCredential(serviceURL))
+                {
+                    hs.url += "?token=" + IdentityManager.instance.findCredential(serviceURL).token;
+                }
                 hs.useProxy = false;
                 hs.requestTimeout = 30;
                 const asyncToken:AsyncToken = hs.send(params);
@@ -344,7 +401,7 @@
 
                 function resultHandler(event:ResultEvent, token:Object = null):void
                 {
-                    const decodedObject:Object = com.esri.ags.utils.JSON.decode(event.result as String);
+                    const decodedObject:Object = JSONUtil.decode(event.result as String);
                     const layers:Array = decodedObject.layers;
                     if (layers && layers.length)
                     {
@@ -352,7 +409,7 @@
                         var candidateFeatureLayers:Array = [];
                         for (var i:int = 0; i < layers.length; )
                         {
-                            if (isFeatureLayerPartOfMap(featureServiceURL + "/" + layers[i].id))
+                            if (isFeatureLayerPartOfMap(featureServiceURL + "/" + layers[i].id, gdbVersion))
                             {
                                 atleastOneFeatureLayerAlreadyIncluded = true;
                                 break;
@@ -365,7 +422,7 @@
                         }
                         if (!atleastOneFeatureLayerAlreadyIncluded)
                         {
-                            changeOplListObjectVisibility(token.layer);
+                            //changeOplListObjectVisibility(token.layer);
 
                             var arcGISDynamicMapServiceLayer:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(token.layer);
 
@@ -376,61 +433,116 @@
                             arcGISDynamicMapServiceLayer.addEventListener(LayerEvent.IS_IN_SCALE_RANGE_CHANGE, layer_isInScaleRangeChangeHandler);
                             arcGISDynamicMapServiceLayer.addEventListener(FlexEvent.HIDE, layer_hideShowHandler);
                             arcGISDynamicMapServiceLayer.addEventListener(FlexEvent.SHOW, layer_hideShowHandler);
-                            
+
                             if (arcGISDynamicMapServiceLayer.visibleLayers)
                             {
                                 arcGISDynamicMapServiceLayer.visibleLayers.removeEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);
                                 arcGISDynamicMapServiceLayer.visibleLayers.addEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);
                             }
                             visibleLayersChangeWatcher = ChangeWatcher.watch(arcGISDynamicMapServiceLayer, "visibleLayers", visibleLayersChange);
-                            
-                            var arr:Array=[];
-                            for each (var fLayer:Object in candidateFeatureLayers)
-                            {                                   
-                                var featureLayer:FeatureLayer = new FeatureLayer;
-                                featureLayer.outFields = ['*'];
-                                featureLayer.url = featureServiceURL + "/" + fLayer.id;
-                                featureLayer.mode = FeatureLayer.MODE_SELECTION;
-                                featureLayer.name = "hiddenLayer_" + fLayer.name;
-                                featureLayer.visible = arcGISDynamicMapServiceLayer.visibleLayers ? isFeatureLayerVisible(fLayer.id, arcGISDynamicMapServiceLayer) : isFeatureLayerVisible(fLayer.id, arcGISDynamicMapServiceLayer, true);
+                            var copyLayerInfos:Array = arcGISDynamicMapServiceLayer.layerInfos;
+                            for each (var copyLayerInfo:LayerInfo in copyLayerInfos)
+                            {
+                                updateMinMaxScaleOnLayerInfos(copyLayerInfo, copyLayerInfos);
+                            }
 
-                                featureLayer.removeEventListener(FlexEvent.HIDE, featureLayer_hideShowHandler);
-                                featureLayer.removeEventListener(FlexEvent.SHOW, featureLayer_hideShowHandler);
-                                featureLayer.removeEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete);
+                            var arr:Array = [];
+                            var index1:int = 0;
+                            parseCandidateFeatureLayers(index1, candidateFeatureLayers);
 
-                                featureLayer.addEventListener(FlexEvent.HIDE, featureLayer_hideShowHandler);
-                                featureLayer.addEventListener(FlexEvent.SHOW, featureLayer_hideShowHandler);
-                                featureLayer.addEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete, false, 1);
-
-                                featureLayerToDynamicMapService[featureLayer] = arcGISDynamicMapServiceLayer;
-                                if (!onMapLayerAdd)
+                            var fLayerObject:Object;
+                            function parseCandidateFeatureLayers(index1:int, candidateFeatureLayers:Array):void
+                            {
+                                if (index1 < candidateFeatureLayers.length)
                                 {
-                                    featureLayers.push(featureLayer);
+                                    fLayerObject = candidateFeatureLayers[index1];
+                                    var featureLayer:FeatureLayer = new FeatureLayer;
+                                    featureLayer.url = featureServiceURL + "/" + fLayerObject.id;
+                                    updateFeatureLayerMinMaxScale(featureLayer, fLayerObject.id, copyLayerInfos);
+                                    featureLayer.addEventListener(LayerEvent.LOAD, featureLayerLoadHandler);
+                                    featureLayer.addEventListener(LayerEvent.LOAD_ERROR, featureLayerLoadErrorHandler);
                                 }
                                 else
                                 {
-                                    featureLayers.unshift(featureLayer);
-                                } 
-                                arr.push(featureLayer);
+                                    var indexOnMap:int = map.layerIds.indexOf(arcGISDynamicMapServiceLayer.id) + 1;
+                                    for each (var featLayer:FeatureLayer in arr.reverse())
+                                    {
+                                        map.addLayer(featLayer, indexOnMap);
+                                        indexOnMap++;
+                                    }
+                                    arrFinalLayers.push(arcGISDynamicMapServiceLayer);
+                                    if (!onMapLayerAdd)
+                                    {
+                                        index = token.count + 1;
+                                        getAllFeatureLayers(index, featureLayers);
+                                    }
+                                    else
+                                    {
+                                        deactivateEditor();
+                                        editor.featureLayers = featureLayers;
+                                        //store the renderer info for each layer on map
+                                        storeInfoWindowRenderer();
+                                    }
+                                }
                             }
-                            var indexOnMap:int = map.layerIds.indexOf(arcGISDynamicMapServiceLayer.id) + 1;
-                            for each(var featLayer:FeatureLayer in arr.reverse())
+
+                            function featureLayerLoadHandler(event:LayerEvent):void
                             {
-                                map.addLayer(featLayer, indexOnMap);
-                                indexOnMap++;
+                                var loadedFeatureLayer:FeatureLayer = event.layer as FeatureLayer;
+                                if (loadedFeatureLayer.isEditable)
+                                {
+                                    loadedFeatureLayer.outFields = [ '*' ];
+                                    loadedFeatureLayer.mode = FeatureLayer.MODE_SELECTION;
+                                    loadedFeatureLayer.gdbVersion = gdbVersion;
+                                    loadedFeatureLayer.name = "hiddenLayer_" + fLayerObject.name;
+                                    if (gdbVersion)
+                                    {
+                                        loadedFeatureLayer.name += "-" + gdbVersion;
+                                    }
+                                    if (arcGISDynamicMapServiceLayer.visible)
+                                    {
+                                        loadedFeatureLayer.visible = arcGISDynamicMapServiceLayer.visibleLayers ? isFeatureLayerVisible(fLayerObject.id, arcGISDynamicMapServiceLayer) : isFeatureLayerVisible(fLayerObject.id, arcGISDynamicMapServiceLayer, true);
+                                    }
+                                    else
+                                    {
+                                        loadedFeatureLayer.visible = false;
+                                    }
+
+                                    loadedFeatureLayer.removeEventListener(FlexEvent.HIDE, featureLayer_hideShowHandler);
+                                    loadedFeatureLayer.removeEventListener(FlexEvent.SHOW, featureLayer_hideShowHandler);
+                                    loadedFeatureLayer.removeEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete);
+
+                                    loadedFeatureLayer.addEventListener(FlexEvent.HIDE, featureLayer_hideShowHandler);
+                                    loadedFeatureLayer.addEventListener(FlexEvent.SHOW, featureLayer_hideShowHandler);
+                                    loadedFeatureLayer.addEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete, false, 1);
+
+                                    featureLayerToDynamicMapService[loadedFeatureLayer] = arcGISDynamicMapServiceLayer;
+
+                                    if (!onMapLayerAdd)
+                                    {
+                                        featureLayers.push(loadedFeatureLayer);
+                                    }
+                                    else
+                                    {
+                                        featureLayers.unshift(loadedFeatureLayer);
+                                    }
+                                    arr.push(loadedFeatureLayer);
+                                }
+                                index1++;
+                                parseCandidateFeatureLayers(index1, candidateFeatureLayers);
                             }
-                            arrFinalLayers.push(arcGISDynamicMapServiceLayer);
+
+                            function featureLayerLoadErrorHandler(event:LayerEvent):void
+                            {
+                                index1++;
+                                parseCandidateFeatureLayers(index1, candidateFeatureLayers);
+                            }
                         }
-                    }
-                    if (!onMapLayerAdd)
-                    {
-                        index = token.count + 1;
-                        getAllFeatureLayers(index, featureLayers);
                     }
                     else
                     {
-                        deactivateEditor();
-                        editor.featureLayers = featureLayers;
+                        index = token.count + 1;
+                        getAllFeatureLayers(index, featureLayers);
                     }
                 }
                 function faultHandler(event:FaultEvent, token:Object = null):void
@@ -439,6 +551,47 @@
                     {
                         index = token.count + 1;
                         getAllFeatureLayers(index, featureLayers);
+                    }
+                }
+            }
+
+            private function updateMinMaxScaleOnLayerInfos(copyLayerInfo:LayerInfo, copyLayerInfos:Array):void
+            {
+                if (copyLayerInfo.subLayerIds)
+                {
+                    for each (var childId:Number in copyLayerInfo.subLayerIds)
+                    {
+                        var childLayer:LayerInfo = findLayerById(childId, copyLayerInfos);
+                        if (childLayer)
+                        {
+                            if (copyLayerInfo.minScale > 0)
+                            {
+                                if (childLayer.minScale == 0 || (childLayer.minScale > 0 && childLayer.minScale > copyLayerInfo.minScale))
+                                {
+                                    childLayer.minScale = copyLayerInfo.minScale;
+                                }
+                            }
+                            if (copyLayerInfo.maxScale)
+                            {
+                                if (childLayer.maxScale == 0 || (childLayer.maxScale > 0 && childLayer.maxScale < copyLayerInfo.maxScale))
+                                {
+                                    childLayer.maxScale = copyLayerInfo.maxScale;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            private function updateFeatureLayerMinMaxScale(featureLayer:FeatureLayer, layerId:Number, copyLayerInfos:Array):void
+            {
+                for each (var copyLayerInfo:LayerInfo in copyLayerInfos)
+                {
+                    if (copyLayerInfo.layerId == layerId)
+                    {
+                        featureLayer.minScale = copyLayerInfo.minScale;
+                        featureLayer.maxScale = copyLayerInfo.maxScale;
+                        break;
                     }
                 }
             }
@@ -462,7 +615,6 @@
 
             private function mapLayerAddHandler(event:MapEvent):void
             {
-                storeInfoWindowRenderer(event.layer);
                 if (event.layer.name.indexOf("hiddenLayer_") == -1)
                 {
                     if (event.layer is FeatureLayer)
@@ -471,6 +623,9 @@
                         changeOplListObjectVisibility(event.layer);
                         event.layer.removeEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete);
                         event.layer.addEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete, false, 1);
+
+                        //store the renderer info for each layer on map                        
+                        storeInfoWindowRenderer();
 
                         arrFinalLayers.unshift(event.layer);
                         featureLayers.unshift(event.layer);
@@ -525,7 +680,7 @@
                 var i:int;
                 var currentFeatureLayerIndex:int;
                 var newLayerIds:Array = getNewLayerIds(map.layerIds);
-                if (index <= (newLayerIds.length - arrFinalLayers.length)) 
+                if (index <= (newLayerIds.length - arrFinalLayers.length))
                 {
                     if (layer is FeatureLayer && featureLayers.indexOf(layer) != -1)
                     {
@@ -639,7 +794,7 @@
             {
                 var result:Array = [];
                 for (var i:int = 0; i < layerIds.length; i++)
-                {   
+                {
                     var layer:Layer = ArrayCollection(map.layers).getItemAt(i) as Layer;
                     if (layer.name.indexOf("hiddenLayer_") != -1 || (layer is GraphicsLayer && !(layer is FeatureLayer)))
                     {
@@ -650,22 +805,25 @@
                 return result;
             }
 
-            private function storeInfoWindowRenderer(layer:Layer):void
+            private function storeInfoWindowRenderer():void
             {
-                if (layer is ArcGISDynamicMapServiceLayer && ArcGISDynamicMapServiceLayer(layer).layerInfoWindowRenderers)
+                for each (var layer:Layer in map.layers)
                 {
-                    dictionary[layer] = ArcGISDynamicMapServiceLayer(layer).layerInfoWindowRenderers;
-                    ArcGISDynamicMapServiceLayer(layer).layerInfoWindowRenderers = null; // set it to null, as widget overtakes now
-                }
-                else if (layer is ArcGISTiledMapServiceLayer && ArcGISTiledMapServiceLayer(layer).layerInfoWindowRenderers)
-                {
-                    dictionary[layer] = ArcGISTiledMapServiceLayer(layer).layerInfoWindowRenderers;
-                    ArcGISTiledMapServiceLayer(layer).layerInfoWindowRenderers = null; // set it to null, as widget overtakes now
-                }
-                else if (layer is GraphicsLayer && GraphicsLayer(layer).infoWindowRenderer)
-                {
-                    dictionary[layer] = GraphicsLayer(layer).infoWindowRenderer;
-                    GraphicsLayer(layer).infoWindowRenderer = null; // set it to null, as widget overtakes now
+                    if (layer is ArcGISDynamicMapServiceLayer && ArcGISDynamicMapServiceLayer(layer).layerInfoWindowRenderers)
+                    {
+                        dictionary[layer] = ArcGISDynamicMapServiceLayer(layer).layerInfoWindowRenderers;
+                        ArcGISDynamicMapServiceLayer(layer).layerInfoWindowRenderers = null; // set it to null, as widget overtakes now
+                    }
+                    else if (layer is ArcGISTiledMapServiceLayer && ArcGISTiledMapServiceLayer(layer).layerInfoWindowRenderers)
+                    {
+                        dictionary[layer] = ArcGISTiledMapServiceLayer(layer).layerInfoWindowRenderers;
+                        ArcGISTiledMapServiceLayer(layer).layerInfoWindowRenderers = null; // set it to null, as widget overtakes now
+                    }
+                    else if (layer is GraphicsLayer && GraphicsLayer(layer).infoWindowRenderer)
+                    {
+                        dictionary[layer] = GraphicsLayer(layer).infoWindowRenderer;
+                        GraphicsLayer(layer).infoWindowRenderer = null; // set it to null, as widget overtakes now
+                    }
                 }
             }
 
@@ -690,14 +848,16 @@
                 return result;
             }
 
-            private function isFeatureLayerPartOfMap(featureLayerURL:String):Boolean
+            private function isFeatureLayerPartOfMap(featureLayerURL:String, gdbVersion:String):Boolean
             {
                 var result:Boolean;
 
                 // loop through all the operational layers
                 for (var n:int = 0; n < mapLayers.length; )
                 {
-                    if (mapLayers.getItemAt(n) is FeatureLayer && FeatureLayer(mapLayers.getItemAt(n)).url == featureLayerURL)
+                    if (mapLayers.getItemAt(n) is FeatureLayer &&
+                        FeatureLayer(mapLayers.getItemAt(n)).url == featureLayerURL
+                        && FeatureLayer(mapLayers.getItemAt(n)).gdbVersion && FeatureLayer(mapLayers.getItemAt(n)).gdbVersion == gdbVersion)
                     {
                         result = true;
                         break;
@@ -770,7 +930,7 @@
             {
                 var result:Boolean;
 
-                if (!checkDefaultVisibility)
+                if (!checkDefaultVisibility && dynamicMapServiceLayer.visibleLayers)
                 {
                     var actualVisibleLayers:Array = getActualVisibleLayers(dynamicMapServiceLayer.visibleLayers.toArray(), dynamicMapServiceLayer.layerInfos);
                     result = actualVisibleLayers.indexOf(Number(layerId)) != -1;
@@ -787,7 +947,7 @@
                                 if (layerInfos[i].parentLayerId != -1)
                                 {
                                     // find the parent and check its default visibility
-                                    var parentLayerInfo:LayerInfo = findLayerById(layerInfos[0].parentLayerId, layerInfos);
+                                    var parentLayerInfo:LayerInfo = findLayerById(layerInfos[i].parentLayerId, layerInfos);
                                     result = parentLayerInfo.defaultVisibility;
                                 }
                                 else
@@ -820,7 +980,7 @@
                     // replace group layers with their sub layers
                     for each (layerInfo in layerInfos)
                     {
-                        layerIdIndex = layerIds.indexOf(layerInfo.id);
+                        layerIdIndex = layerIds.indexOf(layerInfo.layerId);
                         if (layerInfo.subLayerIds && layerIdIndex != -1)
                         {
                             layerIds.splice(layerIdIndex, 1); // remove the group layer id
@@ -833,7 +993,7 @@
 
                     for each (layerInfo in layerInfos.reverse())
                     {
-                        if (layerIds.indexOf(layerInfo.id) != -1 && layerIds.indexOf(layerInfo.parentLayerId) == -1 && layerInfo.parentLayerId != -1)
+                        if (layerIds.indexOf(layerInfo.layerId) != -1 && layerIds.indexOf(layerInfo.parentLayerId) == -1 && layerInfo.parentLayerId != -1)
                         {
                             layerIds.push(layerInfo.parentLayerId);
                         }
@@ -849,7 +1009,7 @@
             {
                 for each (var layerInfo:LayerInfo in layerInfos)
                 {
-                    if (id == layerInfo.id)
+                    if (id == layerInfo.layerId)
                     {
                         return layerInfo;
                     }
@@ -959,6 +1119,12 @@
                 map.infoWindow.content = editor.attributeInspector;
             }
 
+            private function attributeInspector_showFeatureHandler(event:AttributeInspectorEvent):void
+            {
+                attachmentInspector.addEnabled = editor.attributeInspector.updateEnabled;
+                attachmentInspector.deleteEnabled = editor.attributeInspector.deleteButtonVisible;
+            }
+
             private function widgetClosedHandler(event:Event):void
             {
                 disablePanZoomNavigationWidget = false;
@@ -1039,7 +1205,9 @@
         </viewer:layout>
         <s:Label id="selectTemplateLabel"
                  width="100%"
-                 text="{getDefaultString('selectTemplateText')}"/>
+                 includeInLayout="false"
+                 text="{getDefaultString('selectTemplateText')}"
+                 visible="false"/>
         <mx:Spacer/>
         <s:Label id="noLayers"
                  width="100%"
