@@ -20,7 +20,7 @@ import com.esri.ags.SpatialReference;
 import com.esri.ags.layers.GraphicsLayer;
 import com.esri.ags.renderers.IRenderer;
 import com.esri.ags.symbols.Symbol;
-import com.esri.ags.webmap.supportClasses.PopUpInfo;
+import com.esri.ags.portal.supportClasses.PopUpInfo;
 
 import mx.core.ClassFactory;
 

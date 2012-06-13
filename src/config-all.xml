@@ -25,18 +25,7 @@
     <widget left="0" top="0" config="widgets/HeaderController/HeaderControllerWidget.xml" url="widgets/HeaderController/HeaderControllerWidget.swf"/>
     <widget left="3" bottom="3" config="widgets/Coordinate/CoordinateWidget.xml" url="widgets/Coordinate/CoordinateWidget.swf"/>
 
-    <map wraparound180="true" initialextent="-14083000 3139000 -10879000 5458000" fullextent="-20000000 -20000000 20000000 20000000" top="40">
-        <basemaps>
-            <layer label="Streets" type="tiled" visible="true"
-                   icon="assets/images/basemap_streets.jpg"
-                   url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer"/>
-            <layer label="Aerial"  type="tiled" visible="false"
-                   icon="assets/images/basemap_imagery.jpg"
-                   url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer"/>
-            <layer label="Topo"    type="tiled" visible="false"
-                   icon="assets/images/basemap_topographic.jpg"
-                   url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer"/>
-        </basemaps>
+    <map wraparound180="true" initialextent="-14083000 3139000 -10879000 5458000" fullextent="-20000000 -20000000 20000000 20000000" top="40" addarcgisbasemaps="true">
         <operationallayers>
             <!-- Example of editable feature layer -->
             <layer label="San Francisco 3-1-1 Incidents" type="feature" visible="false" alpha="1.0"

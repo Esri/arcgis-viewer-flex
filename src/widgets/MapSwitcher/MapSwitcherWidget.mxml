@@ -39,6 +39,7 @@
 
             private var expandLayerItems:Boolean;
             private var basemapSelectionComponent:ListBase;
+            private var previousConfigBasemapsTotal:int;
 
             [Bindable]
             private var shouldShowOpLayers:Boolean;
@@ -121,6 +122,7 @@
                         basemapList.addItem(basemapItem);
                     }
                 }
+                previousConfigBasemapsTotal = configData.basemaps.length;
             }
 
             private function setWidgetState(showThumbnails:Boolean):void
@@ -172,6 +174,7 @@
                 toc.map = map;
                 toc.isMapServiceOnly = false; //gotta get this from the config file
                 toc.excludeLayers = getExcludeLayers();
+                toc.basemapLayers = getBasemapLayers();
                 toc.excludeGraphicsLayers = true;
                 if (expandLayerItems)
                 {
@@ -181,16 +184,7 @@
 
             private function getExcludeLayers():ArrayCollection
             {
-                var excludeLayers:ArrayCollection = new ArrayCollection();
-
-                if (configData && configData.basemaps)
-                {
-                    // exclude basemaps
-                    for (var i:int = 0; i < configData.basemaps.length; i++)
-                    {
-                        excludeLayers.addItem(configData.basemaps[i].label);
-                    }
-                }
+                var excludeLayers:ArrayCollection = getBasemapLayers();
 
                 if (configXML)
                 {
@@ -203,6 +197,21 @@
                 }
 
                 return excludeLayers;
+            }
+
+            private function getBasemapLayers():ArrayCollection
+            {
+                var result:ArrayCollection = new ArrayCollection();
+
+                if (configData && configData.basemaps)
+                {
+                    for (var i:int = 0; i < configData.basemaps.length; i++)
+                    {
+                        result.addItem(configData.basemaps[i].label);
+                    }
+                }
+
+                return result;
             }
 
             private function startHideTimer():void
@@ -270,6 +279,12 @@
 
             private function basemapsButton_rollOverHandler(event:MouseEvent):void
             {
+                var haveBasemapsChanged:Boolean = (previousConfigBasemapsTotal != configData.basemaps.length);
+                if (haveBasemapsChanged)
+                {
+                    initBasemapList();
+                }
+
                 shouldShowOpLayers = false;
                 shouldShowBasemaps = true;
                 hideBasemapsTimer.reset();
@@ -300,12 +315,14 @@
                   rollOut="startHideTimer()"
                   rollOver="opLayerListButton_rollOverHandler(event)"
                   visible="false"/>
+
         <s:ButtonBar id="basemapsButtonBar"
                      change="dispatchChangeBasemapEvent()"
                      dataProvider="{basemapList}"
                      includeIn="buttonOptions"
                      labelField="label"
                      requireSelection="true"/>
+
         <s:Button id="basemapsButton"
                   includeIn="thumbnailOptions"
                   label="{basemapsLabel}"
@@ -313,6 +330,7 @@
                   rollOver="basemapsButton_rollOverHandler(event)"
                   skinClass="com.esri.viewer.skins.BasemapsButtonSkin"/>
     </s:HGroup>
+
     <s:BorderContainer id="opLayersContainer"
                        width="265" height="180"
                        backgroundColor="{getStyle('contentBackgroundColor')}"
@@ -324,6 +342,7 @@
         <toc:TOC id="toc"
                  left="2" right="2" top="3" bottom="3"/>
     </s:BorderContainer>
+
     <s:BorderContainer id="basemapsContainer"
                        backgroundColor="{getStyle('contentBackgroundColor')}"
                        includeIn="thumbnailOptions"

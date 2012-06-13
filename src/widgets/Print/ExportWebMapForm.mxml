@@ -10,11 +10,17 @@
         <![CDATA[
             import com.esri.ags.events.PrintEvent;
             import com.esri.ags.events.ZoomEvent;
+            import com.esri.ags.layers.FeatureLayer;
+            import com.esri.ags.layers.GraphicsLayer;
+            import com.esri.ags.layers.Layer;
             import com.esri.ags.tasks.supportClasses.DataFile;
             import com.esri.ags.tasks.supportClasses.JobInfo;
+            import com.esri.ags.tasks.supportClasses.LegendLayer;
+            import com.esri.ags.tasks.supportClasses.LegendOptions;
             import com.esri.ags.tasks.supportClasses.ParameterValue;
             import com.esri.ags.tasks.supportClasses.PrintServiceInfo;
             import com.esri.viewer.BaseWidget;
+            import com.esri.viewer.utils.ErrorMessageUtil;
 
             import mx.collections.IList;
             import mx.rpc.events.FaultEvent;
@@ -80,6 +86,7 @@
                 layoutOptions.title = txtTitle.text;
                 layoutOptions.author = txtAuthor.text;
                 layoutOptions.copyright = txtCopyright.text;
+                layoutOptions.legendOptions = getLegendOptions();
 
                 var oldscale:Number;
                 var oldLODs:Array;
@@ -108,6 +115,39 @@
                 }
             }
 
+            private function getLegendOptions():LegendOptions
+            {
+                var result:LegendOptions = new LegendOptions();
+                var legendLayers:Array = [];
+
+                for each (var layer:Layer in hostBaseWidget.map.layers)
+                {
+                    if (layer.name.indexOf("hiddenLayer_") == -1 && !(layer is GraphicsLayer && !(layer is FeatureLayer)))
+                    {
+
+                        var isBaseMapLayer:Boolean = false;
+                        for each (var baseMapLayer:Object in hostBaseWidget.configData.basemaps)
+                        {
+                            if (baseMapLayer.label == layer.id)
+                            {
+                                isBaseMapLayer = true;
+                                break;
+                            }
+                        }
+                        if (!isBaseMapLayer)
+                        {
+                            var legendLayer:LegendLayer = new LegendLayer();
+                            legendLayer.layerId = layer.id;
+                            legendLayers.push(legendLayer);
+                        }
+                    }
+                }
+
+                result.legendLayers = legendLayers;
+
+                return result;
+            }
+
             private function map_zoomEndHandler(event:ZoomEvent):void
             {
                 if (!scaleCheckbox.selected)
@@ -131,7 +171,7 @@
 
             protected function printTask_faultHandler(event:FaultEvent):void
             {
-                hostBaseWidget.showError(event.fault.faultString);
+                hostBaseWidget.showError("Error executing print task:\n\n" + ErrorMessageUtil.makeHTMLSafe(event.fault.toString()));
                 swfMessage.visible = false;
             }
 
@@ -156,45 +196,52 @@
 
             private function initTitle():void
             {
+                shouldShowTitle = true;
+                titleFI.label = configXML.labels.titlelabel[0] || hostBaseWidget.getDefaultString("printTitleLabel");
+
                 if (configXML.title[0])
                 {
                     title = configXML.title[0] || hostBaseWidget.getDefaultString("printTitle");
-                    titleFI.label = configXML.labels.titlelabel[0] || hostBaseWidget.getDefaultString("printTitleLabel");
-                    if (configXML.title[0].@visible[0] != "false")
+                    if (configXML.title[0].@visible[0] == "false")
                     {
-                        shouldShowTitle = true;
+                        shouldShowTitle = false;
                     }
                 }
             }
 
             private function initCopyright():void
             {
+                shouldShowCopyright = true;
+                copyrightFI.label = configXML.labels.copyrightlabel[0] || hostBaseWidget.getDefaultString("printCopyrightLabel");
+
                 if (configXML.copyright[0])
                 {
                     copyright = configXML.copyright.@defaultvalue[0] || configXML.copyright[0] || hostBaseWidget.getDefaultString("printCopyright");
-                    copyrightFI.label = configXML.labels.copyrightlabel[0] || hostBaseWidget.getDefaultString("printCopyrightLabel");
-                    if (configXML.copyright[0].@visible[0] != "false")
+                    if (configXML.copyright[0].@visible[0] == "false")
                     {
-                        shouldShowCopyright = true;
+                        shouldShowCopyright = false;
                     }
                 }
             }
 
             private function initAuthor():void
             {
+                shouldShowAuthor = true;
+                authorFI.label = configXML.labels.authorlabel[0] || hostBaseWidget.getDefaultString("printAuthorLabel");
+
                 if (configXML.author[0])
                 {
                     author = configXML.author[0] || hostBaseWidget.getDefaultString("printAuthor");
-                    authorFI.label = configXML.labels.authorlabel[0] || hostBaseWidget.getDefaultString("printAuthorLabel");
-                    if (configXML.author[0].@visible[0] != "false")
+                    if (configXML.author[0].@visible[0] == "false")
                     {
-                        shouldShowAuthor = true;
+                        shouldShowAuthor = false;
                     }
                 }
             }
 
             private function initUseScale():void
             {
+                shouldShowUseScale = true;
                 scaleCheckbox.label = configXML.labels.scalelabel[0] || hostBaseWidget.getDefaultString("printScaleLabel");
                 hostBaseWidget.map.addEventListener(ZoomEvent.ZOOM_END, map_zoomEndHandler, false, 0, true);
                 updatePrintScale();
@@ -209,46 +256,58 @@
                         scaleInput.text = scaleDefaultValue.toString();
                     }
 
-                    if (configXML.usescale[0].@visible[0] != 'false')
+                    if (configXML.usescale[0].@visible[0] == 'false')
                     {
-                        shouldShowUseScale = true;
+                        shouldShowUseScale = false;
                     }
                 }
             }
 
             private function initLayoutTemplates(serviceInfo:PrintServiceInfo):void
             {
+                var layoutTemplatesVisibility:Boolean = true;
+                layoutTemplatesFI.label = configXML.labels.layouttemplateslabel[0] || hostBaseWidget.getDefaultString("printLayoutTemplatesLabel");
+                var layoutTemplates:IList = serviceInfo.layoutTemplates;
+
                 if (configXML.layouttemplates[0])
                 {
                     printParameters.layoutTemplate = configXML.layouttemplates.@defaultvalue[0] || configXML.layouttemplates[0];
+                    layoutTemplatesVisibility = configXML.layouttemplates[0].@visible[0] != "false";
                 }
-                layoutTemplatesFI.label = configXML.labels.layouttemplateslabel[0] || hostBaseWidget.getDefaultString("printLayoutTemplatesLabel");
-
-                var layoutTemplates:IList = serviceInfo.layoutTemplates;
-                shouldShowTemplateOptions = (layoutTemplates && layoutTemplates.length > 1);
+                shouldShowTemplateOptions = layoutTemplatesVisibility && (layoutTemplates && layoutTemplates.length > 1);
 
                 var shouldUseServiceInfoDefault:Boolean = (!printParameters.layoutTemplate && serviceInfo.defaultLayoutTemplate);
                 if (shouldUseServiceInfoDefault)
                 {
                     layoutTemplatesDDL.selectedItem = serviceInfo.defaultLayoutTemplate;
                 }
+                else if (printParameters.layoutTemplate)
+                {
+                    layoutTemplatesDDL.selectedItem = printParameters.layoutTemplate;
+                }
             }
 
             private function initFormats(serviceInfo:PrintServiceInfo):void
             {
+                var formatsVisibility:Boolean = true;
+                formatsFI.label = configXML.labels.formatslabel[0] || hostBaseWidget.getDefaultString("printFormatsLabel");
+                var formats:IList = serviceInfo.formats;
+
                 if (configXML.formats[0])
                 {
                     printParameters.format = configXML.formats.@defaultvalue[0] || configXML.formats[0];
+                    formatsVisibility = configXML.formats[0].@visible[0] != "false";
                 }
-                formatsFI.label = configXML.labels.formatslabel[0] || hostBaseWidget.getDefaultString("printFormatsLabel");
-
-                var formats:IList = serviceInfo.formats;
-                shouldShowFormatOptions = (formats && formats.length > 1);
+                shouldShowFormatOptions = formatsVisibility && (formats && formats.length > 1);
 
                 var shouldUseServiceInfoDefault:Boolean = (!printParameters.format && serviceInfo.defaultFormat);
                 if (shouldUseServiceInfoDefault)
                 {
                     formatsDDL.selectedItem = serviceInfo.defaultFormat;
+                }
+                else if (printParameters.format)
+                {
+                    formatsDDL.selectedItem = printParameters.format;
                 }
             }
 
@@ -280,11 +339,7 @@
                               map="{hostBaseWidget.map}"
                               preserveScale="{scaleCheckbox.selected}">
             <esri:layoutOptions>
-                <esri:LayoutOptions id="layoutOptions">
-                    <esri:legendOptions>
-                        <esri:LegendOptions layerIds="{hostBaseWidget.map.layerIds}"/>
-                    </esri:legendOptions>
-                </esri:LayoutOptions>
+                <esri:LayoutOptions id="layoutOptions"/>
             </esri:layoutOptions>
         </esri:PrintParameters>
     </fx:Declarations>

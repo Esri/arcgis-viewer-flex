@@ -35,21 +35,23 @@
 
             import spark.components.Application;
 
+            import widgets.supportClasses.ResultAttributes;
+            import widgets.supportClasses.ResultItem;
+
             private const SEARCH_RESULT_CLICK:String = "searchResultClick";
-
             private const SEARCH_RESULT_MOUSE_OVER:String = "searchResultMouseOver";
-
             private const SEARCH_RESULT_MOUSE_OUT:String = "searchResultMouseOut";
 
             [Bindable]
-            private var searchResult:SearchResult;
+            private var searchResultAttributes:ResultAttributes;
 
             private var lastResultSymbol:Symbol;
             private var lastResultSwatch:UIComponent;
 
             private function itemrenderer_dataChangeHandler(event:FlexEvent):void
             {
-                searchResult = data as SearchResult;
+                var searchResult:ResultItem = data as ResultItem;
+                searchResultAttributes = searchResult.attributes;
 
                 if (searchResult && searchResult.symbol)
                 {
@@ -92,7 +94,7 @@
             private function showLink(event:MouseEvent):void
             {
                 event.stopImmediatePropagation(); // don't dispatch SEARCH_RESULT_CLICK since we don't want to zoom to feature
-                navigateToURL(new URLRequest(searchResult.link));
+                navigateToURL(new URLRequest(searchResultAttributes.link));
             }
 
             protected function resultLink_preinitializeHandler(event:FlexEvent):void
@@ -165,21 +167,21 @@
             <s:Label width="100%"
                      fontWeight="bold"
                      maxDisplayedLines="1"
-                     text="{searchResult.title}"/>
+                     text="{searchResultAttributes.title}"/>
             <s:Label width="100%"
                      fontWeight="normal"
                      maxDisplayedLines="-1"
-                     text="{searchResult.content}"/>
+                     text="{searchResultAttributes.content}"/>
         </s:VGroup>
         <mx:Image id="resultLink"
                   width="18" height="18"
                   buttonMode="true"
                   click="showLink(event)"
-                  includeInLayout="{searchResult.link != null}"
+                  includeInLayout="{searchResultAttributes.link != null}"
                   preinitialize="resultLink_preinitializeHandler(event)"
                   source="assets/images/w_link.png"
-                  toolTip="{searchResult.link}"
+                  toolTip="{searchResultAttributes.link}"
                   useHandCursor="true"
-                  visible="{searchResult.link != null}"/>
+                  visible="{searchResultAttributes.link != null}"/>
     </s:HGroup>
 </s:ItemRenderer>

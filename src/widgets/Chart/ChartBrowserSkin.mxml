@@ -10,7 +10,7 @@
     <fx:Script>
         <![CDATA[
             import com.esri.ags.utils.StringUtil;
-            import com.esri.ags.webmap.supportClasses.PopUpMediaInfo;
+            import com.esri.ags.portal.supportClasses.PopUpMediaInfo;
 
             import mx.core.IVisualElement;
 
@@ -45,7 +45,7 @@
                     showOrHideCount();
 
                     // show caption
-                    var captionText:String = insertStatsIfKeywordsPresent(mediaInfo.caption);
+                    var captionText:String = insertStats(mediaInfo.caption);
                     captionLabel.text = StringUtil.substitute(captionText, formattedAttributes);
                 }
             }
@@ -124,7 +124,7 @@
                 }
             }
 
-            private function insertStatsIfKeywordsPresent(text:String):String
+            private function insertStats(text:String):String
             {
                 var sumKeywordRE:RegExp = /{=SUM}/;
                 var minKeywordRE:RegExp = /{=MIN}/;
@@ -132,16 +132,26 @@
                 var countKeywordRE:RegExp = /{=COUNT}/;
                 var averageKeywordRE:RegExp = /{=AVERAGE}/;
 
-                text = text.replace(sumKeywordRE, hostComponent.sum);
-                text = text.replace(minKeywordRE, hostComponent.min);
-                text = text.replace(maxKeywordRE, hostComponent.max);
-                text = text.replace(countKeywordRE, hostComponent.count);
-                text = text.replace(averageKeywordRE, hostComponent.average);
+                text = insertStatistic(text, sumKeywordRE, hostComponent.sum);
+                text = insertStatistic(text, minKeywordRE, hostComponent.min);
+                text = insertStatistic(text, maxKeywordRE, hostComponent.max);
+                text = insertStatistic(text, countKeywordRE, hostComponent.count);
+                text = insertStatistic(text, averageKeywordRE, hostComponent.average);
 
                 return text;
             }
+
+            private function insertStatistic(source:String, keyword:RegExp, insertionValue:Number):String
+            {
+                var finalInsertionValue:String = (hostComponent.precision > -1) ? numberFormatter.format(insertionValue) : insertionValue.toString();
+                return source.replace(keyword, finalInsertionValue);
+            }
         ]]>
     </fx:Script>
+
+    <fx:Declarations>
+        <s:NumberFormatter id="numberFormatter" fractionalDigits="{hostComponent.precision}"/>
+    </fx:Declarations>
 
     <s:layout>
         <s:VerticalLayout/>

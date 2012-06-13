@@ -18,7 +18,7 @@ package widgets.Chart
 {
 
 import com.esri.ags.skins.supportClasses.PopUpMediaBrowser;
-import com.esri.ags.webmap.supportClasses.PopUpMediaInfo;
+import com.esri.ags.portal.supportClasses.PopUpMediaInfo;
 
 public class ChartBrowser extends PopUpMediaBrowser
 {
@@ -29,6 +29,9 @@ public class ChartBrowser extends PopUpMediaBrowser
     public var max:Number;
     public var count:Number;
     public var average:Number;
+
+    [Bindable]
+    public var precision:int = -1;
 
     override public function getChartData():Array
     {

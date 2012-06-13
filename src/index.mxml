@@ -20,7 +20,6 @@
                xmlns:s="library://ns.adobe.com/flex/spark"
                xmlns:viewer="com.esri.viewer.*"
                xmlns:managers="com.esri.viewer.managers.*"
-               initialize="this_initializeHandler(event)"
                pageTitle="ArcGIS Viewer for Flex">
 
     <fx:Style source="defaults.css"/>
@@ -28,20 +27,6 @@
     <fx:Metadata>
         [ResourceBundle("ViewerStrings")]
     </fx:Metadata>
-
-    <fx:Script>
-        <![CDATA[
-            import com.esri.ags.components.IdentityManager;
-
-            import mx.events.FlexEvent;
-
-            protected function this_initializeHandler(event:FlexEvent):void
-            {
-                // enable the Identity manager
-                IdentityManager.instance.enabled = true;
-            }
-        ]]>
-    </fx:Script>
 
     <viewer:ViewerContainer id="viewerContainer">
         <viewer:configManager>

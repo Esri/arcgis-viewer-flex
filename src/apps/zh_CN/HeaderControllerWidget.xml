@@ -8,7 +8,7 @@
        <content>
         <![CDATA[<p align='center'><img src='assets/images/globe.png' width='140' height='140' /></p>
         <textformat indent="25"><p><br><a href="http://help.arcgis.com/en/webapps/flexviewer/" target='_blank'><font color='#FFFF00'>ArcGIS Viewer for Flex</font></a>
-        <br><a href="http://help.arcgis.com/en/webapi/flex/" target='_blank'><font color='#FFFF00'>ArcGIS  API for Flex</font></a>
+        <br><a href="http://help.arcgis.com/en/webapi/flex/" target='_blank'><font color='#FFFF00'>ArcGIS API for Flex</font></a>
         <br><a href="http://www.esri.com" target='_blank'><font color='#FFFF00'>Esri</font></a></p></textformat>
         ]]>
         </content>

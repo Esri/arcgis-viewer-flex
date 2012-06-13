@@ -40,6 +40,7 @@
         </viewer:layout>
 
         <s:Label id="lbl"
+                 width="100%"
                  fontSize="18"
                  fontStyle="italic"
                  fontWeight="bold"/>

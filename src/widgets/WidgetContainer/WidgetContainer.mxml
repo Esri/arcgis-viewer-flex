@@ -40,6 +40,19 @@
             import spark.layouts.TileLayout;
             import spark.layouts.VerticalLayout;
 
+            private const PADDING:int = 28;
+
+            private const UP:String = "up";
+            private const DOWN:String = "down";
+            private const LEFT:String = "left";
+            private const RIGHT:String = "right";
+
+            private const HORIZONTAL:String = "horizontal";
+            private const VERTICAL:String = "vertical";
+            private const TILE:String = "tile";
+            private const FIX:String = "fix";
+            private const FLOAT:String = "float";
+
             private var isDraggable:Boolean = true;
             private var isResizeable:Boolean = true;
 
@@ -211,7 +224,7 @@
                     if (baseWidget.widgetId == id)
                     {
 
-                        if ((widgetlayout == "horizontal") || (widgetlayout == "vertical"))
+                        if ((widgetlayout == HORIZONTAL) || (widgetlayout == VERTICAL))
                         {
                             if (!_transitionInProgress)
                             {
@@ -275,19 +288,19 @@
                     return;
                 }
 
-                if (dir == "U")
-                {
-                    widgetContainer.verticalScrollPosition -= 10;
-                }
-                else if (dir == "D")
+                if (dir == UP)
                 {
                     widgetContainer.verticalScrollPosition += 10;
                 }
-                else if (dir == "L")
+                else if (dir == DOWN)
+                {
+                    widgetContainer.verticalScrollPosition -= 10;
+                }
+                else if (dir == LEFT)
                 {
                     widgetContainer.horizontalScrollPosition += 10;
                 }
-                else if (dir == "R")
+                else if (dir == RIGHT)
                 {
                     widgetContainer.horizontalScrollPosition -= 10;
                 }
@@ -300,21 +313,27 @@
                 var screenW:Number = boxRect.width;
                 var screenH:Number = boxRect.height;
 
-                if (dir == "U")
+                var lastVisibleWidget:IVisualElement;
+
+                if (dir == UP)
                 {
-                    return widgetContainer.verticalScrollPosition > 0 - screenH;
+                    lastVisibleWidget = widgetContainer.getElementAt(widgetContainer.numElements - 1);
+                    return widgetContainer.verticalScrollPosition < widgetContainer.contentHeight - lastVisibleWidget.height - PADDING;
                 }
-                else if (dir == "D")
+                else if (dir == DOWN)
                 {
-                    return widgetContainer.verticalScrollPosition < widgetContainer.contentHeight;
+                    lastVisibleWidget = widgetContainer.getElementAt(0);
+                    return widgetContainer.verticalScrollPosition > 0 - screenH + lastVisibleWidget.height + PADDING;
                 }
-                else if (dir == "L")
+                else if (dir == LEFT)
                 {
-                    return widgetContainer.horizontalScrollPosition < widgetContainer.contentWidth;
+                    lastVisibleWidget = widgetContainer.getElementAt(widgetContainer.numElements - 1);
+                    return widgetContainer.horizontalScrollPosition < widgetContainer.contentWidth - lastVisibleWidget.width - PADDING;
                 }
-                else if (dir == "R")
+                else if (dir == RIGHT)
                 {
-                    return widgetContainer.horizontalScrollPosition > 0 - screenW;
+                    lastVisibleWidget = widgetContainer.getElementAt(0);
+                    return widgetContainer.horizontalScrollPosition > 0 - screenW + lastVisibleWidget.width + PADDING;
                 }
 
                 return false;
@@ -371,22 +390,22 @@
                     if (topDelta > 0)
                     {
                         scrolldist = topDelta;
-                        scrolldir = "U";
+                        scrolldir = UP;
                     }
                     else if (bottomDelta > 0)
                     {
                         scrolldist = bottomDelta;
-                        scrolldir = "D";
+                        scrolldir = DOWN;
                     }
                     else if (leftDelta > 0)
                     {
                         scrolldist = leftDelta;
-                        scrolldir = "R";
+                        scrolldir = RIGHT;
                     }
                     else if (rightDelta > 0)
                     {
                         scrolldist = rightDelta;
-                        scrolldir = "L";
+                        scrolldir = LEFT;
                     }
                     scrollinterval = setInterval(scrollToWidgetAction, 30, params);
                     dist = 0;
@@ -397,19 +416,19 @@
             {
                 if (dist < scrolldist)
                 {
-                    if (scrolldir == "U")
+                    if (scrolldir == UP)
                     {
                         widgetContainer.verticalScrollPosition -= 10;
                     }
-                    else if (scrolldir == "D")
+                    else if (scrolldir == DOWN)
                     {
                         widgetContainer.verticalScrollPosition += 10;
                     }
-                    else if (scrolldir == "L")
+                    else if (scrolldir == LEFT)
                     {
                         widgetContainer.horizontalScrollPosition += 10;
                     }
-                    else if (scrolldir == "R")
+                    else if (scrolldir == RIGHT)
                     {
                         widgetContainer.horizontalScrollPosition -= 10;
                     }
@@ -431,7 +450,7 @@
 
             private function isConstrainedLayout():Boolean
             {
-                return widgetlayout == "horizontal" || widgetlayout == "vertical" || widgetlayout == "tile" || widgetlayout == "fix";
+                return widgetlayout == HORIZONTAL || widgetlayout == VERTICAL || widgetlayout == TILE || widgetlayout == FIX;
             }
 
             public function get widgetlayout():String
@@ -447,7 +466,7 @@
 
                     switch (layout)
                     {
-                        case "horizontal":
+                        case HORIZONTAL:
                         {
                             var hLayout:HorizontalLayout = new HorizontalLayout;
                             hLayout.verticalAlign = "bottom";
@@ -459,7 +478,7 @@
                             isResizeable = false;
                             break;
                         }
-                        case "vertical":
+                        case VERTICAL:
                         {
                             var vLayout:VerticalLayout = new VerticalLayout;
                             vLayout.horizontalAlign = "right";
@@ -472,7 +491,7 @@
                             isResizeable = false;
                             break;
                         }
-                        case "tile":
+                        case TILE:
                         {
                             var tLayout:TileLayout = new TileLayout;
                             widgetContainer.layout = tLayout;
@@ -481,14 +500,14 @@
                             isDraggable = false;
                             break;
                         }
-                        case "fix":
+                        case FIX:
                         {
                             widgetContainer.layout = new BasicLayout;
                             isResizeable = false;
                             isDraggable = false;
                             break;
                         }
-                        case "float":
+                        case FLOAT:
                         {
                             widgetContainer.layout = new BasicLayout();
                             widgetContainer.clipAndEnableScrolling = false;
@@ -522,13 +541,13 @@
             {
                 switch (layout)
                 {
-                    case "horizontal":
+                    case HORIZONTAL:
                     {
                         _hv = true;
                         _vv = false;
                         break;
                     }
-                    case "vertical":
+                    case VERTICAL:
                     {
                         _hv = false;
                         _vv = true;
@@ -577,7 +596,7 @@
             {
                 AppEvent.dispatch(AppEvent.TOC_HIDDEN); // always hide the toc layer menu
 
-                if (state == "V")
+                if (state == VERTICAL)
                 {
                     containerWidth = widgetContainer.width;
                     if (currentState != "collapsedRight")
@@ -590,7 +609,7 @@
                         currentState = "normal";
                     }
                 }
-                else if (state == "H")
+                else if (state == HORIZONTAL)
                 {
                     containerHeight = widgetContainer.height;
                     if (currentState != "collapsedDown")
@@ -707,7 +726,7 @@
         <mx:Image id="btnVCollapse"
                   alpha="0.9"
                   buttonMode="true"
-                  click="toggleState('V')"
+                  click="toggleState(VERTICAL)"
                   source="assets/images/w_collapse.png"
                   transformX="10"
                   transformY="10"
@@ -716,7 +735,7 @@
         <mx:Image id="btnUp"
                   alpha="0.9"
                   buttonMode="true"
-                  mouseDown="startScroll('D')"
+                  mouseDown="startScroll(UP)"
                   source="assets/images/w_up.png"
                   useHandCursor="true"
                   visible="{_vv}"
@@ -724,7 +743,7 @@
         <mx:Image id="btnDown"
                   alpha="0.9"
                   buttonMode="true"
-                  mouseDown="startScroll('U')"
+                  mouseDown="startScroll(DOWN)"
                   source="assets/images/w_down.png"
                   useHandCursor="true"
                   visible="{_vv}"
@@ -753,7 +772,7 @@
         <mx:Image id="btnHCollapse"
                   alpha="0.9"
                   buttonMode="true"
-                  click="toggleState('H')"
+                  click="toggleState(HORIZONTAL)"
                   source="assets/images/w_collapse_down.png"
                   transformX="10"
                   transformY="10"
@@ -762,7 +781,7 @@
         <mx:Image id="btnLeft"
                   alpha="0.9"
                   buttonMode="true"
-                  mouseDown="startScroll('L')"
+                  mouseDown="startScroll(LEFT)"
                   source="assets/images/w_left.png"
                   useHandCursor="true"
                   visible="{_hv}"
@@ -770,7 +789,7 @@
         <mx:Image id="btnRight"
                   alpha="0.9"
                   buttonMode="true"
-                  mouseDown="startScroll('R')"
+                  mouseDown="startScroll(RIGHT)"
                   source="assets/images/w_right.png"
                   useHandCursor="true"
                   visible="{_hv}"

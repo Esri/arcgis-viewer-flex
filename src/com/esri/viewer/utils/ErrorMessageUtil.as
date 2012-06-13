@@ -52,6 +52,13 @@ public class ErrorMessageUtil
 
         return message;
     }
+
+    public static function makeHTMLSafe(content:String):String
+    {
+        content = content.replace(/>/g, "&gt;");
+        content = content.replace(/</g, "&lt;");
+        return content;
+    }
 }
 
 }

@@ -16,6 +16,8 @@
 package com.esri.viewer.components.toc.tocClasses
 {
 
+import com.esri.ags.Map;
+import com.esri.ags.events.ExtentEvent;
 import com.esri.ags.events.LayerEvent;
 import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
 import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
@@ -67,6 +69,8 @@ public class TocMapLayerItem extends TocItem
         _isMSOnly = isMapServiceOnly;
         // Set the initial visibility without causing a layer refresh
         setVisible(layer.visible, false);
+        // Indicate whether the item is in scale range without causing a layer refresh
+        setIsInScaleRange(layer.isInScaleRange, false);
 
         // check if the visiblelayers was set on the dynamic map servicelayer
         var opLayers:Array = ViewerContainer.getInstance().configData.opLayers;
@@ -97,6 +101,7 @@ public class TocMapLayerItem extends TocItem
             {
                 // Process the layer info immediately
                 createChildren();
+                layer.map.addEventListener(ExtentEvent.EXTENT_CHANGE, onExtentChange, false, 0, true);
             }
         }
 
@@ -106,6 +111,7 @@ public class TocMapLayerItem extends TocItem
         // Listen for changes in layer visibility
         layer.addEventListener(FlexEvent.SHOW, onLayerShow, false, 0, true);
         layer.addEventListener(FlexEvent.HIDE, onLayerHide, false, 0, true);
+        layer.addEventListener(LayerEvent.IS_IN_SCALE_RANGE_CHANGE, onScaleChange, false, 0, true);
     }
 
     //--------------------------------------------------------------------------
@@ -247,6 +253,7 @@ public class TocMapLayerItem extends TocItem
         if (!_isMSOnly)
         {
             createChildren();
+            layer.map.addEventListener(ExtentEvent.EXTENT_CHANGE, onExtentChange, false, 0, true);
         }
     }
 
@@ -258,6 +265,62 @@ public class TocMapLayerItem extends TocItem
     private function onLayerHide(event:FlexEvent):void
     {
         setVisible(layer.visible, true);
+    }
+
+    private function onScaleChange(event:LayerEvent):void
+    {
+        setIsInScaleRange(layer.isInScaleRange, true);
+    }
+
+    private function onExtentChange(event:ExtentEvent):void
+    {
+        if (layer is ArcGISDynamicMapServiceLayer || layer is ArcGISTiledMapServiceLayer)
+        {
+            for each (var tocLayerInfoItem:TocLayerInfoItem in children)
+            {
+                updateEnabledBasedOnScale(tocLayerInfoItem, isTocLayerInfoItemInScale(tocLayerInfoItem.layerInfo));
+            }
+        }
+    }
+
+    private function updateEnabledBasedOnScale(tocLayerInfoItem:TocLayerInfoItem, isInScaleRange:Boolean):void
+    {
+        if (tocLayerInfoItem.children && tocLayerInfoItem.children.length)
+        {
+            tocLayerInfoItem.isInScaleRange = isInScaleRange;
+            for each (var childTocLayerInfoItem:TocLayerInfoItem in tocLayerInfoItem.children.toArray())
+            {
+                updateEnabledBasedOnScale(childTocLayerInfoItem, tocLayerInfoItem.isInScaleRange && isTocLayerInfoItemInScale(childTocLayerInfoItem.layerInfo));
+            }
+        }
+        else
+        {
+            tocLayerInfoItem.isInScaleRange = isInScaleRange;
+        }
+    }
+
+    private function isTocLayerInfoItemInScale(layerInfo:LayerInfo):Boolean
+    {
+        var result:Boolean = true;
+        var map:Map = layer.map;
+
+        if (map && (layerInfo.maxScale > 0 || layerInfo.minScale > 0))
+        {
+            var scale:Number = map.scale;
+            if (layerInfo.maxScale > 0 && layerInfo.minScale > 0)
+            {
+                result = layerInfo.maxScale <= Math.ceil(scale) && Math.floor(scale) <= layerInfo.minScale;
+            }
+            else if (layerInfo.maxScale > 0)
+            {
+                result = layerInfo.maxScale <= Math.ceil(scale);
+            }
+            else if (layerInfo.minScale > 0)
+            {
+                result = Math.floor(scale) <= layerInfo.minScale;
+            }
+        }
+        return result;
     }
 
     /**
@@ -315,7 +378,7 @@ public class TocMapLayerItem extends TocItem
             var rootLayers:Array = findRootLayers(layerInfos);
             for each (var layerInfo1:LayerInfo in rootLayers)
             {
-                addChild(createTocLayer(this, layerInfo1, layerInfos, layerInfo1.defaultVisibility));
+                addChild(createTocLayer(this, layerInfo1, layerInfos, layerInfo1.defaultVisibility, isTocLayerInfoItemInScale(layerInfo1)));
             }
         }
     }
@@ -361,7 +424,7 @@ public class TocMapLayerItem extends TocItem
         return result;
     }
 
-    private static function createKMLLayerTocItems(parentItem:TocItem, layer:KMLLayer):void
+    private function createKMLLayerTocItems(parentItem:TocItem, layer:KMLLayer):void
     {
         for each (var folder:KMLFolder in layer.folders)
         {
@@ -376,25 +439,13 @@ public class TocMapLayerItem extends TocItem
             // If the parent folder exists , do not create NetworkLinkItem as it is already created
             if (!(hasParentFolder(Number(networkLink.id), layer.folders)))
             {
-                // check if it is loaded
-                if (networkLink.loaded)
-                {
-                    parentItem.addChild(createKmlNetworkLinkTocItem(parentItem, networkLink, layer));
-                }
-                else
-                {
-                    networkLink.addEventListener(LayerEvent.LOAD, networkLinkLoadHandler);
-                }
-
-                function networkLinkLoadHandler(event:LayerEvent):void
-                {
-                    parentItem.addChild(createKmlNetworkLinkTocItem(parentItem, networkLink, layer));
-                }
+                // add network link 
+                parentItem.addChild(createKmlNetworkLinkTocItem(parentItem, networkLink, layer));
             }
         }
     }
 
-    private static function hasParentFolder(id:Number, folders:Array):Boolean
+    private function hasParentFolder(id:Number, folders:Array):Boolean
     {
         // find the immediate parent folder
         var parentFolderFound:Boolean;
@@ -426,7 +477,7 @@ public class TocMapLayerItem extends TocItem
         return parentFolderFound;
     }
 
-    private static function findRootLayers(layerInfos:Array):Array // of LayerInfo
+    private function findRootLayers(layerInfos:Array):Array // of LayerInfo
     {
         var roots:Array = [];
         for each (var layerInfo:LayerInfo in layerInfos)
@@ -441,7 +492,7 @@ public class TocMapLayerItem extends TocItem
         return roots;
     }
 
-    private static function findLayerById(id:Number, layerInfos:Array):LayerInfo
+    private function findLayerById(id:Number, layerInfos:Array):LayerInfo
     {
         for each (var layerInfo:LayerInfo in layerInfos)
         {
@@ -453,9 +504,9 @@ public class TocMapLayerItem extends TocItem
         return null;
     }
 
-    private static function createTocLayer(parentItem:TocItem, layerInfo:LayerInfo, layerInfos:Array, isVisible:Boolean):TocLayerInfoItem
+    private function createTocLayer(parentItem:TocItem, layerInfo:LayerInfo, layerInfos:Array, isVisible:Boolean, isInScaleRange:Boolean):TocLayerInfoItem
     {
-        var item:TocLayerInfoItem = new TocLayerInfoItem(parentItem, layerInfo, isVisible);
+        var item:TocLayerInfoItem = new TocLayerInfoItem(parentItem, layerInfo, isVisible, isInScaleRange);
 
         // Handle any sublayers of a group layer
         if (layerInfo.subLayerIds)
@@ -465,14 +516,14 @@ public class TocMapLayerItem extends TocItem
                 var childLayer:LayerInfo = findLayerById(childId, layerInfos);
                 if (childLayer)
                 {
-                    item.addChild(createTocLayer(item, childLayer, layerInfos, childLayer.defaultVisibility));
+                    item.addChild(createTocLayer(item, childLayer, layerInfos, childLayer.defaultVisibility, item.isInScaleRange && isTocLayerInfoItemInScale(childLayer)));
                 }
             }
         }
         return item;
     }
 
-    private static function createKmlFolderTocItem(parentItem:TocItem, folder:KMLFolder, folders:Array, layer:KMLLayer):TocKmlFolderItem
+    private function createKmlFolderTocItem(parentItem:TocItem, folder:KMLFolder, folders:Array, layer:KMLLayer):TocKmlFolderItem
     {
         var item:TocKmlFolderItem = new TocKmlFolderItem(parentItem, folder, layer);
 
@@ -503,7 +554,7 @@ public class TocMapLayerItem extends TocItem
         return item;
     }
 
-    private static function createKmlNetworkLinkTocItem(item:TocItem, networkLink:KMLLayer, layer:KMLLayer):TocKmlNetworkLinkItem
+    private function createKmlNetworkLinkTocItem(item:TocItem, networkLink:KMLLayer, layer:KMLLayer):TocKmlNetworkLinkItem
     {
         var tocKmlNetworkLinkItem:TocKmlNetworkLinkItem = new TocKmlNetworkLinkItem(item, networkLink, layer);
         if (networkLink.loaded)
@@ -523,7 +574,7 @@ public class TocMapLayerItem extends TocItem
         return tocKmlNetworkLinkItem;
     }
 
-    private static function findFolderById(id:Number, allFolders:Array):KMLFolder
+    private function findFolderById(id:Number, allFolders:Array):KMLFolder
     {
         var match:KMLFolder;
 

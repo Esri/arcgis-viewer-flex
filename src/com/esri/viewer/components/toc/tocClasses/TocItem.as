@@ -136,6 +136,27 @@ public class TocItem extends EventDispatcher
         setVisible(value, true);
     }
 
+    internal static const DEFAULT_IS_IN_SCALE_RANGE:Boolean = true;
+
+    private var _isInScaleRange:Boolean = DEFAULT_IS_IN_SCALE_RANGE;
+
+    [Bindable("propertyChange")]
+    /**
+     * Whether the map layer referred to by this TOC item is enabled or not.
+     */
+    public function get isInScaleRange():Boolean
+    {
+        return _isInScaleRange;
+    }
+
+    /**
+     * @private
+     */
+    public function set isInScaleRange(value:Boolean):void
+    {
+        setIsInScaleRange(value, true);
+    }
+
     /**
      * Allows subclasses to change the visible state without causing a layer refresh.
      */
@@ -154,6 +175,26 @@ public class TocItem extends EventDispatcher
 
             // Dispatch a property change event to notify the item renderer
             dispatchEvent(PropertyChangeEvent.createUpdateEvent(this, "visible", oldValue, value));
+        }
+    }
+
+    /**
+     * Allows subclasses to change the isInScaleRange state without causing a layer refresh.
+     */
+    internal function setIsInScaleRange(value:Boolean, layerRefresh:Boolean = true):void
+    {
+        if (value != _isInScaleRange)
+        {
+            var oldValue:Object = _isInScaleRange;
+            _isInScaleRange = value;
+
+            if (layerRefresh)
+            {
+                refreshLayer();
+            }
+
+            // Dispatch a property change event to notify the item renderer
+            dispatchEvent(PropertyChangeEvent.createUpdateEvent(this, "isInScaleRange", oldValue, value));
         }
     }
 

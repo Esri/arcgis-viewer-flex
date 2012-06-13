@@ -84,8 +84,9 @@
                   verticalAlign="middle">
             <s:VGroup width="25" height="30"
                       horizontalAlign="center">
-                <mx:Image id="icon"
-                          width="100%" height="100%"/>
+                <s:Image id="icon"
+                         width="100%" height="100%"
+                         smooth="true"/>
                 <HeaderController:WidgetUnderline id="underline"/>
             </s:VGroup>
             <s:Label id="widgetLabel"

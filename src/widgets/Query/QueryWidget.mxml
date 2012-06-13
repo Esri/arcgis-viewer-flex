@@ -42,9 +42,6 @@
             import com.esri.ags.events.LayerEvent;
             import com.esri.ags.geometry.Geometry;
             import com.esri.ags.geometry.MapPoint;
-            import com.esri.ags.geometry.Multipoint;
-            import com.esri.ags.geometry.Polygon;
-            import com.esri.ags.geometry.Polyline;
             import com.esri.ags.layers.FeatureLayer;
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.layers.supportClasses.CodedValue;
@@ -57,9 +54,9 @@
             import com.esri.ags.symbols.SimpleLineSymbol;
             import com.esri.ags.symbols.Symbol;
             import com.esri.ags.tasks.supportClasses.Query;
-            import com.esri.ags.webmap.PopUpRenderer;
-            import com.esri.ags.webmap.supportClasses.PopUpInfo;
-            import com.esri.ags.webmap.supportClasses.PopUpMediaInfo;
+            import com.esri.ags.portal.PopUpRenderer;
+            import com.esri.ags.portal.supportClasses.PopUpInfo;
+            import com.esri.ags.portal.supportClasses.PopUpMediaInfo;
 
             import mx.collections.ArrayCollection;
             import mx.events.FlexEvent;
@@ -69,6 +66,9 @@
             import mx.utils.StringUtil;
 
             import spark.components.supportClasses.ItemRenderer;
+
+            import widgets.supportClasses.ResultAttributes;
+            import widgets.supportClasses.ResultItem;
 
             private const ICON_URL:String = "assets/images/";
 
@@ -472,13 +472,12 @@
                         }
                     }
 
-                    var queryResult:QueryResult = new QueryResult();
-                    queryResult.title = title;
-                    queryResult.content = content;
-                    queryResult.point = getGeomCenter(graphic);
-                    queryResult.link = link ? link : null;
-                    queryResult.geometry = graphic.geometry;
-                    queryResult.graphic = graphic;
+                    var resultAttributes:ResultAttributes = new ResultAttributes();
+                    resultAttributes.title = title;
+                    resultAttributes.content = content;
+                    resultAttributes.link = link ? link : null;
+
+                    var queryResult:ResultItem = new ResultItem(graphic, resultAttributes);
 
                     if (graphic.geometry)
                     {
@@ -486,27 +485,27 @@
                         {
                             case Geometry.POLYLINE:
                             {
-                                graphic.symbol = queryResult.symbol = resultLineSymbol;
+                                graphic.symbol = resultLineSymbol;
                                 break;
                             }
                             case Geometry.POLYGON:
                             {
-                                graphic.symbol = queryResult.symbol = resultFillSymbol;
+                                graphic.symbol = resultFillSymbol;
                                 break;
                             }
                             case Geometry.MAPPOINT:
                             {
-                                graphic.symbol = queryResult.symbol = resultMarkerSymbol;
+                                graphic.symbol = resultMarkerSymbol;
                                 break;
                             }
                         }
                     }
 
                     graphic.checkForMouseListeners = false;
-                    graphic.attributes = queryResult;
+                    graphic.attributes = resultAttributes;
                     result.addItem(queryResult);
 
-                    if (queryResult.point && !isNaN(queryResult.point.x) && !isNaN(queryResult.point.y)) // make sure it is a valid point
+                    if (queryResult.center && !isNaN(queryResult.center.x) && !isNaN(queryResult.center.y)) // make sure it is a valid point
                     {
                         graphicsLayer.add(graphic);
                     }
@@ -675,56 +674,13 @@
                 return result;
             }
 
-            private function getGeomCenter(graphic:Graphic):MapPoint
-            {
-                var point:MapPoint;
-                var geometry:Geometry = graphic.geometry;
-
-                if (geometry)
-                {
-                    switch (geometry.type)
-                    {
-                        case Geometry.MAPPOINT:
-                        {
-                            point = geometry as MapPoint;
-                            break;
-                        }
-                        case Geometry.MULTIPOINT:
-                        {
-                            const multipoint:Multipoint = geometry as Multipoint;
-                            point = multipoint.points && multipoint.points.length > 0 ? multipoint.points[0] as MapPoint : null;
-                            break;
-                        }
-                        case Geometry.POLYLINE:
-                        {
-                            var pl:Polyline = geometry as Polyline;
-                            var pathCount:Number = pl.paths.length;
-                            var pathIndex:int = int((pathCount / 2) - 1);
-                            var midPath:Array = pl.paths[pathIndex];
-                            var ptCount:Number = midPath.length;
-                            var ptIndex:int = int((ptCount / 2) - 1);
-                            point = pl.getPoint(pathIndex, ptIndex);
-                            break;
-                        }
-                        case Geometry.POLYGON:
-                        {
-                            const poly:Polygon = geometry as Polygon;
-                            point = poly.extent.center;
-                            break;
-                        }
-                    }
-                }
-
-                return point;
-            }
-
             private var hitimer:uint;
 
             private function mouseOverQueryResult(event:Event):void
             {
                 clearTimeout(hitimer);
-                var queryResult:QueryResult = ItemRenderer(event.target).data as QueryResult;
-                if (map.extent.containsXY(queryResult.point.x, queryResult.point.y)) // only show infowindow if query result in contained within map extent
+                var queryResult:ResultItem = ItemRenderer(event.target).data as ResultItem;
+                if (map.extent.containsXY(queryResult.center.x, queryResult.center.y)) // only show infowindow if query result in contained within map extent
                 {
                     hitimer = setTimeout(showHighlight, 300, [ queryResult ]);
                 }
@@ -741,7 +697,7 @@
 
             private function clickQueryResult(event:Event):void
             {
-                var queryResult:QueryResult = ItemRenderer(event.target).data as QueryResult;
+                var queryResult:ResultItem = ItemRenderer(event.target).data as ResultItem;
                 if (queryResult.geometry)
                 {
                     if (queryResult.geometry.type == Geometry.MAPPOINT)
@@ -751,7 +707,7 @@
                             map.scale = zoomScale;
                         }
 
-                        map.centerAt(queryResult.point);
+                        map.centerAt(queryResult.center);
                     }
                     else
                     {
@@ -769,10 +725,11 @@
 
             private function showHighlight(params:Array):void
             {
-                var showHighlightPoint:MapPoint = params[0].point as MapPoint;
+                var queryResult:ResultItem = params[0];
+                var showHighlightPoint:MapPoint = queryResult.center as MapPoint;
 
-                popUpRenderer.popUpInfo = configurePopUpInfo(params[0].graphic.attributes.link);
-                popUpRenderer.graphic = params[0].graphic;
+                popUpRenderer.popUpInfo = configurePopUpInfo(queryResult.attributes.link);
+                popUpRenderer.graphic = queryResult.graphic;
 
                 map.infoWindow.content = popUpRenderer;
                 map.infoWindow.contentOwner = popUpRenderer.graphic;
@@ -847,14 +804,14 @@
                 doFilter();
             }
 
-            private function filterGraphicLayer(item:Object):Boolean
+            private function filterGraphicLayer(graphic:Graphic):Boolean
             {
-                return QueryResult(Graphic(item).attributes).content.match(new RegExp(txtFilter.text, 'i')) != null;
+                return ResultAttributes(graphic.attributes).content.match(new RegExp(txtFilter.text, 'i')) != null;
             }
 
-            private function filterDataList(item:Object):Boolean
+            private function filterDataList(queryResult:ResultItem):Boolean
             {
-                return QueryResult(item).content.match(new RegExp(txtFilter.text, 'i')) != null;
+                return queryResult.attributes.content.match(new RegExp(txtFilter.text, 'i')) != null;
             }
 
             private function hideInfoWindow():void

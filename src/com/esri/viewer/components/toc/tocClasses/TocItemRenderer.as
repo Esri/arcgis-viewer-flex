@@ -145,14 +145,24 @@ public class TocItemRenderer extends TreeItemRenderer
                 _layerMenuImage.visible = true;
             }
 
-            // Apply a bold label style to root nodes
             if (item.isTopLevel())
             {
+                // Apply a bold label style to root nodes
                 setStyle("fontWeight", "bold");
             }
             else
             {
                 setStyle("fontWeight", "normal");
+            }
+            if (item.isInScaleRange)
+            {
+                alpha = 1;
+                setStyle("fontStyle", "normal");
+            }
+            else
+            {
+                alpha = 0.5;
+                setStyle("fontStyle", "italic");
             }
         }
     }

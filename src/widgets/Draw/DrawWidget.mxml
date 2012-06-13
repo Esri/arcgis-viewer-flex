@@ -1094,6 +1094,7 @@
                 gra.symbol = txtSym;
                 gra.mouseEnabled = false;
                 gra.mouseChildren = false;
+                gra.filters = [ measurementBorderFilter ];
                 graphicsLayer.add(gra);
             }
 
@@ -1142,6 +1143,11 @@
                       color="{getStyle('focusColor')}"
                       inner="true"
                       strength="2"/>
+        <s:GlowFilter id="measurementBorderFilter"
+                      blurX="3"
+                      blurY="3"
+                      color="0xFFFFFF"
+                      strength="7"/>
         <esri:GeometryService id="geometryService"
                               fault="geometryService_faultHandler(event)"
                               projectComplete="geometryService_projectCompleteHandler(event)"
@@ -1353,7 +1359,8 @@
                                     <fx:Object name="{getDefaultString('markerStyleCross')}" style="{SimpleMarkerSymbol.STYLE_CROSS}"/>
                                     <fx:Object name="{getDefaultString('markerStyleDiamond')}" style="{SimpleMarkerSymbol.STYLE_DIAMOND}"/>
                                     <fx:Object name="{getDefaultString('markerStyleSquare')}" style="{SimpleMarkerSymbol.STYLE_SQUARE}"/>
-                                    <fx:Object name="{getDefaultString('markerStyleTriangle')}" style="{SimpleMarkerSymbol.STYLE_TRIANGLE}"/>
+                                    <!-- triangle style is not supported by the 10.1 print task -->
+                                    <!--<fx:Object name="{getDefaultString('markerStyleTriangle')}" style="{SimpleMarkerSymbol.STYLE_TRIANGLE}"/>-->
                                     <fx:Object name="{getDefaultString('markerStyleX')}" style="{SimpleMarkerSymbol.STYLE_X}"/>
                                 </s:ArrayList>
                             </s:DropDownList>

@@ -42,16 +42,16 @@
             import com.esri.ags.Map;
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.layers.GraphicsLayer;
+            import com.esri.ags.portal.PopUpRenderer;
+            import com.esri.ags.portal.supportClasses.PopUpInfo;
             import com.esri.ags.symbols.PictureMarkerSymbol;
             import com.esri.ags.symbols.Symbol;
+            import com.esri.ags.tasks.JSONTask;
             import com.esri.ags.tasks.supportClasses.AddressCandidate;
             import com.esri.ags.tasks.supportClasses.AddressToLocationsParameters;
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.ags.virtualearth.VEGeocodeResult;
-            import com.esri.ags.webmap.PopUpRenderer;
-            import com.esri.ags.webmap.supportClasses.PopUpInfo;
             import com.esri.viewer.utils.ErrorMessageUtil;
-            import com.esri.viewer.utils.GenericJSONTask;
 
             import mx.collections.ArrayCollection;
             import mx.collections.ArrayList;
@@ -106,7 +106,7 @@
             [Bindable]
             private var yExampleValue:String;
 
-            private var locatorService:GenericJSONTask;
+            private var locatorService:JSONTask;
             private var addrObjects:Array = [];
             private var excludeFields:Array;
             private var graphicsLayer:GraphicsLayer;
@@ -119,6 +119,7 @@
             private var useSingleLine:Boolean = true;
             private var zoomScale:Number = 10000;
             private var serviceWKID:Number;
+            private var useSearchExtent:Boolean;
 
             private var popUpRenderer:PopUpRenderer = new PopUpRenderer();
 
@@ -145,6 +146,7 @@
                     }
 
                     minscore = Number(configXML.minscore) || 40;
+                    useSearchExtent = configXML.usesearchextent == "true";
 
                     configureLocator();
                 }
@@ -191,7 +193,6 @@
                 const resultSymbolYOffset:Number = configXML.symbols.picturemarkersymbol.@yoffset || 0;
                 resultSymbol = new PictureMarkerSymbol(resultSymbolURL, resultSymbolWidth, resultSymbolHeight, resultSymbolXOffset, resultSymbolYOffset);
             }
-
 
             private function configureGraphicsLayer():void
             {
@@ -265,7 +266,7 @@
                     }
 
                     var url:String = configXML.locator;
-                    locatorService = new GenericJSONTask();
+                    locatorService = new JSONTask();
                     locatorService.url = url;
                     locator.url = url;
 
@@ -364,15 +365,8 @@
                     + "Most likely cause:\n"
                     + ErrorMessageUtil.getKnownErrorCauseMessage(fault.faultCode) + "\n\n"
                     + "Details:\n"
-                    + makeHTMLSafe(fault.toString());
+                    + ErrorMessageUtil.makeHTMLSafe(fault.toString());
                 showError(msg);
-            }
-
-            private function makeHTMLSafe(content:String):String
-            {
-                content = content.replace(/>/g, "&gt;");
-                content = content.replace(/</g, "&lt;");
-                return content;
             }
 
             private function createSingleLineAddressField(singleLineAddressData:Object):void
@@ -602,6 +596,10 @@
                 showStateResults();
                 var parameters:AddressToLocationsParameters = new AddressToLocationsParameters();
                 parameters.address = data;
+                if (useSearchExtent)
+                {
+                    parameters.searchExtent = map.extent;
+                }
                 locator.addressToLocations(parameters, new ItemResponder(locateResult, locateError));
                 showMessage(loadingLabel, true);
             }
@@ -719,27 +717,35 @@
                     var lat:String = txtLat.text;
                     if (long && lat)
                     {
-                        showStateResults();
-
-                        var locateResult:LocateResult = new LocateResult();
-                        locateResult.symbol = resultSymbol;
-                        locateResult.title = coordinatesLabel;
-                        locateResult.content = long + " " + lat;
-                        locateResult.point = new MapPoint(Number(long), Number(lat));
-                        var mapWKID:Number = map.spatialReference ? map.spatialReference.wkid : NaN;
-                        var mapIsWebMercator:Boolean = mapWKID == 102100 || mapWKID == 3857 || mapWKID == 102113;
-                        if (mapIsWebMercator)
+                        var numLong:Number = Number(long);
+                        var numLat:Number = Number(lat);
+                        if (!isNaN(numLong) && !isNaN(numLat))
                         {
-                            locateResult.point = WebMercatorUtil.geographicToWebMercator(locateResult.point) as MapPoint;
+                            showStateResults();
+
+                            var locateResult:LocateResult = new LocateResult();
+                            locateResult.symbol = resultSymbol;
+                            locateResult.title = coordinatesLabel;
+                            locateResult.content = long + " " + lat;
+                            locateResult.point = new MapPoint(numLong, numLat);
+                            var mapWKID:Number = map.spatialReference ? map.spatialReference.wkid : NaN;
+                            var mapIsWebMercator:Boolean = mapWKID == 102100 || mapWKID == 3857 || mapWKID == 102113;
+                            if (mapIsWebMercator)
+                            {
+                                // clip the locate result, so it's not going to Infinity; otherwise gives an error                           
+                                locateResult.point.x = Math.min(Math.max(locateResult.point.x, -180), 180);
+                                locateResult.point.y = Math.min(Math.max(locateResult.point.y, -89.99), 89.99);
+                                locateResult.point = WebMercatorUtil.geographicToWebMercator(locateResult.point) as MapPoint;
+                            }
+                            locateResult.link = "";
+                            locateResult.selected = true;
+
+                            locateResultAC = new ArrayCollection([ locateResult ]);
+
+                            addSharedData(widgetTitle, locateResultAC);
+                            showLocation(locateResult);
+                            showMessage(locationsLabel + " " + locateResultAC.length, false);
                         }
-                        locateResult.link = "";
-                        locateResult.selected = true;
-
-                        locateResultAC = new ArrayCollection([ locateResult ]);
-
-                        addSharedData(widgetTitle, locateResultAC);
-                        showLocation(locateResult);
-                        showMessage(locationsLabel + " " + locateResultAC.length, false);
                     }
                     else
                     {

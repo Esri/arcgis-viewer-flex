@@ -30,8 +30,6 @@
             import com.esri.ags.Map;
             import com.esri.ags.geometry.Geometry;
             import com.esri.ags.geometry.MapPoint;
-            import com.esri.ags.geometry.Polygon;
-            import com.esri.ags.geometry.Polyline;
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.symbols.PictureMarkerSymbol;
             import com.esri.ags.symbols.SimpleFillSymbol;
@@ -39,21 +37,20 @@
             import com.esri.ags.symbols.Symbol;
             import com.esri.ags.utils.StringUtil;
             import com.esri.ags.utils.WebMercatorUtil;
-            import com.esri.ags.webmap.PopUpRenderer;
-            import com.esri.ags.webmap.supportClasses.PopUpInfo;
-            import com.esri.ags.webmap.supportClasses.PopUpMediaInfo;
-            import com.esri.viewer.AppEvent;
-            import com.esri.viewer.ViewerContainer;
+            import com.esri.ags.portal.PopUpRenderer;
+            import com.esri.ags.portal.supportClasses.PopUpInfo;
+            import com.esri.ags.portal.supportClasses.PopUpMediaInfo;
             import com.esri.viewer.utils.GeoRSSUtil;
             import com.esri.viewer.utils.Namespaces;
 
             import mx.collections.ArrayCollection;
-            import mx.controls.Alert;
-            import mx.core.UIComponent;
             import mx.events.FlexEvent;
             import mx.rpc.events.ResultEvent;
 
             import spark.components.supportClasses.ItemRenderer;
+
+            import widgets.supportClasses.ResultAttributes;
+            import widgets.supportClasses.ResultItem;
 
             private static const ATOM:Namespace = Namespaces.ATOM_NS;
 
@@ -300,13 +297,12 @@
                     var graphic:Graphic = new Graphic(geometry);
                     graphic.checkForMouseListeners = false;
 
-                    var geoRSSFeed:GeoRSSFeed = new GeoRSSFeed;
-                    geoRSSFeed.title = title;
-                    geoRSSFeed.content = content;
-                    geoRSSFeed.point = getGeomCenter(graphic);
-                    geoRSSFeed.link = link;
-                    geoRSSFeed.geometry = geometry;
-                    geoRSSFeed.graphic = graphic;
+                    var resultAttributes:ResultAttributes = new ResultAttributes();
+                    resultAttributes.title = title;
+                    resultAttributes.content = content;
+                    resultAttributes.link = link ? link : null;
+
+                    var geoRSSFeed:ResultItem = new ResultItem(graphic, resultAttributes);
 
                     if (geometry)
                     {
@@ -314,25 +310,25 @@
                         {
                             case Geometry.POLYLINE:
                             {
-                                graphic.symbol = geoRSSFeed.symbol = resultLineSymbol;
+                                graphic.symbol = resultLineSymbol;
                                 break;
                             }
                             case Geometry.POLYGON:
                             {
-                                graphic.symbol = geoRSSFeed.symbol = resultFillSymbol;
+                                graphic.symbol = resultFillSymbol;
                                 break;
                             }
                             case Geometry.MAPPOINT:
                             {
-                                graphic.symbol = geoRSSFeed.symbol = resultMarkerSymbol;
+                                graphic.symbol = resultMarkerSymbol;
                                 break;
                             }
                         }
                     }
-                    graphic.attributes = geoRSSFeed;
+                    graphic.attributes = resultAttributes;
                     result.addItem(geoRSSFeed);
 
-                    if (geoRSSFeed.point && !isNaN(geoRSSFeed.point.x) && !isNaN(geoRSSFeed.point.y)) // make sure it is a valid point
+                    if (geoRSSFeed.center && !isNaN(geoRSSFeed.center.x) && !isNaN(geoRSSFeed.center.y)) // make sure it is a valid point
                     {
                         graphicsLayer.add(graphic);
                     }
@@ -398,48 +394,11 @@
                 return "";
             }
 
-            private function getGeomCenter(graphic:Graphic):MapPoint
-            {
-                var point:MapPoint;
-                var geometry:Geometry = graphic.geometry;
-
-                if (geometry)
-                {
-                    switch (geometry.type)
-                    {
-                        case Geometry.MAPPOINT:
-                        {
-                            point = geometry as MapPoint;
-                            break;
-                        }
-                        case Geometry.POLYLINE:
-                        {
-                            var pl:Polyline = geometry as Polyline;
-                            var pathCount:Number = pl.paths.length;
-                            var pathIndex:int = int((pathCount / 2) - 1);
-                            var midPath:Array = pl.paths[pathIndex];
-                            var ptCount:Number = midPath.length;
-                            var ptIndex:int = int((ptCount / 2) - 1);
-                            point = pl.getPoint(pathIndex, ptIndex);
-                            break;
-                        }
-                        case Geometry.POLYGON:
-                        {
-                            const poly:Polygon = geometry as Polygon;
-                            point = poly.extent.center;
-                            break;
-                        }
-                    }
-                }
-
-                return point;
-            }
-
             private function mouseOverGeoRSSFeed(event:Event):void
             {
                 clearTimeout(highlightTimer);
-                var geoRSSFeed:GeoRSSFeed = ItemRenderer(event.target).data as GeoRSSFeed;
-                if (map.extent.containsXY(geoRSSFeed.point.x, geoRSSFeed.point.y)) // only show infowindow if feed in contained within map extent
+                var geoRSSFeed:ResultItem = ItemRenderer(event.target).data as ResultItem;
+                if (map.extent.containsXY(geoRSSFeed.center.x, geoRSSFeed.center.y)) // only show infowindow if feed in contained within map extent
                 {
                     highlightTimer = setTimeout(showHighlight, 300, [ geoRSSFeed ]);
                 }
@@ -456,14 +415,14 @@
 
             private function clickGeoRSSFeed(event:Event):void
             {
-                var geoRSSFeed:GeoRSSFeed = ItemRenderer(event.target).data as GeoRSSFeed;
-                if (geoRSSFeed.point)
+                var geoRSSFeed:ResultItem = ItemRenderer(event.target).data as ResultItem;
+                if (geoRSSFeed.center)
                 {
                     if (map.scale > zoomScale)
                     {
                         map.scale = zoomScale;
                     }
-                    map.centerAt(geoRSSFeed.point);
+                    map.centerAt(geoRSSFeed.center);
                 }
                 clearTimeout(highlightTimer);
                 highlightTimer = setTimeout(showHighlight, 300, [ geoRSSFeed ]);
@@ -471,10 +430,11 @@
 
             private function showHighlight(params:Array):void
             {
-                var showHighlightPoint:MapPoint = params[0].point as MapPoint;
+                var geoRSSFeed:ResultItem = params[0];
+                var showHighlightPoint:MapPoint = geoRSSFeed.center as MapPoint;
 
-                popUpRenderer.popUpInfo = configurePopUpInfo(params[0].graphic.attributes.link);
-                popUpRenderer.graphic = params[0].graphic;
+                popUpRenderer.popUpInfo = configurePopUpInfo(geoRSSFeed.attributes.link);
+                popUpRenderer.graphic = geoRSSFeed.graphic;
 
                 map.infoWindow.content = popUpRenderer;
                 map.infoWindow.contentOwner = popUpRenderer.graphic;
@@ -521,7 +481,6 @@
     </fx:Script>
 
     <fx:Declarations>
-        <!-- HTTP SERVICE -->
         <mx:HTTPService id="rssService"
                         fault="faultHandler(event)"
                         result="loadRSSData(event)"

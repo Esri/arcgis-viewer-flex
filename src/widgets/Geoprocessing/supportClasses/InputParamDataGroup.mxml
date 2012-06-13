@@ -37,8 +37,7 @@
             import widgets.Geoprocessing.renderers.input.GPInputRasterDataLayerParamItemRenderer;
             import widgets.Geoprocessing.renderers.input.GPInputRecordSetParamItemRenderer;
             import widgets.Geoprocessing.renderers.input.GPInputStringParamItemRenderer;
-            import widgets.Geoprocessing.renderers.input.multivalue.GPInputMultiValueParamItemRenderer;
-            import widgets.Geoprocessing.supportClasses.FeatureInputParamEvent;
+            import widgets.Geoprocessing.renderers.input.multivalue.GPInputMultiValueStringParamItemRenderer;
 
             private var _visibleGraphicsLayers:ArrayList;
 
@@ -103,9 +102,9 @@
                         itemRendererClass = GPInputRasterDataLayerParamItemRenderer;
                         break;
                     }
-                    case GPParameterTypes.MULTI_VALUE:
+                    case GPParameterTypes.MULTI_VALUE_STRING:
                     {
-                        itemRendererClass = GPInputMultiValueParamItemRenderer;
+                        itemRendererClass = GPInputMultiValueStringParamItemRenderer;
                         break;
                     }
                     default:

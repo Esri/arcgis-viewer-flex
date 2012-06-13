@@ -26,7 +26,7 @@ import com.esri.ags.layers.supportClasses.LayerInfo;
  */
 public class TocLayerInfoItem extends TocItem
 {
-    public function TocLayerInfoItem(parentItem:TocItem, layerInfo:LayerInfo, isVisible:Boolean)
+    public function TocLayerInfoItem(parentItem:TocItem, layerInfo:LayerInfo, isVisible:Boolean, isInScaleRange:Boolean)
     {
         super(parentItem);
 
@@ -34,6 +34,7 @@ public class TocLayerInfoItem extends TocItem
         label = layerInfo.name;
 
         setVisible(isVisible, false);
+        setIsInScaleRange(isInScaleRange, false);
     }
 
     //--------------------------------------------------------------------------
@@ -48,27 +49,6 @@ public class TocLayerInfoItem extends TocItem
     public function get layerInfo():LayerInfo
     {
         return _layerInfo;
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    //  Methods
-    //
-    //--------------------------------------------------------------------------
-
-    /**
-     * @private
-     */
-    override internal function setVisible(value:Boolean, layerRefresh:Boolean = true):void
-    {
-        // Set the visible state of this item, but defer the layer refresh
-        super.setVisible(value, false);
-
-        // Allow the layer refresh now that all changes have been made
-        if (layerRefresh)
-        {
-            refreshLayer();
-        }
     }
 }
 

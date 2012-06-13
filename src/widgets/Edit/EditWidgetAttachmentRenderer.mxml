@@ -24,13 +24,7 @@
         <![CDATA[
             import com.esri.ags.components.supportClasses.AttachmentRemoveEvent;
             import com.esri.ags.layers.supportClasses.AttachmentInfo;
-            import com.esri.ags.skins.AttachmentInspectorSkin;
 
-            import mx.controls.Alert;
-            import mx.events.CloseEvent;
-            import mx.events.FlexEvent;
-
-            import spark.components.BorderContainer;
             import spark.components.List;
 
             [Bindable]
@@ -157,7 +151,7 @@
                 }
             }
 
-            protected function button1_clickHandler(event:MouseEvent):void
+            protected function deleteButton_clickHandler(event:MouseEvent):void
             {
                 event.stopImmediatePropagation();
 
@@ -203,8 +197,8 @@
               buttonMode="true"
               emphasized="true"
               includeIn="hovered,selected"
-              includeInLayout="{EditWidgetAttachmentInfoList(owner).deleteEnabled}"
-              mouseDown="button1_clickHandler(event)"
+              includeInLayout="{EditWidgetAttachmentInfoList(owner).deleteEnabled &amp;&amp; EditWidgetAttachmentInfoList(owner).isEditable}"
+              mouseDown="deleteButton_clickHandler(event)"
               skinClass="com.esri.ags.skins.supportClasses.AttachmentRendererDeleteButtonSkin"
-              visible="{EditWidgetAttachmentInfoList(owner).deleteEnabled}"/>
+              visible="{EditWidgetAttachmentInfoList(owner).deleteEnabled &amp;&amp; EditWidgetAttachmentInfoList(owner).isEditable}"/>
 </s:ItemRenderer>

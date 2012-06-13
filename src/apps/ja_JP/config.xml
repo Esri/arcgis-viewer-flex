@@ -8,7 +8,7 @@
 -->
 <configuration>
     <title>ArcGIS Viewer for Flex</title>
-    <logo>assets/images/jp.png</logo>
+    <logo>assets/images/logo.png</logo>
     <style>
         <colors>0xFFFFFF,0x333333,0x101010,0x000000,0xFFD700</colors>
         <alpha>0.8</alpha>
@@ -23,12 +23,7 @@
     <widget left="0" top="0" config="apps/ja_JP/HeaderControllerWidget.xml" url="widgets/HeaderController/HeaderControllerWidget.swf"/>
     <widget left="3" bottom="3" config="apps/ja_JP/CoordinateWidget.xml" url="widgets/Coordinate/CoordinateWidget.swf"/>
 
-    <map initialextent="14211000 3338000 16794000 5916000" top="40" wraparound180="true">
-        <basemaps>
-            <layer label="道路地図" type="tiled" visible="true" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer"/>
-            <layer label="航空写真" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer"/>
-            <layer label="地形図" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer"/>
-        </basemaps>
+    <map initialextent="14211000 3338000 16794000 5916000" top="40" wraparound180="true" addarcgisbasemaps="true">
         <operationallayers>
             <layer label="人口統計" type="tiled" visible="false" alpha="0.5" url="http://server.arcgisonline.com/ArcGIS/rest/services/Demographics/USA_Median_Household_Income/MapServer">
                 <sublayer id="1" popupconfig="popups/PopUp_Demographics_BlockGroups.xml"/>

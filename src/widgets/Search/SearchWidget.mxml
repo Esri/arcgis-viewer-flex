@@ -49,7 +49,6 @@
             import com.esri.ags.geometry.Geometry;
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.geometry.Polygon;
-            import com.esri.ags.geometry.Polyline;
             import com.esri.ags.layers.FeatureLayer;
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.layers.supportClasses.CodedValue;
@@ -66,9 +65,9 @@
             import com.esri.ags.tasks.supportClasses.Query;
             import com.esri.ags.tools.DrawTool;
             import com.esri.ags.utils.GeometryUtil;
-            import com.esri.ags.webmap.PopUpRenderer;
-            import com.esri.ags.webmap.supportClasses.PopUpInfo;
-            import com.esri.ags.webmap.supportClasses.PopUpMediaInfo;
+            import com.esri.ags.portal.PopUpRenderer;
+            import com.esri.ags.portal.supportClasses.PopUpInfo;
+            import com.esri.ags.portal.supportClasses.PopUpMediaInfo;
             import com.esri.viewer.AppEvent;
 
             import mx.collections.ArrayCollection;
@@ -78,6 +77,9 @@
             import mx.rpc.events.FaultEvent;
 
             import spark.components.supportClasses.ItemRenderer;
+
+            import widgets.supportClasses.ResultAttributes;
+            import widgets.supportClasses.ResultItem;
 
             private const ICON_URL:String = "assets/images/";
 
@@ -702,14 +704,13 @@
 
                     graphic.checkForMouseListeners = false;
 
-                    var searchResult:SearchResult = new SearchResult();
-                    searchResult.title = title;
-                    searchResult.content = content;
-                    searchResult.point = getGeomCenter(graphic);
-                    searchResult.link = link ? link : null;
-                    searchResult.linkAlias = linkAlias;
-                    searchResult.geometry = graphic.geometry;
-                    searchResult.graphic = graphic;
+                    var resultAttributes:ResultAttributes = new ResultAttributes();
+                    resultAttributes.title = title;
+                    resultAttributes.content = content;
+                    resultAttributes.link = link ? link : null;
+                    resultAttributes.linkAlias = linkAlias;
+
+                    var searchResult:ResultItem = new ResultItem(graphic, resultAttributes);
 
                     if (graphic.geometry)
                     {
@@ -717,25 +718,25 @@
                         {
                             case Geometry.MAPPOINT:
                             {
-                                graphic.symbol = searchResult.symbol = resultMarkerSymbol;
+                                graphic.symbol = resultMarkerSymbol;
                                 break;
                             }
                             case Geometry.POLYLINE:
                             {
-                                graphic.symbol = searchResult.symbol = resultLineSymbol;
+                                graphic.symbol = resultLineSymbol;
                                 break;
                             }
                             case Geometry.POLYGON:
                             {
-                                graphic.symbol = searchResult.symbol = resultFillSymbol;
+                                graphic.symbol = resultFillSymbol;
                                 break;
                             }
                         }
                     }
 
-                    graphic.attributes = searchResult;
+                    graphic.attributes = resultAttributes;
                     result.addItem(searchResult);
-                    var isValidPoint:Boolean = searchResult.point && !isNaN(searchResult.point.x) && !isNaN(searchResult.point.y);
+                    var isValidPoint:Boolean = searchResult.center && !isNaN(searchResult.center.x) && !isNaN(searchResult.center.y);
 
                     if (isValidPoint)
                     {
@@ -762,7 +763,7 @@
                     var sfx:String = link.substr(pos, 4).toLowerCase();
                     var isImageLink:Boolean = (sfx == ".jpg") || (sfx == ".png") || (sfx == ".gif");
 
-                    if (false)
+                    if (isImageLink)
                     {
                         var popUpMediaInfo:PopUpMediaInfo = new PopUpMediaInfo;
                         popUpMediaInfo.imageLinkURL = link;
@@ -920,43 +921,6 @@
                 return result;
             }
 
-            private function getGeomCenter(graphic:Graphic):MapPoint
-            {
-                var point:MapPoint;
-                var geometry:Geometry = graphic.geometry;
-
-                if (geometry)
-                {
-                    switch (geometry.type)
-                    {
-                        case Geometry.MAPPOINT:
-                        {
-                            point = geometry as MapPoint;
-                            break;
-                        }
-                        case Geometry.POLYLINE:
-                        {
-                            const pl:Polyline = geometry as Polyline;
-                            const pathCount:Number = pl.paths.length;
-                            const pathIndex:int = int((pathCount / 2) - 1);
-                            const midPath:Array = pl.paths[pathIndex];
-                            const ptCount:Number = midPath.length;
-                            const ptIndex:int = int((ptCount / 2) - 1);
-                            point = pl.getPoint(pathIndex, ptIndex);
-                            break;
-                        }
-                        case Geometry.POLYGON:
-                        {
-                            const poly:Polygon = geometry as Polygon;
-                            point = poly.extent.center;
-                            break;
-                        }
-                    }
-                }
-
-                return point;
-            }
-
             private function clear():void
             {
                 hideInfoWindow();
@@ -974,8 +938,8 @@
             private function mouseOverSearchResult(event:Event):void
             {
                 clearTimeout(hitimer);
-                var searchResult:SearchResult = ItemRenderer(event.target).data as SearchResult;
-                var mapExtentContainsSearchResult:Boolean = map.extent.containsXY(searchResult.point.x, searchResult.point.y);
+                var searchResult:ResultItem = ItemRenderer(event.target).data as ResultItem;
+                var mapExtentContainsSearchResult:Boolean = map.extent.containsXY(searchResult.center.x, searchResult.center.y);
 
                 if (mapExtentContainsSearchResult)
                 {
@@ -994,7 +958,7 @@
 
             private function clickSearchResult(event:Event):void
             {
-                var searchResult:SearchResult = ItemRenderer(event.target).data as SearchResult;
+                var searchResult:ResultItem = ItemRenderer(event.target).data as ResultItem;
                 if (searchResult.geometry)
                 {
                     if (searchResult.geometry.type == Geometry.MAPPOINT)
@@ -1004,7 +968,7 @@
                             map.scale = zoomScale;
                         }
 
-                        map.centerAt(searchResult.point);
+                        map.centerAt(searchResult.center);
                     }
                     else
                     {
@@ -1022,11 +986,12 @@
 
             private function showHighlight(params:Array):void
             {
-                var showHighlightPoint:MapPoint = params[0].point as MapPoint;
-                var linkAlias:String = params[0].linkAlias;
+                var searchResult:ResultItem = params[0];
+                var showHighlightPoint:MapPoint = searchResult.center as MapPoint;
+                var linkAlias:String = searchResult.attributes.linkAlias;
 
-                popUpRenderer.popUpInfo = configurePopUpInfo(params[0].graphic.attributes.link, linkAlias);
-                popUpRenderer.graphic = params[0].graphic;
+                popUpRenderer.popUpInfo = configurePopUpInfo(searchResult.attributes.link, linkAlias);
+                popUpRenderer.graphic = searchResult.graphic;
 
                 map.infoWindow.content = popUpRenderer;
                 map.infoWindow.contentOwner = popUpRenderer.graphic;

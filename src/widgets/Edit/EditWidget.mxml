@@ -39,7 +39,7 @@
     <fx:Script>
         <![CDATA[
             import com.esri.ags.Graphic;
-            import com.esri.ags.components.IdentityManager;
+            import com.esri.ags.components.AttributeInspector;
             import com.esri.ags.events.AttributeInspectorEvent;
             import com.esri.ags.events.FeatureLayerEvent;
             import com.esri.ags.events.LayerEvent;
@@ -49,11 +49,13 @@
             import com.esri.ags.layers.FeatureLayer;
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.layers.Layer;
+            import com.esri.ags.layers.supportClasses.FeatureLayerDetails;
+            import com.esri.ags.layers.supportClasses.FeatureTableDetails;
             import com.esri.ags.layers.supportClasses.Field;
             import com.esri.ags.layers.supportClasses.LayerInfo;
             import com.esri.ags.skins.supportClasses.AttachmentMouseEvent;
             import com.esri.ags.tasks.GeometryServiceSingleton;
-            import com.esri.ags.utils.JSONUtil;
+            import com.esri.ags.tasks.JSONTask;
             import com.esri.viewer.AppEvent;
 
             import mx.binding.utils.ChangeWatcher;
@@ -62,10 +64,7 @@
             import mx.events.CollectionEvent;
             import mx.events.FlexEvent;
             import mx.rpc.AsyncResponder;
-            import mx.rpc.AsyncToken;
-            import mx.rpc.events.FaultEvent;
-            import mx.rpc.events.ResultEvent;
-            import mx.rpc.http.HTTPService;
+            import mx.rpc.Fault;
 
             [Bindable]
             private var oplList:Array;
@@ -187,45 +186,14 @@
                     }
                     editor.updateGeometryEnabled = updateGeometry;
 
-                    // showCreatorField
-                    if (configXML.showcreatorfield.length() > 0)
+                    // formFieldsOrder
+                    if (configXML.formfieldsorder.length() > 0)
                     {
-                        editor.attributeInspector.showCreatorField = configXML.showcreatorfield == "true";
-                    }
-
-                    // showCreationDateField
-                    if (configXML.showcreationdatefield.length() > 0)
-                    {
-                        editor.attributeInspector.showCreationDateField = configXML.showcreationdatefield == "true";
-                    }
-
-                    // showEditorField
-                    if (configXML.showeditorfield.length() > 0)
-                    {
-                        editor.attributeInspector.showEditorField = configXML.showeditorfield == "true";
-                    }
-
-                    // showEditDateField
-                    if (configXML.showeditdatefield.length() > 0)
-                    {
-                        editor.attributeInspector.showEditDateField = configXML.showeditdatefield == "true";
+                        editor.attributeInspector.formFieldsOrder = toAttributeInspectorFormFieldsOrder(configXML.formfieldsorder);
                     }
 
                     //labels
-                    attributesLabel = configXML.labels.attributeslabel[0] || getDefaultString("attributesLabel");
-                    attachmentsLabel = configXML.labels.attachmentslabel[0] || getDefaultString("attachmentsLabel");
-
-                    noEditableLayersText = configXML.noeditablelayerstext || getDefaultString("noEditableLayersText");
-                    EditWidgetTemplatePickerSkin.featureLayerNotVisibleText = configXML.featurelayernotvisibletext || getDefaultString("featureLayerNotVisibleText");
-                    EditWidgetAttributeInspectorSkin.showAttachmentsText = configXML.showattachmentstext || getDefaultString("showAttachmentsText");
-                    EditWidgetAttachmentInspectorSkin.layerNotSupportingAttachmentsText = configXML.layernotsupportingattchmentstext || getDefaultString("layerNotSupportingAttachmentsText");
-                    EditWidgetAttachmentInspectorSkin.noAttachmentsText = configXML.noattchmentstext || getDefaultString("noAttachmentsText");
-                    EditWidgetAttachmentInspectorSkin.chooseFileText = configXML.choosefiletext || getDefaultString("chooseFileText");
-                    EditWidgetAttachmentInspectorSkin.attachmentSubmitLabel = configXML.attachmentsubmitlabel || getDefaultString("attachmentSubmitLabel");
-                    EditWidgetAttachmentInspectorSkin.attachmentCancelLabel = configXML.attachmentcancellabel || getDefaultString("attachmentCancelLabel");
-                    EditWidgetAttributeInspectorSkin.deleteLabel = configXML.deletelabel || getDefaultString("deleteLabel");
-                    EditWidgetAttributeInspectorSkin.okLabel = configXML.oklabel || getDefaultString("okLabel");
-                    EditWidgetAttachmentInspectorSkin.showAttributesText = configXML.showattributestext || getDefaultString("showAttributesText");
+                    configureLabels(configXML.labels);
                 }
                 map.addEventListener(MapEvent.LAYER_ADD, mapLayerAddHandler, false);
                 map.addEventListener(MapEvent.LAYER_REMOVE, mapLayerRemoveHandler, false);
@@ -238,6 +206,45 @@
                 populateEditor(arrLayers);
             }
 
+            private function toAttributeInspectorFormFieldsOrder(formFieldsOrder:String):String
+            {
+                switch (formFieldsOrder)
+                {
+                    case "alphabetical":
+                    {
+                        return AttributeInspector.ALPHABETICAL_ORDER;
+                    }
+                    case "fieldinspector":
+                    {
+                        return AttributeInspector.FIELD_INSPECTOR_ORDER;
+                    }
+                    case "fields":
+                    default:
+                    {
+                        return AttributeInspector.FIELDS_ORDER;
+                    }
+                }
+            }
+
+            private function configureLabels(labels:XMLList):void
+            {
+                attributesLabel = labels.attributeslabel[0] || getDefaultString("attributesLabel");
+                attachmentsLabel = labels.attachmentslabel[0] || getDefaultString("attachmentsLabel");
+                noEditableLayersText = labels.noeditablelayerstext[0] || getDefaultString("noEditableLayersText");
+
+                EditWidgetTemplatePickerSkin.featureLayerOutOfScaleText = labels.featurelayeroutofscaletext[0] || getDefaultString("featureLayerOutOfScaleText");
+
+                EditWidgetAttributeInspectorSkin.showAttachmentsText = labels.showattachmentstext[0] || getDefaultString("showAttachmentsText");
+                EditWidgetAttributeInspectorSkin.deleteLabel = labels.deletelabel[0] || getDefaultString("deleteLabel");
+                EditWidgetAttributeInspectorSkin.saveLabel = labels.savelabel[0] || getDefaultString("okLabel");
+
+                EditWidgetAttachmentInspectorSkin.noAttachmentsText = labels.noattchmentstext[0] || getDefaultString("noAttachmentsText");
+                EditWidgetAttachmentInspectorSkin.chooseFileText = labels.choosefiletext[0] || getDefaultString("chooseFileText");
+                EditWidgetAttachmentInspectorSkin.attachmentSubmitLabel = labels.attachmentsubmitlabel[0] || getDefaultString("attachmentSubmitLabel");
+                EditWidgetAttachmentInspectorSkin.attachmentCancelLabel = labels.attachmentcancellabel[0] || getDefaultString("attachmentCancelLabel");
+                EditWidgetAttachmentInspectorSkin.showAttributesText = labels.showattributestext[0] || getDefaultString("showAttributesText");
+            }
+
             private function basewidget_creationCompleteHandler(event:FlexEvent):void
             {
                 // do not show template swatch for RTL
@@ -245,7 +252,6 @@
 
                 editor.attributeInspector.setStyle("skinClass", EditWidgetAttributeInspectorSkin);
                 editor.attributeInspector.addEventListener("attachmentGroupClicked", attachmentGroupClickedHandler);
-                editor.attributeInspector.addEventListener("okButtonClicked", okButtonClickHandler);
                 editor.attributeInspector.addEventListener(AttributeInspectorEvent.SHOW_FEATURE, attributeInspector_showFeatureHandler);
 
                 attachmentInspector.addEventListener("attributeGroupClicked", attributeGroupClickedHandler);
@@ -317,9 +323,8 @@
                     {
                         if ((layer is FeatureLayer && layer.name.indexOf("hiddenLayer_") == -1) && FeatureLayer(layer).isEditable && !FeatureLayer(layer).featureCollection)
                         {
-                            // always turn the layer on by default
+//                            changeOplListObjectVisibility(layer);
 
-                            changeOplListObjectVisibility(layer);
                             layer.removeEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete);
                             layer.addEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete, false, 1);
                             featureLayers.push(layer);
@@ -356,6 +361,10 @@
                     {
                         noLayers.visible = noLayers.includeInLayout = false;
                         selectTemplateLabel.visible = selectTemplateLabel.includeInLayout = true;
+                        if (!atleastOneFeatureLayerHasCreateCapability(featureLayers))
+                        {
+                            selectTemplateLabel.text = getDefaultString("noCreateCapabilityLayersText");
+                        }
 
                         //store the renderer info for each layer on map
                         storeInfoWindowRenderer();
@@ -385,24 +394,16 @@
                 var gdbVersion:String = ArcGISDynamicMapServiceLayer(layer).gdbVersion;
                 var featureServiceURL:String = serviceURL.replace("MapServer", "FeatureServer");
 
-                // send the resonse to see if it has featurelayers
-                const params:URLVariables = new URLVariables();
-                params.f = 'json';
-                const hs:HTTPService = new HTTPService();
-                hs.url = featureServiceURL;
-                if (IdentityManager.instance.findCredential(serviceURL))
-                {
-                    hs.url += "?token=" + IdentityManager.instance.findCredential(serviceURL).token;
-                }
-                hs.useProxy = false;
-                hs.requestTimeout = 30;
-                const asyncToken:AsyncToken = hs.send(params);
-                asyncToken.addResponder(new AsyncResponder(resultHandler, faultHandler, { layer: layer, count: index }));
+                // get corresponding featurelayers
+                var jsonTask:JSONTask = new JSONTask;
+                var urlVars:URLVariables = new URLVariables();
+                urlVars.f = "json";
+                jsonTask.url = featureServiceURL;
+                jsonTask.execute(urlVars, new AsyncResponder(jsonTask_resultHandler, jsonTask_faultHandler, { layer: layer, count: index }));
 
-                function resultHandler(event:ResultEvent, token:Object = null):void
+                function jsonTask_resultHandler(resultObject:Object, token:Object = null):void
                 {
-                    const decodedObject:Object = JSONUtil.decode(event.result as String);
-                    const layers:Array = decodedObject.layers;
+                    const layers:Array = resultObject.layers;
                     if (layers && layers.length)
                     {
                         var atleastOneFeatureLayerAlreadyIncluded:Boolean;
@@ -538,6 +539,11 @@
                                 parseCandidateFeatureLayers(index1, candidateFeatureLayers);
                             }
                         }
+                        else
+                        {
+                            index = token.count + 1;
+                            getAllFeatureLayers(index, featureLayers);
+                        }
                     }
                     else
                     {
@@ -545,7 +551,7 @@
                         getAllFeatureLayers(index, featureLayers);
                     }
                 }
-                function faultHandler(event:FaultEvent, token:Object = null):void
+                function jsonTask_faultHandler(fault:Fault, token:Object = null):void
                 {
                     if (!onMapLayerAdd)
                     {
@@ -852,12 +858,12 @@
             {
                 var result:Boolean;
 
-                // loop through all the operational layers
+                // loop through all the map layers
                 for (var n:int = 0; n < mapLayers.length; )
                 {
                     if (mapLayers.getItemAt(n) is FeatureLayer &&
-                        FeatureLayer(mapLayers.getItemAt(n)).url == featureLayerURL
-                        && FeatureLayer(mapLayers.getItemAt(n)).gdbVersion && FeatureLayer(mapLayers.getItemAt(n)).gdbVersion == gdbVersion)
+                        FeatureLayer(mapLayers.getItemAt(n)).url == featureLayerURL &&
+                        FeatureLayer(mapLayers.getItemAt(n)).gdbVersion == gdbVersion)
                     {
                         result = true;
                         break;
@@ -1039,6 +1045,36 @@
                 }
             }
 
+            private function atleastOneFeatureLayerHasCreateCapability(featureLayers:Array):Boolean
+            {
+                var result:Boolean;
+                for each (var featureLayer:FeatureLayer in featureLayers)
+                {
+                    if (isCreateAllowed(featureLayer))
+                    {
+                        result = true;
+                        break;
+                    }
+                }
+                return result;
+            }
+
+            private function isCreateAllowed(featureLayer:FeatureLayer):Boolean
+            {
+                var result:Boolean;
+
+                if (featureLayer.layerDetails is FeatureLayerDetails)
+                {
+                    result = (featureLayer.layerDetails as FeatureLayerDetails).isCreateAllowed;
+                }
+                else if (featureLayer.tableDetails is FeatureTableDetails)
+                {
+                    result = (featureLayer.layerDetails as FeatureTableDetails).isCreateAllowed;
+                }
+
+                return result;
+            }
+
             private function deactivateEditor():void
             {
                 map.infoWindow.hide();
@@ -1076,11 +1112,6 @@
                 {
                     attachmentInspector.clear();
                 }
-            }
-
-            private function okButtonClickHandler(event:Event):void
-            {
-                map.infoWindow.hide();
             }
 
             private function attributeGroupClickedHandler(event:Event):void

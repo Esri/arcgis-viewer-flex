@@ -89,7 +89,6 @@
         ]]>
     </fx:Script>
     <Navigation:Navigation id="navigation"
-                           layoutDirection="ltr"
                            map="{map}"
                            rollOut="{rollOutFade.play()}"
                            rollOver="{rollOverFade.play()}"

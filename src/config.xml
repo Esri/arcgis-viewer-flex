@@ -23,18 +23,7 @@
     <widget right="20" top="55"    config="widgets/MapSwitcher/MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf"/>
     <widget left="0"   top="0"     config="widgets/HeaderController/HeaderControllerWidget.xml" url="widgets/HeaderController/HeaderControllerWidget.swf"/>
 
-    <map wraparound180="true" initialextent="-14083000 3139000 -10879000 5458000" fullextent="-20000000 -20000000 20000000 20000000" top="40">
-        <basemaps>
-            <layer label="Streets" type="tiled" visible="true"
-                   icon="assets/images/basemap_streets.jpg"
-                   url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer"/>
-            <layer label="Aerial"  type="tiled" visible="false"
-                   icon="assets/images/basemap_imagery.jpg"
-                   url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer"/>
-            <layer label="Topo"    type="tiled" visible="false"
-                   icon="assets/images/basemap_topographic.jpg"
-                   url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer"/>
-        </basemaps>
+    <map wraparound180="true" initialextent="-14083000 3139000 -10879000 5458000" fullextent="-20000000 -20000000 20000000 20000000" top="40" addarcgisbasemaps="true">
         <operationallayers>
             <layer label="Demographics" type="tiled" visible="false" alpha="0.5"
                    url="http://server.arcgisonline.com/ArcGIS/rest/services/Demographics/USA_Median_Household_Income/MapServer">

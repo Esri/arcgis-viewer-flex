@@ -38,6 +38,7 @@
             import com.esri.ags.symbols.Symbol;
             import com.esri.ags.tasks.GeometryService;
             import com.esri.ags.tasks.GeometryServiceSingleton;
+            import com.esri.ags.tasks.JSONTask;
             import com.esri.ags.tasks.supportClasses.GPMessage;
             import com.esri.ags.tasks.supportClasses.JobInfo;
             import com.esri.ags.tools.DrawTool;
@@ -46,7 +47,6 @@
             import com.esri.ags.utils.GraphicUtil;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.utils.ErrorMessageUtil;
-            import com.esri.viewer.utils.GenericJSONTask;
 
             import mx.collections.ArrayCollection;
             import mx.controls.Alert;
@@ -61,7 +61,7 @@
             private var finishDrawing:Boolean;
             private var graphicsLayer:GraphicsLayer;
             private var graphicContextMenu:ContextMenu;
-            private var gpService:GenericJSONTask;
+            private var gpService:JSONTask;
             private var selectedDrawingIcon:Image;
 
             private var drawSymbol:Symbol;
@@ -144,7 +144,7 @@
                         useProxy = configXML.useproxy == "true";
                     }
 
-                    gpService = new GenericJSONTask();
+                    gpService = new JSONTask();
                     gpService.url = gpURL;
                     if (useProxy && configData.proxyUrl)
                     {
@@ -209,13 +209,6 @@
                 var graphic:Graphic = event.contextMenuOwner as Graphic;
                 var graphicsLayer:GraphicsLayer = graphic.graphicsLayer;
                 graphicsLayer.remove(graphic);
-            }
-
-            private function makeHTMLSafe(content:String):String
-            {
-                content = content.replace(/>/g, "&gt;");
-                content = content.replace(/</g, "&lt;");
-                return content;
             }
 
             private function callGPService():void
@@ -676,7 +669,7 @@
                     + "Most likely cause:\n"
                     + ErrorMessageUtil.getKnownErrorCauseMessage(fault.faultCode) + "\n\n"
                     + "Details:\n"
-                    + makeHTMLSafe(fault.toString());
+                    + ErrorMessageUtil.makeHTMLSafe(fault.toString());
                 showError(msg);
                 widgetVBox.enabled = false;
             }

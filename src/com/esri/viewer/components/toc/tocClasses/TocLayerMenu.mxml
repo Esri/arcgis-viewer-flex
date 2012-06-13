@@ -24,8 +24,6 @@
                    xmlns:mx="library://ns.adobe.com/flex/mx"
                    xmlns:esri="http://www.esri.com/2008/ags"
                    width="150" height="105"
-                   backgroundColor="{getStyle('contentBackgroundColor')}"
-                   borderColor="{getStyle('accentColor')}"
                    initialize="bordercontainer1_initializeHandler(event)"
                    rollOut="bordercontainer1_rollOutHandler(event)"
                    rollOver="bordercontainer1_rollOverHandler(event)">
@@ -55,10 +53,14 @@
             private var _item:Object;
             private var _layer:Layer;
             private var _map:Map;
+            private var _toc:TOC;
             private var _transparencyMenuItem:TransparencyMenuItem;
 
             private function bordercontainer1_initializeHandler(event:FlexEvent):void
             {
+                setStyle("backgroundColor", getStyle("contentBackgroundColor"));
+                setStyle("borderColor", getStyle("accentColor"));
+
                 geometryService.url = GeometryServiceSingleton.instance.url;
                 geometryService.token = GeometryServiceSingleton.instance.token;
                 geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
@@ -88,9 +90,8 @@
             {
                 if (parent is TOC)
                 {
-                    var toc:TOC = TOC(parent);
-
-                    var tocMapLayerItems:ArrayCollection = toc.dataProvider as ArrayCollection;
+                    _toc = TOC(parent);
+                    var tocMapLayerItems:ArrayCollection = _toc.dataProvider as ArrayCollection;
 
                     if (tocMapLayerItems.length == 1)
                     {
@@ -244,13 +245,38 @@
                 for (var i:int = 0; i < layers.length; i++)
                 {
                     const layer:Layer = layers.getItemAt(i) as Layer;
-                    if (layer.name.indexOf("hiddenLayer_") != -1 || (layer is GraphicsLayer && !(layer is FeatureLayer)))
+                    if (layer.name.indexOf("hiddenLayer_") != -1 || (layer is GraphicsLayer && !(layer is FeatureLayer)) || islayerExcludedAndNotBaseMap(layer))
                     {
                         continue;
                     }
                     result.push(layers.getItemAt(i));
                 }
                 return result;
+            }
+
+            private function islayerExcludedAndNotBaseMap(layer:Layer):Boolean
+            {
+                var exclude:Boolean;
+                for each (var item:* in _toc.excludeLayers)
+                {
+                    if ((item === layer || item == layer.name) || (item == layer.id))
+                    {
+                        exclude = true;
+                        for each (var item1:* in _toc.basemapLayers)
+                        {
+                            if (item1 === item)
+                            {
+                                exclude = false;
+                                break;
+                            }
+                        }
+                        if (!exclude)
+                        {
+                            break;
+                        }
+                    }
+                }
+                return exclude;
             }
 
             private function descriptionOrDownloadLabel_clickHandler(event:MouseEvent):void

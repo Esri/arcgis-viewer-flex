@@ -24,8 +24,8 @@ import com.esri.ags.renderers.IRenderer;
 import com.esri.ags.renderers.SimpleRenderer;
 import com.esri.ags.renderers.UniqueValueRenderer;
 import com.esri.ags.symbols.Symbol;
-import com.esri.ags.webmap.PopUpRenderer;
-import com.esri.ags.webmap.supportClasses.PopUpInfo;
+import com.esri.ags.portal.PopUpRenderer;
+import com.esri.ags.portal.supportClasses.PopUpInfo;
 
 import mx.collections.ArrayCollection;
 import mx.core.ClassFactory;

@@ -67,7 +67,7 @@ Custom skin class for the TemplatePicker component.
             private var _itemRenderer:EditWidgetTemplatePickerListItemRenderer = new EditWidgetTemplatePickerListItemRenderer;
 
             // configurable through the edit widget's config file
-            public static var featureLayerNotVisibleText:String;
+            public static var featureLayerOutOfScaleText:String;
 
             private function sparkskin1_initializeHandler(event:FlexEvent):void
             {
@@ -142,7 +142,7 @@ Custom skin class for the TemplatePicker component.
                         checkbox.name = featureLayer.name;
                         checkbox.label = featureLayerDisplayName;
                         checkbox.setStyle("fontWeight", "bold");
-                        checkbox.selected = featureLayer.visible && featureLayer.isInScaleRange;
+                        checkbox.selected = featureLayer.visible;
                         vGrp.addElement(checkbox);
 
                         var templateList:List = new List;
@@ -163,9 +163,9 @@ Custom skin class for the TemplatePicker component.
                         var text:Text = new Text;
                         text.percentWidth = 100;
                         text.name = featureLayer.name;
-                        text.text = featureLayerDisplayName + " " + featureLayerNotVisibleText;
+                        text.text = featureLayerOutOfScaleText;
                         text.setStyle("fontStyle", FontPosture.ITALIC);
-                        text.visible = text.includeInLayout = !featureLayer.visible || !featureLayer.isInScaleRange;
+                        text.visible = text.includeInLayout = !featureLayer.isInScaleRange;
                         vGrp.addElement(text);
                     }
                     invalidateDisplayList();
@@ -289,13 +289,13 @@ Custom skin class for the TemplatePicker component.
                     if (vGrp.getElementAt(i) is CheckBox && CheckBox(vGrp.getElementAt(i)).name == layerName)
                     {
                         const checkBox:CheckBox = CheckBox(vGrp.getElementAt(i));
-                        checkBox.selected = featureLayer.isInScaleRange && featureLayer.visible;
+                        checkBox.selected = featureLayer.visible;
                     }
                     if (vGrp.getElementAt(i) is Label && Label(vGrp.getElementAt(i)).name == layerName)
                     {
                         const label:Label = Label(vGrp.getElementAt(i));
-                        label.visible = !featureLayer.isInScaleRange || !featureLayer.visible;
-                        label.includeInLayout = !featureLayer.isInScaleRange || !featureLayer.visible;
+                        label.visible = !featureLayer.isInScaleRange;
+                        label.includeInLayout = !featureLayer.isInScaleRange;
                     }
                 }
                 invalidateDisplayList();
@@ -367,6 +367,13 @@ Custom skin class for the TemplatePicker component.
         ]]>
     </fx:Script>
 
+    <mx:Image width="30" height="30"
+              autoLoad="true"
+              horizontalCenter="0"
+              includeIn="loading"
+              scaleContent="true"
+              source="assets/images/loader.swf"
+              verticalCenter="0"/>
     <!--- @private -->
     <s:VGroup id="vGrp"
               width="100%" height="100%"/>

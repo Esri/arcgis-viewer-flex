@@ -447,7 +447,7 @@ public class BaseWidget extends Module implements IBaseWidget
         AppEvent.dispatch(AppEvent.SHOW_INFOWINDOW, infoData);
     }
 
-    public function setMapAction(action:String, status:String, symbol:Symbol, callback:Function, showDrawTips:Boolean = true):void
+    public function setMapAction(action:String, status:String, symbol:Symbol, callback:Function, showDrawTips:Boolean = true, enableGraphicsLayerMouseEvents:Boolean = false):void
     {
         var data:Object =
             {
@@ -455,7 +455,8 @@ public class BaseWidget extends Module implements IBaseWidget
                 status: status,
                 symbol: symbol,
                 handler: callback,
-                showDrawTips: showDrawTips
+                showDrawTips: showDrawTips,
+                enableGraphicsLayerMouseEvents: enableGraphicsLayerMouseEvents
             };
         AppEvent.dispatch(AppEvent.SET_MAP_ACTION, data);
     }

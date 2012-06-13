@@ -56,7 +56,7 @@ public class UIManager extends EventDispatcher
         configData.styleColors[2] = event.data.rolloverColor;
         configData.styleColors[3] = event.data.selectionColor;
         configData.styleColors[4] = event.data.titleColor;
-        configData.styleColors[5] = event.data.textColor;
+        configData.styleColors[5] = event.data.applicationBackgroundColor;
         configData.styleAlpha = event.data.alpha;
         setViewerStyle();
     }
@@ -287,11 +287,11 @@ public class UIManager extends EventDispatcher
 
         if (numberOfStyleColors > 4)
         {
-            var cssStyleDeclarationPopUpRendererLink:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("com.esri.ags.webmap.PopUpRenderer");
+            var cssStyleDeclarationPopUpRendererLink:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("com.esri.ags.portal.PopUpRenderer");
             cssStyleDeclarationPopUpRendererLink.setStyle("linkActiveColor", titleColor);
             cssStyleDeclarationPopUpRendererLink.setStyle("linkNormalColor", textColor);
             cssStyleDeclarationPopUpRendererLink.setStyle("linkHoverColor", titleColor);
-            topLevelStyleManager.setStyleDeclaration("com.esri.ags.webmap.PopUpRenderer", cssStyleDeclarationPopUpRendererLink, false);
+            topLevelStyleManager.setStyleDeclaration("com.esri.ags.portal.PopUpRenderer", cssStyleDeclarationPopUpRendererLink, false);
         }
 
         var cssStyleDeclarationContentNavigator:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("com.esri.ags.components.ContentNavigator");
@@ -434,7 +434,7 @@ public class UIManager extends EventDispatcher
         cssStyleDeclarationModal.setStyle("modalTransparencyColor", 0x777777);
         cssStyleDeclarationModal.setStyle("modalTransparencyBlur", 1);
         cssStyleDeclarationModal.setStyle("modalTransparency", 0.5);
-        cssStyleDeclarationModal.setStyle("modalTransparencyDuration", 1000); //messes up tween!
+        cssStyleDeclarationModal.setStyle("modalTransparencyDuration", 300); //messes up tween!
         topLevelStyleManager.setStyleDeclaration("global", cssStyleDeclarationModal, true);
     }
 }

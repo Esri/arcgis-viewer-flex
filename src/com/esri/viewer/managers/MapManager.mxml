@@ -35,27 +35,26 @@ Class used to configure the viewer map component (including layers) and handle m
             import com.esri.ags.Graphic;
             import com.esri.ags.Map;
             import com.esri.ags.SpatialReference;
-            import com.esri.ags.clusterers.ESRIClusterer;
             import com.esri.ags.events.DrawEvent;
             import com.esri.ags.events.LayerEvent;
             import com.esri.ags.events.MapEvent;
             import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
-            import com.esri.ags.layers.ArcGISImageServiceLayer;
             import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
-            import com.esri.ags.layers.ArcIMSMapServiceLayer;
             import com.esri.ags.layers.FeatureLayer;
             import com.esri.ags.layers.KMLLayer;
             import com.esri.ags.layers.Layer;
-            import com.esri.ags.layers.OpenStreetMapLayer;
-            import com.esri.ags.layers.WMSLayer;
-            import com.esri.ags.layers.WMTSLayer;
             import com.esri.ags.layers.supportClasses.Field;
             import com.esri.ags.layers.supportClasses.LayerDetails;
             import com.esri.ags.layers.supportClasses.LayerInfoWindowRenderer;
             import com.esri.ags.layers.supportClasses.StaticLayer_m_esriLogo;
             import com.esri.ags.layers.supportClasses.TableDetails;
+            import com.esri.ags.portal.PopUpRenderer;
+            import com.esri.ags.portal.supportClasses.PopUpFieldFormat;
+            import com.esri.ags.portal.supportClasses.PopUpFieldInfo;
+            import com.esri.ags.portal.supportClasses.PopUpInfo;
+            import com.esri.ags.portal.supportClasses.PopUpMediaInfo;
             import com.esri.ags.symbols.PictureMarkerSymbol;
             import com.esri.ags.symbols.SimpleFillSymbol;
             import com.esri.ags.symbols.SimpleLineSymbol;
@@ -64,24 +63,17 @@ Class used to configure the viewer map component (including layers) and handle m
             import com.esri.ags.symbols.TextSymbol;
             import com.esri.ags.tools.DrawTool;
             import com.esri.ags.tools.NavigationTool;
-            import com.esri.ags.virtualearth.VETiledLayer;
-            import com.esri.ags.webmap.PopUpRenderer;
-            import com.esri.ags.webmap.supportClasses.PopUpFieldFormat;
-            import com.esri.ags.webmap.supportClasses.PopUpFieldInfo;
-            import com.esri.ags.webmap.supportClasses.PopUpInfo;
-            import com.esri.ags.webmap.supportClasses.PopUpMediaInfo;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.ConfigData;
             import com.esri.viewer.IBaseWidget;
             import com.esri.viewer.IInfowindowTemplate;
             import com.esri.viewer.ViewerContainer;
             import com.esri.viewer.components.InfoPopup;
-
+            import com.esri.viewer.utils.ErrorMessageUtil;
+            
             import mx.collections.ArrayCollection;
-            import mx.collections.ArrayList;
             import mx.containers.Canvas;
             import mx.controls.Alert;
-            import mx.core.FlexVersion;
             import mx.events.CloseEvent;
             import mx.events.FlexEvent;
             import mx.managers.CursorManagerPriority;
@@ -92,7 +84,7 @@ Class used to configure the viewer map component (including layers) and handle m
             import mx.rpc.events.ResultEvent;
             import mx.rpc.http.HTTPService;
             import mx.utils.StringUtil;
-
+            
             import spark.components.Group;
             import spark.globalization.SortingCollator;
 
@@ -187,12 +179,6 @@ Class used to configure the viewer map component (including layers) and handle m
 
             private function setViewerVersion():void
             {
-                var alertParent:Sprite;
-                if (FlexVersion.CURRENT_VERSION >= 0x04050000)
-                {
-                    // work-around for 4.5 regression - https://bugs.adobe.com/jira/browse/SDK-30755
-                    alertParent = ViewerContainer.getInstance();
-                }
                 var contextMenuText:String = getDefaultString("contextMenuText");
                 var aboutText:String = getDefaultString("aboutText");
                 var menuItem:ContextMenuItem = new ContextMenuItem(contextMenuText, true, true);
@@ -206,11 +192,11 @@ Class used to configure the viewer map component (including layers) and handle m
                     Alert.buttonWidth = 100;
                     Alert.yesLabel = getDefaultString("aboutLearnMoreBtn");
                     Alert.noLabel = getDefaultString("aboutCloseBtn");
-                    Alert.show(aboutText, contextMenuText, Alert.YES | Alert.NO, alertParent, function(event:CloseEvent):void
+                    Alert.show(aboutText, contextMenuText, Alert.YES | Alert.NO, null, function(event:CloseEvent):void
                     {
                         if (event.detail == Alert.YES)
                         {
-                            navigateToURL(new URLRequest("http://help.arcgis.com/en/webapps/flexviewer/"));
+                            navigateToURL(new URLRequest("http://resourcesbeta.arcgis.com/en/communities/flex-viewer/"));
                         }
                     }, StaticLayer_m_esriLogo, Alert.NO);
                     // restore labels to normal
@@ -269,29 +255,9 @@ Class used to configure the viewer map component (including layers) and handle m
 
                 configMapAttributes();
 
-                if (m_configData.webMapLayers)
-                {
-                    map.addEventListener(MapEvent.LAYER_ADD, layerloadComplete);
-                    for each (var layer:Layer in m_configData.webMapLayers)
-                    {
-                        if (layer is FeatureLayer)
-                        {
-                            layer.addEventListener(FlexEvent.HIDE, featureLayer_hideHandler);
-                        }
-                        if (layer is KMLLayer)
-                        {
-                            layer.addEventListener(FlexEvent.HIDE, kmlLayer_hideHandler);
-                        }
-                        map.addLayer(layer);
-                    }
-                    m_optLayerTable = m_configData.opLayers;
-                }
-                else
-                {
-                    configBasemaps();
-                    configOperationalLayers();
-                    configReferenceBasemaps();
-                }
+                configBasemaps();
+                configOperationalLayers();
+                configReferenceBasemaps();
 
                 setViewerVersion();
             }
@@ -525,372 +491,29 @@ Class used to configure the viewer map component (including layers) and handle m
 
             private function addLayerToMap(layerObject:Object):void
             {
-                const alpha:Number = Number(layerObject.alpha);
-                const autoRefresh:Number = Number(layerObject.autoRefresh);
-                const bandIds:String = layerObject.bandIds;
-                const bingMapKey:String = layerObject.key;
-                const clusterer:ESRIClusterer = layerObject.clusterer;
-                const culture:String = layerObject.culture;
-                const definitionExpression:String = layerObject.definitionExpression;
-                const displayLevels:String = layerObject.displayLevels;
-                const gdbVersion:String = layerObject.gdbVersion;
-                const imageFormat:String = layerObject.imageFormat;
-                const label:String = layerObject.label;
-                const layerId:String = layerObject.layerId;
-                const maxAllowableOffset:Number = layerObject.maxAllowableOffset;
-                const mode:String = layerObject.mode;
-                const noData:Number = Number(layerObject.noData);
-                const password:String = layerObject.password;
-                const proxyUrl:String = m_configData.proxyUrl;
-                const serviceHost:String = layerObject.serviceHost;
-                const serviceName:String = layerObject.serviceName;
-                const serviceMode:String = layerObject.serviceMode;
-                const serviceURL:String = layerObject.serviceURL;
-                const skipGetCapabilities:String = layerObject.skipGetCapabilities;
-                const style:String = layerObject.style;
-                const token:String = layerObject.token;
-                const type:String = layerObject.type;
-                const url:String = layerObject.url;
-                const useAMF:String = layerObject.useAMF;
-                const useMapTime:Boolean = layerObject.useMapTime;
-                const useProxy:Boolean = layerObject.useProxy;
-                const username:String = layerObject.username;
-                const version:String = layerObject.version;
-                const visible:Boolean = layerObject.visible;
-                const visibleLayers:String = layerObject.visibleLayers;
-                const wkid:Number = layerObject.wkid;
-
-                var i:int;
-                switch (type.toLowerCase())
+                //TODO: need to set when layerObject is created.
+                layerObject.proxyURL = m_configData.proxyUrl;
+                var layer:Layer = layerObject.layer ? layerObject.layer : LayerCreator.createLayerFromLayerObject(layerObject);
+                if (layer)
                 {
-                    case "tiled":
+                    layer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
+                    layer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
+                    if (layer is FeatureLayer)
                     {
-                        var tiledLayer:ArcGISTiledMapServiceLayer = new ArcGISTiledMapServiceLayer(url);
-                        tiledLayer.alpha = alpha;
-                        tiledLayer.id = label;
-                        tiledLayer.name = label;
-                        tiledLayer.token = token;
-                        tiledLayer.visible = visible;
-                        if (displayLevels)
-                        {
-                            tiledLayer.displayLevels = displayLevels.split(",");
-                            for (i = 0; i < tiledLayer.displayLevels.length; i++)
-                            {
-                                tiledLayer.displayLevels[i] = Number(tiledLayer.displayLevels[i]); // convert to Numbers
-                            }
-                        }
-                        if (proxyUrl && useProxy)
-                        {
-                            tiledLayer.proxyURL = proxyUrl;
-                        }
-                        layerObject.layer = tiledLayer;
-                        tiledLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
-                        tiledLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
-                        map.addLayer(tiledLayer);
-                        break;
+                        layer.addEventListener(FlexEvent.HIDE, featureLayer_hideHandler);
                     }
-                    case "dynamic":
+                    if (layer is KMLLayer)
                     {
-                        var dynLayer:ArcGISDynamicMapServiceLayer = new ArcGISDynamicMapServiceLayer(url);
-                        dynLayer.alpha = alpha;
-                        dynLayer.id = label;
-                        dynLayer.name = label;
-                        dynLayer.token = token;
-                        dynLayer.visible = visible;
-                        dynLayer.useMapTime = useMapTime;
-                        if (autoRefresh > 0)
-                        {
-                            setInterval(dynLayer.refresh, autoRefresh * 1000);
-                        }
-                        if (imageFormat)
-                        {
-                            dynLayer.imageFormat = imageFormat;
-                        }
-                        if (visibleLayers)
-                        {
-                            var vizLayers:Array = visibleLayers.split(",");
-                            for (i = 0; i < vizLayers.length; i++)
-                            {
-                                vizLayers[i] = Number(vizLayers[i]); // convert to Numbers
-                            }
-                            dynLayer.visibleLayers = new ArrayCollection(vizLayers);
-                        }
-                        if (proxyUrl && useProxy)
-                        {
-                            dynLayer.proxyURL = proxyUrl;
-                        }
-                        if (gdbVersion)
-                        {
-                            dynLayer.gdbVersion = gdbVersion;
-                        }
-                        layerObject.layer = dynLayer;
-                        dynLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
-                        dynLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
-                        map.addLayer(dynLayer);
-                        break;
+                        layer.addEventListener(FlexEvent.HIDE, kmlLayer_hideHandler);
                     }
-                    case "feature":
-                    {
-                        var featureLayer:FeatureLayer = new FeatureLayer(url);
-                        featureLayer.addEventListener(FlexEvent.HIDE, featureLayer_hideHandler);
-                        featureLayer.alpha = alpha;
-                        featureLayer.id = label;
-                        featureLayer.name = label;
-                        featureLayer.maxAllowableOffset = maxAllowableOffset;
-                        featureLayer.outFields = [ '*' ]; // TODO: be smarter
-                        featureLayer.token = token;
-                        featureLayer.visible = visible;
-                        featureLayer.useMapTime = useMapTime;
-                        featureLayer.clusterer = clusterer;
-                        if (gdbVersion)
-                        {
-                            featureLayer.gdbVersion = gdbVersion;
-                        }
-                        if (useAMF)
-                        {
-                            featureLayer.useAMF = (useAMF == "true");
-                        }
-                        if (mode)
-                        {
-                            featureLayer.mode = mode;
-                        }
-                        if (definitionExpression)
-                        {
-                            featureLayer.definitionExpression = definitionExpression;
-                        }
-                        if (proxyUrl && useProxy)
-                        {
-                            featureLayer.proxyURL = proxyUrl;
-                        }
-                        // example for hard-coding layer symbology, e.g. for pre-10.0 ArcGIS Servers
-                        /* if (label == "Traffic Cameras") // the layer label in main configuration file
-                        {
-                        var picSymbol:PictureMarkerSymbol = new PictureMarkerSymbol("assets/images/i_camera.png",30,30,0,0,0);
-                        var rend:Renderer = new SimpleRenderer(picSymbol);
-                        featureLayer.renderer = rend;
-                        } */
-                        layerObject.layer = featureLayer;
-                        featureLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
-                        featureLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
-                        map.addLayer(featureLayer);
-                        break;
-                    }
-                    case "bing":
-                    {
-                        var veTiledLayer:VETiledLayer = new VETiledLayer();
-                        veTiledLayer.id = label;
-                        veTiledLayer.name = label;
-                        veTiledLayer.key = bingMapKey;
-                        veTiledLayer.visible = visible;
-                        veTiledLayer.alpha = alpha;
-                        if (style)
-                        {
-                            veTiledLayer.mapStyle = style;
-                        }
-                        if (culture)
-                        {
-                            veTiledLayer.culture = culture;
-                        }
-                        if (displayLevels)
-                        {
-                            veTiledLayer.displayLevels = displayLevels.split(",");
-                            for (i = 0; i < veTiledLayer.displayLevels.length; i++)
-                            {
-                                veTiledLayer.displayLevels[i] = Number(veTiledLayer.displayLevels[i]); // convert to Numbers
-                            }
-                        }
-                        layerObject.layer = veTiledLayer;
-                        veTiledLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
-                        veTiledLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
-                        map.addLayer(veTiledLayer);
-                        break;
-                    }
-                    case "image":
-                    {
-                        var imgLayer:ArcGISImageServiceLayer = new ArcGISImageServiceLayer(url);
-                        imgLayer.id = label;
-                        imgLayer.name = label;
-                        imgLayer.alpha = alpha;
-                        imgLayer.token = token;
-                        imgLayer.visible = visible;
-                        imgLayer.noData = noData;
-                        imgLayer.useMapTime = useMapTime;
-                        if (imageFormat)
-                        {
-                            imgLayer.imageFormat = imageFormat;
-                        }
-                        if (bandIds)
-                        {
-                            imgLayer.bandIds = bandIds.split(",");
-                            for (i = 0; i < imgLayer.bandIds.length; i++)
-                            {
-                                imgLayer.bandIds[i] = Number(imgLayer.bandIds[i]); // convert to Numbers
-                            }
-                        }
-                        if (proxyUrl && useProxy)
-                        {
-                            imgLayer.proxyURL = proxyUrl;
-                        }
-                        layerObject.layer = imgLayer;
-                        imgLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
-                        imgLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
-                        map.addLayer(imgLayer);
-                        break;
-                    }
-                    case "arcims":
-                    {
-                        var arcimsLayer:ArcIMSMapServiceLayer = new ArcIMSMapServiceLayer();
-                        arcimsLayer.alpha = alpha;
-                        arcimsLayer.id = label;
-                        arcimsLayer.name = label;
-                        arcimsLayer.visible = visible;
-                        arcimsLayer.serviceHost = serviceHost;
-                        arcimsLayer.serviceName = serviceName;
-                        if (autoRefresh > 0)
-                        {
-                            setInterval(arcimsLayer.refresh, autoRefresh * 1000);
-                        }
-                        if (imageFormat)
-                        {
-                            arcimsLayer.imageFormat = imageFormat;
-                        }
-                        if (visibleLayers)
-                        {
-                            var visLayers:Array = visibleLayers.split(",");
-                            arcimsLayer.visibleLayers = new ArrayCollection(visLayers);
-                        }
-                        if (proxyUrl && useProxy)
-                        {
-                            arcimsLayer.proxyURL = proxyUrl;
-                        }
-                        if (username && password)
-                        {
-                            arcimsLayer.username = username;
-                            arcimsLayer.password = password;
-                        }
-                        layerObject.layer = arcimsLayer;
-                        arcimsLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
-                        arcimsLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
-                        map.addLayer(arcimsLayer);
-                        break;
-                    }
-                    case "wms":
-                    {
-                        var wmsLayer:WMSLayer = new WMSLayer(url);
-                        wmsLayer.alpha = alpha;
-                        wmsLayer.id = label;
-                        wmsLayer.name = label;
-                        wmsLayer.visible = visible;
-                        if (wkid)
-                        {
-                            wmsLayer.spatialReference = new SpatialReference(wkid);
-                        }
-                        if (autoRefresh > 0)
-                        {
-                            setInterval(wmsLayer.refresh, autoRefresh * 1000);
-                        }
-                        if (imageFormat)
-                        {
-                            wmsLayer.imageFormat = imageFormat;
-                        }
-                        if (visibleLayers)
-                        {
-                            var wmsVisLayers:Array = visibleLayers.split(",");
-                            wmsLayer.visibleLayers = new ArrayList(wmsVisLayers);
-                        }
-                        if (proxyUrl && useProxy)
-                        {
-                            wmsLayer.proxyURL = proxyUrl;
-                        }
-                        if (skipGetCapabilities)
-                        {
-                            wmsLayer.skipGetCapabilities = skipGetCapabilities == "true";
-                        }
-                        if (username && password)
-                        {
-                            wmsLayer.username = username;
-                            wmsLayer.password = password;
-                        }
-                        if (version)
-                        {
-                            wmsLayer.version = version;
-                        }
-                        layerObject.layer = wmsLayer;
-                        wmsLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
-                        wmsLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
-                        map.addLayer(wmsLayer);
-                        break;
-                    }
-                    case "wmts":
-                    {
-                        var wmtsLayer:WMTSLayer = new WMTSLayer(url);
-                        wmtsLayer.alpha = alpha;
-                        wmtsLayer.id = label;
-                        wmtsLayer.name = label;
-                        wmtsLayer.visible = visible;
-                        if (imageFormat)
-                        {
-                            wmtsLayer.imageFormat = imageFormat;
-                        }
-                        if (proxyUrl && useProxy)
-                        {
-                            wmtsLayer.proxyURL = proxyUrl;
-                        }
-                        if (serviceMode)
-                        {
-                            wmtsLayer.serviceMode = serviceMode;
-                        }
-                        if (layerId)
-                        {
-                            wmtsLayer.layerId = layerId;
-                        }
-                        layerObject.layer = wmtsLayer;
-                        wmtsLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
-                        wmtsLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
-                        map.addLayer(wmtsLayer);
-                        break;
-                    }
-                    case "osm":
-                    {
-                        var osmLayer:OpenStreetMapLayer = new OpenStreetMapLayer();
-                        osmLayer.alpha = alpha;
-                        osmLayer.id = label;
-                        osmLayer.name = label;
-                        osmLayer.visible = visible;
-                        layerObject.layer = osmLayer;
-                        osmLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
-                        osmLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
-                        map.addLayer(osmLayer);
-                        break;
-                    }
-                    case "kml":
-                    {
-                        var kmlLayer:KMLLayer = new KMLLayer(url);
-                        kmlLayer.addEventListener(FlexEvent.HIDE, kmlLayer_hideHandler);
-                        kmlLayer.alpha = alpha;
-                        kmlLayer.id = label;
-                        kmlLayer.name = label;
-                        if (serviceURL)
-                        {
-                            kmlLayer.serviceURL = serviceURL;
-                        }
-                        if (autoRefresh > 0)
-                        {
-                            setInterval(kmlLayer.refresh, autoRefresh * 1000);
-                        }
-                        kmlLayer.visible = visible;
-                        layerObject.layer = kmlLayer;
-                        kmlLayer.addEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
-                        kmlLayer.addEventListener(LayerEvent.LOAD, layer_loadEvent);
-                        map.addLayer(kmlLayer);
-                        break;
-                    }
-                    default:
-                    {
-                        var errorMessage:String = StringUtil.substitute(getDefaultString('incorrectLayerTypeText'), "'" + type + "'");
-                        AppEvent.showError(errorMessage, MAP_MANAGER);
-                        break;
-                    }
+
+                    layerObject.layer = layer;
+                    map.addLayer(layer);
+                }
+                else
+                {
+                    var errorMessage:String = StringUtil.substitute(getDefaultString('incorrectLayerTypeText'), "'" + layerObject.type + "'");
+                    AppEvent.showError(errorMessage, MAP_MANAGER);
                 }
             }
 
@@ -898,11 +521,49 @@ Class used to configure the viewer map component (including layers) and handle m
             {
                 event.layer.removeEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
                 event.layer.removeEventListener(LayerEvent.LOAD, layer_loadEvent);
-
-                if (event.fault.faultString != "LOGIN ABORTED")
+    
+                if (event.fault.faultString != "Sign in aborted")
                 {
-                    var errorMessage:String = event.layer.name + " layer failed to load: " + makeHTMLSafe(buildFaultMessage(event.fault));
-                    AppEvent.showError(errorMessage, MAP_MANAGER);
+                    var errorMessage:String = event.layer.name + " layer failed to load: " + ErrorMessageUtil.makeHTMLSafe(buildFaultMessage(event.fault));
+                    AppEvent.showError(errorMessage, MAP_MANAGER);                   
+                }
+                // remove layer from map and map switcher
+                removeLayerFromLayerObject(event.layer);
+                map.removeLayer(event.layer);
+            }
+
+            private function removeLayerFromLayerObject(layer:Layer):void
+            {
+                var layerFound:Boolean;
+                var i:int;
+                for (i = 0; i < m_configData.opLayers.length; )
+                {
+                    if (m_configData.opLayers[i].layer == layer)
+                    {
+                        layerFound = true;
+                        m_configData.opLayers.splice(i, 1);
+                        break;
+                    }
+                    else
+                    {
+                        i++;
+                    }
+                }
+                if (!layerFound)
+                {
+                    for (i = 0; i < m_configData.basemaps.length; )
+                    {
+                        if (m_configData.basemaps[i].layer == layer)
+                        {
+                            layerFound = true;
+                            m_configData.basemaps.splice(i, 1);
+                            break;
+                        }
+                        else
+                        {
+                            i++;
+                        }
+                    }
                 }
             }
 
@@ -910,13 +571,6 @@ Class used to configure the viewer map component (including layers) and handle m
             {
                 event.layer.removeEventListener(LayerEvent.LOAD_ERROR, layer_loadErrorEvent);
                 event.layer.removeEventListener(LayerEvent.LOAD, layer_loadEvent);
-            }
-
-            private function makeHTMLSafe(content:String):String
-            {
-                content = content.replace(/>/g, "&gt;");
-                content = content.replace(/</g, "&lt;");
-                return content;
             }
 
             private function buildFaultMessage(fault:Fault):String
@@ -962,7 +616,7 @@ Class used to configure the viewer map component (including layers) and handle m
             {
                 if (layerObject.layer is ArcGISDynamicMapServiceLayer || layerObject.layer is ArcGISTiledMapServiceLayer)
                 {
-                    // look at the sublayers                   
+                    // look at the sublayers
                     var subLayers:Array = layerObject.subLayers as Array;
                     if ((subLayers).length > 0)
                     {
@@ -1638,6 +1292,7 @@ Class used to configure the viewer map component (including layers) and handle m
                 var status:String = data.status;
                 var symbol:Symbol = data.symbol;
                 var showDrawTips:Boolean = data.showDrawTips;
+                var enableGraphicsLayerMouseEvents:Boolean = data.enableGraphicsLayerMouseEvents;
 
                 if (tool)
                 {
@@ -1648,7 +1303,7 @@ Class used to configure the viewer map component (including layers) and handle m
 
                     m_drawEndFunction = data.handler;
                     m_navTool.deactivate();
-                    m_drawTool.activate(tool);
+                    m_drawTool.activate(tool, enableGraphicsLayerMouseEvents);
                     // showDrawTips
                     m_drawTool.showDrawTips = showDrawTips;
                     // reset symbology

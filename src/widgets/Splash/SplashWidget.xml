@@ -21,7 +21,7 @@
         </p>
         <textformat blockindent="20">
             <p>
-                * Built with <a href="http://help.arcgis.com/en/webapps/flexviewer/" target='_blank'><font color="#FFFFFF"><b>ArcGIS Viewer for Flex</b></font></a>
+                * Built with <a href="http://resourcesbeta.arcgis.com/en/communities/flex-viewer/" target='_blank'><font color="#FFFFFF"><b>ArcGIS Viewer for Flex</b></font></a>
                 <br>
                 * Based on <a href="http://help.arcgis.com/en/webapi/flex/" target='_blank'><font color="#FFFFFF"><b>ArcGIS API for Flex</b></font></a>
             </p>

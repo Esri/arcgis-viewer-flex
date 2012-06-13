@@ -59,9 +59,9 @@ public class GPParameterFactory
                 gpParam = new LongParameter();
                 break;
             }
-            case GPParameterTypes.MULTI_VALUE:
+            case GPParameterTypes.MULTI_VALUE_STRING:
             {
-                gpParam = new MultiValueParameter();
+                gpParam = new MultiValueStringParameter();
                 break;
             }
             case GPParameterTypes.RASTER_DATA_LAYER:

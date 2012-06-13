@@ -28,7 +28,7 @@ public class GPParameterTypes
     public static const RECORD_SET:String = "recordset";
     public static const FEATURE_RECORD_SET_LAYER:String = "featurerecordset";
     public static const RASTER_DATA_LAYER:String = "rasterdatalayer";
-    public static const MULTI_VALUE:String = "multivalue";
+    public static const MULTI_VALUE_STRING:String = "multivalue:string";
 
     public static const GP_BOOLEAN:String = "GPBoolean";
     public static const GP_STRING:String = "GPString";
@@ -40,7 +40,7 @@ public class GPParameterTypes
     public static const GP_RECORD_SET:String = "GPRecordSet";
     public static const GP_FEATURE_RECORD_SET_LAYER:String = "GPFeatureRecordSetLayer";
     public static const GP_RASTER_DATA_LAYER:String = "GPRasterDataLayer";
-    public static const GP_MULTI_VALUE:String = "GPMultiValue:GPString"; //only string multivalue supported
+    public static const GP_MULTI_VALUE_STRING:String = "GPMultiValue:GPString"; //only string multivalue supported
 }
 
 }

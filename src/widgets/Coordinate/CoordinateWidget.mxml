@@ -30,7 +30,6 @@
             import com.esri.ags.utils.WebMercatorUtil;
 
             import mx.formatters.NumberBaseRoundType;
-            import mx.utils.ColorUtil;
             import mx.utils.StringUtil;
 
             private var m_template:String;
@@ -40,26 +39,26 @@
             {
                 if (configXML)
                 {
-                    const decimalSeparator:String = configXML.numberformatter.@decimalseparator
-                    numberFormatter.decimalSeparatorTo = decimalSeparator.length ? decimalSeparator : ".";
+                    const decimalSeparator:String = configXML.numberformatter.@decimalseparator;
+                    numberFormatter.decimalSeparatorTo = decimalSeparator ? decimalSeparator : ".";
                     const thousandsSeparator:String = configXML.numberformatter.@thousandsseparator;
-                    numberFormatter.thousandsSeparatorTo = thousandsSeparator.length ? thousandsSeparator : ",";
+                    numberFormatter.thousandsSeparatorTo = thousandsSeparator ? thousandsSeparator : ",";
                     numberFormatter.useThousandsSeparator = configXML.numberformatter.@usethousandsseparator == "true";
                     numberFormatter.precision = parseFloat(configXML.numberformatter.@precision || "-1");
                     const rounding:String = configXML.numberformatter.@rounding;
-                    numberFormatter.rounding = rounding.length ? rounding : NumberBaseRoundType.NONE;
+                    numberFormatter.rounding = rounding ? rounding : NumberBaseRoundType.NONE;
 
-                    const color:String = configXML.label.@color;
-                    coords.setStyle("color", toNumber(color.length ? color : "0x000000"));
-                    const fontFamily:String = configXML.label.@fontfamily;
-                    coords.setStyle("fontFamily", fontFamily.length ? fontFamily : "Verdana");
-                    const fontSize:String = configXML.label.@fontsize;
-                    coords.setStyle("fontSize", parseInt(fontSize.length ? fontSize : "9"));
-                    const fontWeight:String = configXML.label.@fontweight;
-                    coords.setStyle("fontWeight", fontWeight.length ? fontWeight : "bold");
+                    const color:String = configXML.labelstyle.@color[0] || configXML.label.@color[0];
+                    coords.setStyle("color", toNumber(color ? color : "0x000000"));
+                    const fontFamily:String = configXML.labelstyle.@fontfamily[0] || configXML.label.@fontfamily[0];
+                    coords.setStyle("fontFamily", fontFamily ? fontFamily : "Verdana");
+                    const fontSize:String = configXML.labelstyle.@fontsize[0] || configXML.label.@fontsize[0];
+                    coords.setStyle("fontSize", parseInt(fontSize ? fontSize : "9"));
+                    const fontWeight:String = configXML.labelstyle.@fontweight[0] || configXML.label.@fontweight[0];
+                    coords.setStyle("fontWeight", fontWeight ? fontWeight : "bold");
 
                     // If no template specified, show them with a space in between (except for special case below)
-                    m_template = configXML.label.@template || "{0} {1}";
+                    m_template = configXML.labels.template[0] || configXML.label.@template[0] || "{0} {1}";
 
                     if (map.loaded)
                     {
@@ -90,13 +89,13 @@
                         {
                             m_func = mercatorToGeographic;
                             // special default for geographic outputs
-                            m_template = configXML.label.@template || getDefaultString("latitudeLabel") + ":{1}   " + getDefaultString("longitudeLabel") + ":{0}";
+                            m_template = configXML.labels.template[0] || configXML.label.@template[0] || getDefaultString("latitudeLabel") + ":{1}   " + getDefaultString("longitudeLabel") + ":{0}";
                             numberFormatter.precision = parseFloat(configXML.numberformatter.@precision || "6");
                         }
                         else if (wkid === 4326 || wkid === 4269 || wkid === 4267)
                         {
                             // special default for geographic outputs
-                            m_template = configXML.label.@template || getDefaultString("latitudeLabel") + ":{1}   " + getDefaultString("longitudeLabel") + ":{0}";
+                            m_template = configXML.labels.template[0] || configXML.label.@template[0] || getDefaultString("latitudeLabel") + ":{1}   " + getDefaultString("longitudeLabel") + ":{0}";
                             numberFormatter.precision = parseFloat(configXML.numberformatter.@precision || "6");
                         }
                     }

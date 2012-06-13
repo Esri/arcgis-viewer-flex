@@ -16,10 +16,6 @@
 package com.esri.viewer.managers
 {
 
-import com.esri.ags.clusterers.ESRIClusterer;
-import com.esri.ags.clusterers.WeightedClusterer;
-import com.esri.ags.clusterers.supportClasses.FlareSymbol;
-import com.esri.ags.clusterers.supportClasses.SimpleClusterSymbol;
 import com.esri.ags.events.WebMapEvent;
 import com.esri.ags.geometry.Extent;
 import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
@@ -30,21 +26,20 @@ import com.esri.ags.layers.KMLLayer;
 import com.esri.ags.layers.Layer;
 import com.esri.ags.layers.OpenStreetMapLayer;
 import com.esri.ags.layers.WMSLayer;
-import com.esri.ags.layers.WMTSLayer;
 import com.esri.ags.layers.supportClasses.LOD;
-import com.esri.ags.symbols.Symbol;
+import com.esri.ags.portal.WebMapUtil;
 import com.esri.ags.tasks.GeometryServiceSingleton;
 import com.esri.ags.virtualearth.VETiledLayer;
-import com.esri.ags.webmap.WebMapUtil;
 import com.esri.viewer.AppEvent;
 import com.esri.viewer.ConfigData;
 import com.esri.viewer.ViewerContainer;
+import com.esri.viewer.utils.LayerObjectUtil;
+import com.esri.viewer.utils.PortalBasemapAppender;
 
 import flash.events.Event;
 import flash.events.EventDispatcher;
 import flash.events.IOErrorEvent;
 import flash.events.SecurityErrorEvent;
-import flash.text.TextFormat;
 
 import mx.collections.ArrayCollection;
 import mx.resources.ResourceManager;
@@ -69,6 +64,8 @@ public class ConfigManager extends EventDispatcher
     private const CONFIG_MANAGER:String = "ConfigManager";
     private const DEFAULT_GEOMETRY_SERVICE_URL:String = "http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer";
 
+    private var configData:ConfigData;
+
     public function ConfigManager()
     {
         //make sure the container is properly initialized and then
@@ -91,19 +88,17 @@ public class ConfigManager extends EventDispatcher
         configService.send();
     }
 
-    private function configService_faultHandler(event:mx.rpc.events.FaultEvent):void
+    private function configService_faultHandler(event:FaultEvent):void
     {
-        // happens if for example the main config file is missing or have crossdomain problem
-
         var sInfo:String = "";
 
-        // Missing config file
         if (event.fault.rootCause is IOErrorEvent)
         {
             var ioe:IOErrorEvent = event.fault.rootCause as IOErrorEvent;
-            if (ioe.text.indexOf("2032: Stream Error. URL:") > -1)
+            // Missing config file
+            if (ioe.errorID == 2032)
             {
-                sInfo += StringUtil.substitute(getDefaultString('missingConfigFileText'), ioe.text.substring(32)) + "\n\n";
+                sInfo += StringUtil.substitute(getDefaultString('missingConfigFileText'), ViewerContainer.configFile) + "\n\n";
             }
             else
             {
@@ -112,21 +107,17 @@ public class ConfigManager extends EventDispatcher
             }
         }
 
-        // config file with crossdomain issue
         if (event.fault.rootCause is SecurityErrorEvent)
         {
             var sec:SecurityErrorEvent = event.fault.rootCause as SecurityErrorEvent;
-            if (sec.text.indexOf("Error #2048: ") > -1) // debug player
-            {
-                sInfo += StringUtil.substitute(getDefaultString('configFileCrossDomain'), "\n", sec.text) + "\n\n";
-            }
-            else if (sec.text.indexOf("Error #2048") > -1) // non-debug player
+            // config file with crossdomain issue
+            if (sec.errorID == 2048)
             {
                 sInfo += StringUtil.substitute(getDefaultString('configFileCrossDomain'), "\n", sec.toString()) + "\n\n";
             }
+            // some other Security error
             else
             {
-                // some other Security error
                 sInfo += event.fault.rootCause + "\n\n";
             }
         }
@@ -148,7 +139,7 @@ public class ConfigManager extends EventDispatcher
         try
         {
             //parse main configuration file to create config data object
-            var configData:ConfigData = new ConfigData();
+            configData = new ConfigData();
             var configXML:XML = XML(event.result);
             configData.configXML = configXML;
 
@@ -578,6 +569,9 @@ public class ConfigManager extends EventDispatcher
                 arcGISWebMapItemID = ViewerContainer.urlConfigParams.itemid;
             }
 
+            var portalURL:String = configXML.map.@portalurl[0] || configXML.map.@arcgissharingurl[0];
+            var addArcGISBasemaps:Boolean = configXML.map.@addarcgisbasemaps[0] == "true";
+
             if (arcGISWebMapItemID)
             {
                 var webMapUtil:WebMapUtil = new WebMapUtil();
@@ -587,10 +581,9 @@ public class ConfigManager extends EventDispatcher
                 {
                     webMapUtil.geometryService = GeometryServiceSingleton.instance;
                 }
-                var arcgisSharingURL:String = configXML.map.@arcgissharingurl[0];
-                if (arcgisSharingURL)
+                if (portalURL)
                 {
-                    webMapUtil.arcgisSharingURL = arcgisSharingURL;
+                    webMapUtil.portalURL = portalURL;
                 }
                 webMapUtil.createMapById(arcGISWebMapItemID, new Responder(webMapUtil_createMapByIdResultHandler, webMapUtil_createMapByIdFaultHandler));
                 function webMapUtil_createMapByIdResultHandler(result:WebMapEvent):void
@@ -607,7 +600,6 @@ public class ConfigManager extends EventDispatcher
                     }
 
                     var layers:ArrayCollection = result.map.layers as ArrayCollection;
-                    configData.webMapLayers = layers;
                     for (i = 0; i < layers.length; i++)
                     {
                         var layer:Layer = layers[i];
@@ -625,121 +617,12 @@ public class ConfigManager extends EventDispatcher
                         }
                         layer.id = label;
 
-                        var lyrXML:XML = null;
-                        if (layer is ArcGISDynamicMapServiceLayer)
-                        {
-                            var dynLyr:ArcGISDynamicMapServiceLayer = layer as ArcGISDynamicMapServiceLayer;
-                            lyrXML = <layer label={label}
-                                    type="dynamic"
-                                    visible={dynLyr.visible}
-                                    alpha={dynLyr.alpha}
-                                    useproxy={dynLyr.proxyURL != null}
-                                    url={dynLyr.url}/>;
-                            if (dynLyr.visibleLayers)
-                            {
-                                lyrXML.@visiblelayers = dynLyr.visibleLayers.toArray().join();
-                            }
-                        }
-                        else if (layer is ArcGISImageServiceLayer)
-                        {
-                            var imgLyr:ArcGISImageServiceLayer = layer as ArcGISImageServiceLayer;
-                            lyrXML = <layer label={label}
-                                    type="image"
-                                    visible={imgLyr.visible}
-                                    alpha={imgLyr.alpha}
-                                    useproxy={imgLyr.proxyURL != null}
-                                    url={imgLyr.url}/>;
-                            if (imgLyr.bandIds)
-                            {
-                                lyrXML.@bandids = imgLyr.bandIds.join();
-                            }
-                        }
-                        else if (layer is ArcGISTiledMapServiceLayer)
-                        {
-                            var tiledLyr:ArcGISTiledMapServiceLayer = layer as ArcGISTiledMapServiceLayer;
-                            lyrXML = <layer label={label}
-                                    type="tiled"
-                                    visible={tiledLyr.visible}
-                                    alpha={tiledLyr.alpha}
-                                    useproxy={tiledLyr.proxyURL != null}
-                                    url={tiledLyr.url}/>;
-                            if (tiledLyr.displayLevels)
-                            {
-                                lyrXML.@displaylevels = tiledLyr.displayLevels.join();
-                            }
-                        }
-                        else if (layer is FeatureLayer)
-                        {
-                            var feaLyr:FeatureLayer = layer as FeatureLayer;
-                            if (feaLyr.featureCollection)
-                            {
-                                lyrXML = <layer label={label}
-                                        type="feature"
-                                        visible={feaLyr.visible}
-                                        alpha={feaLyr.alpha}/>
-                            }
-                            else
-                            {
-                                lyrXML = <layer label={label}
-                                        type="feature"
-                                        visible={feaLyr.visible}
-                                        alpha={feaLyr.alpha}
-                                        mode={feaLyr.mode}
-                                        useproxy={feaLyr.proxyURL != null}
-                                        url={feaLyr.url}/>;
-                            }
-                        }
-                        else if (layer is OpenStreetMapLayer)
-                        {
-                            var osmLyr:OpenStreetMapLayer = layer as OpenStreetMapLayer;
-                            lyrXML = <layer label={label}
-                                    type="osm"
-                                    visible={osmLyr.visible}
-                                    alpha={osmLyr.alpha}/>;
-                        }
-                        else if (layer is VETiledLayer)
-                        {
-                            var veLyr:VETiledLayer = layer as VETiledLayer;
-                            lyrXML = <layer label={label}
-                                    type="bing"
-                                    visible={veLyr.visible}
-                                    alpha={veLyr.alpha}
-                                    style={veLyr.mapStyle}/>;
-                            if (veLyr.displayLevels)
-                            {
-                                lyrXML.@displaylevels = veLyr.displayLevels.join();
-                            }
-                        }
-                        else if (layer is KMLLayer)
-                        {
-                            var kmlLayer:KMLLayer = layer as KMLLayer;
-                            lyrXML = <layer label={label}
-                                    type="kml"
-                                    visible={kmlLayer.visible}
-                                    alpha={kmlLayer.alpha}
-                                    url={kmlLayer.url}/>;
-                        }
-                        else if (layer is WMSLayer)
-                        {
-                            var wmsLayer:WMSLayer = layer as WMSLayer;
-                            lyrXML = <layer label={label}
-                                    type="wms"
-                                    visible={wmsLayer.visible}
-                                    alpha={wmsLayer.alpha}
-                                    version={wmsLayer.version}
-                                    skipgetcapabilities={wmsLayer.skipGetCapabilities}
-                                    imageformat={wmsLayer.imageFormat}
-                                    url={wmsLayer.url}/>;
-                            if (wmsLayer.visibleLayers)
-                            {
-                                lyrXML.@visiblelayers = wmsLayer.visibleLayers.toArray().join();
-                            }
-                        }
+                        var lyrXML:XML = createLayerXML(layer, label);
                         if (lyrXML)
                         {
                             if (isOpLayer)
                             {
-                                configData.opLayers.push(getLayerObject(lyrXML, i, true, bingKey, layer));
+                                configData.opLayers.push(LayerObjectUtil.getLayerObject(lyrXML, i, true, bingKey, layer));
                             }
                             else
                             {
@@ -747,7 +630,7 @@ public class ConfigManager extends EventDispatcher
                                 {
                                     lyrXML.@reference = true;
                                 }
-                                configData.basemaps.push(getLayerObject(lyrXML, i, false, bingKey, layer));
+                                configData.basemaps.push(LayerObjectUtil.getLayerObject(lyrXML, i, false, bingKey, layer));
                             }
                         }
                     }
@@ -765,8 +648,17 @@ public class ConfigManager extends EventDispatcher
                             mapAttrs.push(iExt);
                         }
                     }
-                    AppEvent.dispatch(AppEvent.CONFIG_LOADED, configData);
+
+                    if (addArcGISBasemaps)
+                    {
+                        appendPortalBasemaps();
+                    }
+                    else
+                    {
+                        AppEvent.dispatch(AppEvent.CONFIG_LOADED, configData);
+                    }
                 }
+
                 function webMapUtil_createMapByIdFaultHandler(error:Fault):void
                 {
                     AppEvent.showError(error.faultString, CONFIG_MANAGER);
@@ -787,7 +679,7 @@ public class ConfigManager extends EventDispatcher
 
                 for (i = 0; i < maplayerList.length(); i++)
                 {
-                    configBasemaps.push(getLayerObject(maplayerList[i], i, false, bingKey));
+                    configBasemaps.push(LayerObjectUtil.getLayerObject(maplayerList[i], i, false, bingKey));
                 }
                 configData.basemaps = configBasemaps;
 
@@ -798,7 +690,7 @@ public class ConfigManager extends EventDispatcher
                 var opLayerList:XMLList = configXML.map.operationallayers.layer;
                 for (i = 0; i < opLayerList.length(); i++)
                 {
-                    configOpLayers.push(getLayerObject(opLayerList[i], i, true, bingKey));
+                    configOpLayers.push(LayerObjectUtil.getLayerObject(opLayerList[i], i, true, bingKey));
                 }
                 configData.opLayers = configOpLayers;
             }
@@ -1032,7 +924,14 @@ public class ConfigManager extends EventDispatcher
                 //================================================
                 //announce configuration is complete
                 //================================================
-                AppEvent.dispatch(AppEvent.CONFIG_LOADED, configData);
+                if (addArcGISBasemaps)
+                {
+                    appendPortalBasemaps();
+                }
+                else
+                {
+                    AppEvent.dispatch(AppEvent.CONFIG_LOADED, configData);
+                }
             }
         }
         catch (error:Error)
@@ -1041,182 +940,127 @@ public class ConfigManager extends EventDispatcher
         }
     }
 
-    private function getLayerObject(obj:XML, num:Number, isOpLayer:Boolean, bingKey:String, layer:Layer = null):Object
+    private function createLayerXML(layer:Layer, label:String):XML
     {
-        var label:String = isOpLayer ? 'OpLayer ' + num : 'Map ' + num; // default label
-        if (obj.@label[0]) // check that label attribute exist
+        var lyrXML:XML = null;
+        if (layer is ArcGISDynamicMapServiceLayer)
         {
-            label = obj.@label; // set basemap label if specified in configuration file
-        }
-
-        var type:String;
-        if (!isOpLayer)
-        {
-            type = "tiled"; // default basemap type
-        }
-        if (obj.@type[0]) // check that type attribute exist
-        {
-            type = obj.@type; // set basemap type if specified in configuration file
-        }
-
-        // wms
-        var wkid:String;
-        if (obj.@wkid[0])
-        {
-            wkid = obj.@wkid;
-        }
-
-        var visible:Boolean = obj.@visible == "true";
-
-        var alpha:Number = 1.0;
-        if (obj.@alpha[0])
-        {
-            if (!isNaN(parseFloat(obj.@alpha)))
+            var dynLyr:ArcGISDynamicMapServiceLayer = layer as ArcGISDynamicMapServiceLayer;
+            lyrXML = <layer label={label}
+                    type="dynamic"
+                    visible={dynLyr.visible}
+                    alpha={dynLyr.alpha}
+                    useproxy={dynLyr.proxyURL != null}
+                    url={dynLyr.url}/>;
+            if (dynLyr.visibleLayers)
             {
-                alpha = parseFloat(obj.@alpha);
+                lyrXML.@visiblelayers = dynLyr.visibleLayers.toArray().join();
             }
         }
-
-        var maxAllowableOffset:Number;
-        if (obj.@maxallowableoffset[0])
+        else if (layer is ArcGISImageServiceLayer)
         {
-            if (!isNaN(parseFloat(obj.@maxallowableoffset)))
+            var imgLyr:ArcGISImageServiceLayer = layer as ArcGISImageServiceLayer;
+            lyrXML = <layer label={label}
+                    type="image"
+                    visible={imgLyr.visible}
+                    alpha={imgLyr.alpha}
+                    useproxy={imgLyr.proxyURL != null}
+                    url={imgLyr.url}/>;
+            if (imgLyr.bandIds)
             {
-                maxAllowableOffset = parseFloat(obj.@maxallowableoffset);
+                lyrXML.@bandids = imgLyr.bandIds.join();
             }
         }
-
-        var noData:Number;
-        if (obj.@nodata[0])
+        else if (layer is ArcGISTiledMapServiceLayer)
         {
-            if (!isNaN(parseFloat(obj.@nodata)))
+            var tiledLyr:ArcGISTiledMapServiceLayer = layer as ArcGISTiledMapServiceLayer;
+            lyrXML = <layer label={label}
+                    type="tiled"
+                    visible={tiledLyr.visible}
+                    alpha={tiledLyr.alpha}
+                    useproxy={tiledLyr.proxyURL != null}
+                    url={tiledLyr.url}/>;
+            if (tiledLyr.displayLevels)
             {
-                noData = parseFloat(obj.@nodata);
+                lyrXML.@displaylevels = tiledLyr.displayLevels.join();
             }
         }
-
-        var autoRefresh:Number = 0;
-        if (obj.@autorefresh[0])
+        else if (layer is FeatureLayer)
         {
-            if (!isNaN(parseInt(obj.@autorefresh)))
+            var feaLyr:FeatureLayer = layer as FeatureLayer;
+            if (feaLyr.featureCollection)
             {
-                autoRefresh = parseInt(obj.@autorefresh);
+                lyrXML = <layer label={label}
+                        type="feature"
+                        visible={feaLyr.visible}
+                        alpha={feaLyr.alpha}/>
+            }
+            else
+            {
+                lyrXML = <layer label={label}
+                        type="feature"
+                        visible={feaLyr.visible}
+                        alpha={feaLyr.alpha}
+                        mode={feaLyr.mode}
+                        useproxy={feaLyr.proxyURL != null}
+                        url={feaLyr.url}/>;
             }
         }
-
-        var clusterer:ESRIClusterer = parseClusterer(obj.clustering[0]);
-        var useProxy:Boolean = obj.@useproxy[0] && obj.@useproxy == "true"; // default false
-        var useMapTime:Boolean = obj.@usemaptime[0] ? obj.@usemaptime == "true" : true; // default true
-        var useAMF:String = obj.@useamf[0] ? obj.@useamf : "";
-        var token:String = obj.@token[0] ? obj.@token : "";
-        var mode:String = obj.@mode[0] ? obj.@mode : "";
-        var icon:String = isSupportedImageType(obj.@icon[0]) ? obj.@icon : 'assets/images/defaultBasemapIcon.png';
-        var layerId:String = obj.@layerid[0];
-        var imageFormat:String = obj.@imageformat;
-        var visibleLayers:String = obj.@visiblelayers;
-        var displayLevels:String = obj.@displaylevels;
-        var bandIds:String = obj.@bandids;
-        var skipGetCapabilities:String = obj.@skipgetcapabilities[0];
-        var version:String = obj.@version[0];
-        var url:String = obj.@url;
-        var serviceURL:String = obj.@serviceurl[0];
-        var serviceMode:String = obj.@servicemode[0];
-        var username:String = obj.@username;
-        var password:String = obj.@password;
-
-        // ve tiled layer
-        var style:String = obj.@style[0] ? obj.@style : "";
-        var key:String;
-        if (bingKey)
+        else if (layer is OpenStreetMapLayer)
         {
-            key = bingKey;
+            var osmLyr:OpenStreetMapLayer = layer as OpenStreetMapLayer;
+            lyrXML = <layer label={label}
+                    type="osm"
+                    visible={osmLyr.visible}
+                    alpha={osmLyr.alpha}/>;
         }
-        else
+        else if (layer is VETiledLayer)
         {
-            key = obj.@key[0] ? obj.@key : "";
-        }
-        var culture:String = obj.@culture[0] ? obj.@culture : "";
-
-        // arcims layer
-        var serviceHost:String = obj.@servicehost[0] ? obj.@servicehost : "";
-        var serviceName:String = obj.@servicename[0] ? obj.@servicename : "";
-
-        // definitionExpression for featurelayer
-        var definitionExpression:String = obj.@definitionexpression[0] ? obj.@definitionexpression : "";
-        var gdbVersion:String = obj.@gdbversion[0];
-
-        //sublayers
-        var subLayers:Array = [];
-        if (type == "tiled" || type == "dynamic")
-        {
-            var subLayersList:XMLList = obj.sublayer;
-            for (var i:int = 0; i < subLayersList.length(); i++)
+            var veLyr:VETiledLayer = layer as VETiledLayer;
+            lyrXML = <layer label={label}
+                    type="bing"
+                    visible={veLyr.visible}
+                    alpha={veLyr.alpha}
+                    style={veLyr.mapStyle}/>;
+            if (veLyr.displayLevels)
             {
-                subLayers.push({ id: String(subLayersList[i].@id), info: subLayersList[i].@info, infoConfig: subLayersList[i].@infoconfig, popUpConfig: subLayersList[i].@popupconfig, definitionExpression: String(subLayersList[i].@definitionexpression)});
+                lyrXML.@displaylevels = veLyr.displayLevels.join();
             }
         }
-
-        var resultObject:Object =
-            {
-                id: String(num),
-                alpha: alpha,
-                bandIds: bandIds,
-                autoRefresh: autoRefresh,
-                culture: culture,
-                clusterer: clusterer,
-                definitionExpression: definitionExpression,
-                displayLevels: displayLevels,
-                gdbVersion: gdbVersion,
-                icon: icon,
-                imageFormat: imageFormat,
-                key: key,
-                label: label,
-                layerId: layerId,
-                maxAllowableOffset: maxAllowableOffset,
-                mode: mode,
-                noData: noData,
-                password: password,
-                serviceHost: serviceHost,
-                serviceName: serviceName,
-                serviceMode: serviceMode,
-                serviceURL: serviceURL,
-                skipGetCapabilities: skipGetCapabilities,
-                style: style,
-                subLayers: subLayers,
-                token: token,
-                type: type,
-                url: url,
-                useAMF: useAMF,
-                useMapTime: useMapTime,
-                useProxy: useProxy,
-                username: username,
-                version: version,
-                visible: visible,
-                visibleLayers: visibleLayers,
-                wkid: wkid
-            };
-
-        // look for info, infoconfig and popupconfig on basemaps and operational layers
-        var opLayerInfo:String = obj.@info;
-        var opLayerInfoConfig:String = obj.@infoconfig;
-        var opLayerPopUpConfig:String = obj.@popupconfig;
-        resultObject.popUpConfig = opLayerPopUpConfig;
-        resultObject.infoConfig = opLayerInfoConfig;
-        resultObject.infoUrl = opLayerInfo;
-        resultObject.layer = layer;
-        if (!isOpLayer)
+        else if (layer is KMLLayer)
         {
-            var reference:Boolean = obj.@reference[0] && obj.@reference == "true";
-            resultObject.reference = reference;
+            var kmlLayer:KMLLayer = layer as KMLLayer;
+            lyrXML = <layer label={label}
+                    type="kml"
+                    visible={kmlLayer.visible}
+                    alpha={kmlLayer.alpha}
+                    url={kmlLayer.url}/>;
         }
-
-        return resultObject;
-    }
-
-    private function isSupportedImageType(filePath:String):Boolean
-    {
-        var endsWithSupportedImageFileType:RegExp = /\.(png|gif|jpg)$/i;
-        return endsWithSupportedImageFileType.test(filePath);
+        else if (layer is WMSLayer)
+        {
+            var wmsLayer:WMSLayer = layer as WMSLayer;
+            lyrXML = <layer label={label}
+                    type="wms"
+                    visible={wmsLayer.visible}
+                    alpha={wmsLayer.alpha}
+                    version={wmsLayer.version}
+                    skipgetcapabilities={wmsLayer.skipGetCapabilities}
+                    imageformat={wmsLayer.imageFormat}
+                    url={wmsLayer.url}/>;
+            if (wmsLayer.maxImageHeight > 0)
+            {
+                lyrXML.@maximageheight = wmsLayer.maxImageHeight;
+            }
+            if (wmsLayer.maxImageWidth > 0)
+            {
+                lyrXML.@maximagewidth = wmsLayer.maxImageWidth;
+            }
+            if (wmsLayer.visibleLayers)
+            {
+                lyrXML.@visiblelayers = wmsLayer.visibleLayers.toArray().join();
+            }
+        }
+        return lyrXML;
     }
 
     private function getDefaultString(token:String):String
@@ -1224,204 +1068,17 @@ public class ConfigManager extends EventDispatcher
         return ResourceManager.getInstance().getString("ViewerStrings", token);
     }
 
-    private function parseClusterer(clusteringXML:XML):ESRIClusterer
+    private function appendPortalBasemaps():void
     {
-        var clusterer:ESRIClusterer;
-
-        if (clusteringXML)
-        {
-            var clusterSymbol:Symbol;
-            if (clusteringXML.clustersymbol[0])
-            {
-                clusterSymbol = parseClusterSymbol(clusteringXML.clustersymbol[0]);
-            }
-
-            if (clusterSymbol)
-            {
-                clusterer = new WeightedClusterer();
-                if (clusteringXML.@mingraphiccount[0])
-                {
-                    clusterer.minGraphicCount = parseInt(clusteringXML.@mingraphiccount[0]);
-                }
-                if (clusteringXML.@sizeinpixels[0])
-                {
-                    clusterer.sizeInPixels = parseFloat(clusteringXML.@sizeinpixels[0]);
-                }
-                clusterer.symbol = clusterSymbol;
-            }
-        }
-
-        return clusterer;
+        var basemapAppender:PortalBasemapAppender = new PortalBasemapAppender("http://www.arcgis.com", configData);
+        basemapAppender.addEventListener(Event.COMPLETE, basemapAppender_completeHandler);
+        basemapAppender.fetchAndAppendPortalBasemaps();
     }
 
-    private function parseClusterSymbol(clusterSymbolXML:XML):Symbol
+    protected function basemapAppender_completeHandler(event:Event):void
     {
-        var clusterSymbol:Symbol;
-
-        var type:String = clusterSymbolXML.@type;
-
-        if (type == "simple")
-        {
-            clusterSymbol = parseSimpleClusterSymbol(clusterSymbolXML);
-        }
-        else if (type == "flare")
-        {
-            clusterSymbol = parseFlareSymbol(clusterSymbolXML);
-        }
-
-        return clusterSymbol;
-    }
-
-    private function parseSimpleClusterSymbol(clusterSymbolXML:XML):Symbol
-    {
-        var simpleClusterSymbol:SimpleClusterSymbol = new SimpleClusterSymbol();
-
-        if (clusterSymbolXML.@alpha[0])
-        {
-            simpleClusterSymbol.alpha = parseFloat(clusterSymbolXML.@alpha[0]);
-        }
-        if (clusterSymbolXML.@color[0])
-        {
-            simpleClusterSymbol.color = parseInt(clusterSymbolXML.@color[0]);
-        }
-        if (clusterSymbolXML.@size[0])
-        {
-            simpleClusterSymbol.size = parseFloat(clusterSymbolXML.@size[0]);
-        }
-        if (clusterSymbolXML.@alphas[0])
-        {
-            simpleClusterSymbol.alphas = parseAlphas(clusterSymbolXML.@alphas[0]);
-        }
-        if (clusterSymbolXML.@sizes[0])
-        {
-            simpleClusterSymbol.sizes = parseSizes(clusterSymbolXML.@sizes[0]);
-        }
-        if (clusterSymbolXML.@weights[0])
-        {
-            simpleClusterSymbol.weights = parseWeights(clusterSymbolXML.@weights[0]);
-        }
-        if (clusterSymbolXML.@colors[0])
-        {
-            simpleClusterSymbol.colors = parseColors(clusterSymbolXML.@colors[0]);
-        }
-        var textFormat:TextFormat = parseTextFormat(clusterSymbolXML);
-
-        simpleClusterSymbol.textFormat = textFormat;
-
-        return simpleClusterSymbol;
-    }
-
-    private function parseAlphas(delimitedAlphas:String):Array
-    {
-        var alphas:Array = [];
-        var alphasToParse:Array = delimitedAlphas.split(',');
-        for each (var alpha:String in alphasToParse)
-        {
-            alphas.push(parseFloat(alpha));
-        }
-
-        return alphas;
-    }
-
-    private function parseSizes(delimitedSizes:String):Array
-    {
-        var sizes:Array = [];
-        var sizesToParse:Array = delimitedSizes.split(',');
-        for each (var size:String in sizesToParse)
-        {
-            sizes.push(parseFloat(size));
-        }
-
-        return sizes;
-    }
-
-    private function parseWeights(delimitedWeights:String):Array
-    {
-        var weights:Array = [];
-        var weightsToParse:Array = delimitedWeights.split(',');
-        for each (var weight:String in weightsToParse)
-        {
-            weights.push(parseFloat(weight));
-        }
-
-        return weights;
-    }
-
-    private function parseColors(delimitedColors:String):Array
-    {
-        var colors:Array = [];
-        var colorsToParse:Array = delimitedColors.split(',');
-        for each (var color:String in colorsToParse)
-        {
-            colors.push(parseInt(color));
-        }
-        return colors;
-    }
-
-    private function parseTextFormat(clusterSymbolXML:XML):TextFormat
-    {
-        var textFormat:TextFormat = new TextFormat();
-
-        if (clusterSymbolXML.@textcolor[0])
-        {
-            textFormat.color = parseInt(clusterSymbolXML.@textcolor);
-        }
-        if (clusterSymbolXML.@textsize[0])
-        {
-            textFormat.size = parseInt(clusterSymbolXML.@textsize);
-        }
-
-        return textFormat;
-    }
-
-    private function parseFlareSymbol(flareSymbolXML:XML):Symbol
-    {
-        var flareSymbol:FlareSymbol = new FlareSymbol();
-
-        if (flareSymbolXML)
-        {
-            if (flareSymbolXML.@alpha[0])
-            {
-                flareSymbol.backgroundAlpha = parseFloat(flareSymbolXML.@alpha[0]);
-            }
-            if (flareSymbolXML.@color[0])
-            {
-                flareSymbol.backgroundColor = parseInt(flareSymbolXML.@color[0])
-            }
-            if (flareSymbolXML.@bordercolor[0])
-            {
-                flareSymbol.borderColor = parseInt(flareSymbolXML.@bordercolor[0]);
-            }
-            if (flareSymbolXML.@flaremaxcount[0])
-            {
-                flareSymbol.flareMaxCount = parseInt(flareSymbolXML.@flaremaxcount[0])
-            }
-            if (flareSymbolXML.@size[0])
-            {
-                flareSymbol.size = parseFloat(flareSymbolXML.@size[0]);
-            }
-            if (flareSymbolXML.@alphas[0])
-            {
-                flareSymbol.backgroundAlphas = parseAlphas(flareSymbolXML.@alphas[0]);
-            }
-            if (flareSymbolXML.@sizes[0])
-            {
-                flareSymbol.sizes = parseSizes(flareSymbolXML.@sizes[0]);
-            }
-            if (flareSymbolXML.@weights[0])
-            {
-                flareSymbol.weights = parseWeights(flareSymbolXML.@weights[0]);
-            }
-            if (flareSymbolXML.@colors[0])
-            {
-                flareSymbol.backgroundColors = parseColors(flareSymbolXML.@colors[0]);
-            }
-
-            flareSymbol.textFormat = parseTextFormat(flareSymbolXML);
-        }
-
-        return flareSymbol;
+        (event.currentTarget as PortalBasemapAppender).removeEventListener(Event.COMPLETE, basemapAppender_completeHandler);
+        AppEvent.dispatch(AppEvent.CONFIG_LOADED, configData);
     }
 }
-
 }

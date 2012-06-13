@@ -13,35 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 ///////////////////////////////////////////////////////////////////////////
-package widgets.Search
+package com.esri.viewer
 {
 
-import com.esri.ags.Graphic;
-import com.esri.ags.geometry.Geometry;
-import com.esri.ags.geometry.MapPoint;
-import com.esri.ags.symbols.Symbol;
+// Make sure these classes are defined in root Viewer application
+// so that they will be shared by all the widgets.
 
-import flash.events.EventDispatcher;
+import com.esri.ags.tasks.PrintTask;
 
-[Bindable]
+PrintTask;
 
-public class SearchResult extends EventDispatcher
+public class ForcedImports
 {
-    public var title:String;
-
-    public var symbol:Symbol;
-
-    public var content:String;
-
-    public var point:MapPoint;
-
-    public var link:String;
-
-    public var linkAlias:String;
-
-    public var geometry:Geometry;
-
-    public var graphic:Graphic;
 }
 
 }

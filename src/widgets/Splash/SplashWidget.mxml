@@ -35,7 +35,7 @@
                 if (configXML)
                 {
                     content = configXML.content || "...";
-                    btnLabel = configXML.btnlabel || getDefaultString("okLabel");
+                    btnLabel = configXML.labels.btnlabel[0] || configXML.btnlabel || getDefaultString("okLabel");
                     txtareaWidth = configXML.width || 500;
                     txtareaHeight = configXML.height || 500;
 

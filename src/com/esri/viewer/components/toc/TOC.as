@@ -94,6 +94,8 @@ public class TOC extends Tree
 
     private var _layerFiltersChanged:Boolean = false;
 
+    private var _basemapLayers:ArrayCollection;
+
     // Label function for TocMapLayerItem
     private var _labelFunction:Function = null;
     private var _labelFunctionChanged:Boolean = false;
@@ -231,6 +233,26 @@ public class TOC extends Tree
         _excludeGraphicsLayers = value;
 
         onFilterChange();
+    }
+
+    //--------------------------------------------------------------------------
+    //  basemapLayers
+    //--------------------------------------------------------------------------
+
+    /**
+     * A list of basemap layer objects and/or layer IDs.
+     */
+    public function get basemapLayers():Object
+    {
+        return _basemapLayers;
+    }
+
+    /**
+     * @private
+     */
+    public function set basemapLayers(value:Object):void
+    {
+        _basemapLayers = normalizeLayerFilter(value);
     }
 
     //--------------------------------------------------------------------------
@@ -397,7 +419,7 @@ public class TOC extends Tree
         var layer:Layer = event.layer;
         var index:int = event.index;
 
-        if (isGraphicsLayer(layer) || isHiddenLayer(layer))
+        if (isGraphicsLayer(layer) || isHiddenLayer(layer) || isLayerExcluded(layer))
         {
             return;
         }
@@ -487,7 +509,7 @@ public class TOC extends Tree
         for (var i:int = 0; i < layerIds.length; i++)
         {
             var layer:Layer = mapLayers.getItemAt(i) as Layer
-            if (isHiddenLayer(layer) || isGraphicsLayer(layer))
+            if (isHiddenLayer(layer) || isGraphicsLayer(layer) || islayerExcludedAndNotBaseMap(layer))
             {
                 continue;
             }
@@ -504,6 +526,45 @@ public class TOC extends Tree
     private function isHiddenLayer(layer:Layer):Boolean
     {
         return layer.name.indexOf("hiddenLayer_") > -1;
+    }
+
+    private function isLayerExcluded(layer:Layer):Boolean
+    {
+        var exclude:Boolean;
+        for each (var item:* in excludeLayers)
+        {
+            if ((item === layer || item == layer.name) || (item == layer.id))
+            {
+                exclude = true;
+                break;
+            }
+        }
+        return exclude;
+    }
+
+    private function islayerExcludedAndNotBaseMap(layer:Layer):Boolean
+    {
+        var exclude:Boolean;
+        for each (var item:* in excludeLayers)
+        {
+            if ((item === layer || item == layer.name) || (item == layer.id))
+            {
+                exclude = true;
+                for each (var item1:* in basemapLayers)
+                {
+                    if (item1 === item)
+                    {
+                        exclude = false;
+                        break;
+                    }
+                }
+                if (!exclude)
+                {
+                    break;
+                }
+            }
+        }
+        return exclude;
     }
 
     private function unregisterAllMapLayers():void
@@ -567,7 +628,7 @@ public class TOC extends Tree
                 trueMapLayerIndex++;
             }
         }
-        // now add at the correct index       
+        // now add at the correct index 
         _tocRoots.addItemAt(tocItem, _tocRoots.length - trueMapLayerIndex);
     }
 
@@ -641,7 +702,7 @@ public class TOC extends Tree
         }
     }
 
-    private function filterOutLayer(layer:Layer):Boolean
+    public function filterOutLayer(layer:Layer):Boolean
     {
         var exclude:Boolean = false;
         if (excludeGraphicsLayers && isGraphicsLayer(layer))
@@ -654,20 +715,12 @@ public class TOC extends Tree
         }
         if (!exclude && excludeLayers)
         {
-            exclude = false;
-            for each (var item:* in excludeLayers)
-            {
-                if ((item === layer || item == layer.name) || (item == layer.id))
-                {
-                    exclude = true;
-                    break;
-                }
-            }
+            exclude = isLayerExcluded(layer);
         }
         if (includeLayers)
         {
             exclude = true;
-            for each (item in includeLayers)
+            for each (var item:* in includeLayers)
             {
                 if (item === layer || item == layer.id)
                 {

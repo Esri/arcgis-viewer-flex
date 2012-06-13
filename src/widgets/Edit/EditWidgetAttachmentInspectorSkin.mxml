@@ -54,8 +54,6 @@
             import spark.events.IndexChangeEvent;
 
             [Bindable]
-            public static var layerNotSupportingAttachmentsText:String;
-            [Bindable]
             public static var noAttachmentsText:String;
             [Bindable]
             public static var chooseFileText:String;
@@ -183,7 +181,7 @@
     <s:states>
         <s:State name="normal"/>
         <s:State name="disabled"/>
-        <s:State name="queryAttachmentInfos"/>
+        <s:State name="queryAttachmentInfos" stateGroups="queryAttachmentInfosGroup"/>
         <s:State name="queryAttachmentInfosWithList" stateGroups="queryAttachmentInfosGroup"/>
         <s:State name="attachmentLoaded" stateGroups="loadState"/>
         <s:State name="attachmentLoadedNoAttachmentsInList" stateGroups="noAttachmentsState,loadState"/>
@@ -192,10 +190,9 @@
     <s:layout>
         <s:VerticalLayout horizontalAlign="center"/>
     </s:layout>
-
-    <mx:Image includeIn="queryAttachmentInfos"
-              minHeight.queryAttachmentInfosWithList="140"
-              minWidth.queryAttachmentInfosWithList="200"
+    <!--- @private -->
+    <mx:Image horizontalAlign="center"
+              includeIn="queryAttachmentInfosGroup"
               source="assets/images/loader.swf"/>
     <s:Label id="numAttachments"
              excludeFrom="noAttachmentsState, disabled"
@@ -219,6 +216,7 @@
                                            doubleClick="attachmentInfoList_clickHandler(event)"
                                            doubleClickEnabled="true"
                                            enabled.disabled="false"
+                                           excludeFrom="noAttachmentsState,queryAttachmentInfosGroup,disabled"
                                            isEditable="{hostComponent.featureLayer.isEditable}"
                                            itemRenderer="widgets.Edit.EditWidgetAttachmentRenderer"
                                            keyUp="attachmentInfoList_keyUpHandler(event)"
@@ -232,9 +230,6 @@
             </edit:layout>
         </edit:EditWidgetAttachmentInfoList>
     </s:BorderContainer>
-    <s:Label fontWeight="bold"
-             includeIn="disabled"
-             text="{layerNotSupportingAttachmentsText}"/>
     <s:Label fontWeight="bold"
              includeIn="noAttachmentsInList"
              text="{noAttachmentsText}"/>

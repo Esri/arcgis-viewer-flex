@@ -87,13 +87,13 @@
               gap="2"
               horizontalAlign="center"
               verticalAlign="middle">
-        <mx:Image id="icon"
-                  width="25" height="100%"
-                  buttonMode="true"
-                  mouseOut="mouseOutHandler(event)"
-                  mouseOver="mouseOverHandler(event)"
-                  smoothBitmapContent="true"
-                  useHandCursor="true"/>
+        <s:Image id="icon"
+                 width="25" height="100%"
+                 buttonMode="true"
+                 mouseOut="mouseOutHandler(event)"
+                 mouseOver="mouseOverHandler(event)"
+                 smooth="true"
+                 useHandCursor="true"/>
         <HeaderController:WidgetUnderline id="underline"/>
     </s:VGroup>
 

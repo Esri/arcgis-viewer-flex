@@ -42,12 +42,12 @@
             import com.esri.ags.symbols.SimpleLineSymbol;
             import com.esri.ags.symbols.SimpleMarkerSymbol;
             import com.esri.ags.tasks.GeometryServiceSingleton;
+            import com.esri.ags.tasks.JSONTask;
             import com.esri.ags.tasks.supportClasses.DataFile;
             import com.esri.ags.tasks.supportClasses.JobInfo;
             import com.esri.ags.tasks.supportClasses.ParameterValue;
             import com.esri.ags.tasks.supportClasses.ProjectParameters;
             import com.esri.viewer.AppEvent;
-            import com.esri.viewer.utils.GenericJSONTask;
 
             import flashx.textLayout.conversion.TextConverter;
 
@@ -174,7 +174,7 @@
 
             private function getExecutionType():void
             {
-                var gpTaskInspector:GenericJSONTask = new GenericJSONTask();
+                var gpTaskInspector:JSONTask = new JSONTask();
                 var urlVars:URLVariables = new URLVariables();
                 urlVars.f = "json";
                 gpTaskInspector.url = gp.url;
@@ -194,7 +194,7 @@
 
             private function fetchGPServerDescription():void
             {
-                var gpServerInspector:GenericJSONTask = new GenericJSONTask();
+                var gpServerInspector:JSONTask = new JSONTask();
                 var urlVars:URLVariables = new URLVariables();
                 urlVars.f = "json";
                 gpServerInspector.url = getGPServerURL(gp.url);
@@ -302,7 +302,6 @@
                 if (!currentGraphicsLayer.map)
                 {
                     map.addLayer(currentGraphicsLayer);
-                    layerOrderer.orderLayers();
                 }
 
                 inputParamsDataGroup.dispatchEvent(event);
@@ -932,7 +931,10 @@
             {
                 for each (var resultImageLayer:GPResultImageLayer in resultImageLayersOnMap)
                 {
-                    map.addLayer(resultImageLayer);
+                    if (!map.getLayer(resultImageLayer.id))
+                    {
+                        map.addLayer(resultImageLayer);
+                    }
                 }
             }
         ]]>

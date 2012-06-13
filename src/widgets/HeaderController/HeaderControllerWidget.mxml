@@ -119,9 +119,9 @@
                 if (configXML)
                 {
                     aboutContent = configXML.about.content || "";
-                    labelText = configXML.about.label || getDefaultString("aboutLabel");
+                    labelText = configXML.labels.abouttext[0] || configXML.about.label[0] || getDefaultString("aboutLabel");
                     labelVisible = configXML.about.visible.toString() || "true";
-                    aboutButtonLabel = configXML.about.btnlabel || getDefaultString("okLabel");
+                    aboutButtonLabel = configXML.labels.btnlabel[0] || configXML.about.btnlabel[0] || getDefaultString("okLabel");
                     aboutWidth = configXML.about.width || 500;
                     aboutHeight = configXML.about.height || 500;
                 }

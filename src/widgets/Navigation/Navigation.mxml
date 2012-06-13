@@ -52,7 +52,6 @@
             [Bindable]
             public var panrightItem:NavToolItem;
 
-
             [Bindable]
             public var prevextItem:NavToolItem;
 
@@ -129,7 +128,9 @@
                             blurX="10"
                             blurY="10"/>
     </s:filters>
-    <s:Group includeInLayout="{panwheelItem.toolVisible}" visible="{panwheelItem.toolVisible}">
+    <s:Group includeInLayout="{panwheelItem.toolVisible}"
+             layoutDirection="ltr"
+             visible="{panwheelItem.toolVisible}">
         <s:Button id="nwButton"
                   x="2" y="2"
                   click="map.panUpperLeft()"

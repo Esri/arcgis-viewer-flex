@@ -7,7 +7,7 @@
 ////////////////////////////////////////////////////////////////////////////
 -->
 <configuration>
-    <title>حول ArcGIS Viewer لـ Flex...</title>
+    <title>ArcGIS Viewer for Flex</title>
     <layoutdirection>rtl</layoutdirection>
     <logo>assets/images/logo.png</logo>
     <style>
@@ -23,12 +23,7 @@
     <widget left="0" top="0" config="apps/ar/HeaderControllerWidget.xml" url="widgets/HeaderController/HeaderControllerWidget.swf"/>
     <widget left="3" bottom="3" config="widgets/Coordinate/CoordinateWidget.xml" url="widgets/Coordinate/CoordinateWidget.swf"/>
 
-    <map initialextent="-1958000 12000 9166000 5481000" top="40" wraparound180="true">
-        <basemaps>
-            <layer label="الشوارع" type="tiled" visible="true" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer"/>
-            <layer label="تصوير جوي" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer"/>
-            <layer label="طوبو" type="tiled" visible="false" url="http://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer"/>
-        </basemaps>
+    <map initialextent="-1958000 12000 9166000 5481000" top="40" wraparound180="true" addarcgisbasemaps="true">
         <operationallayers>
             <layer label="التركيبة السكانية" type="tiled" visible="false" alpha="0.5" url="http://server.arcgisonline.com/ArcGIS/rest/services/Demographics/USA_Median_Household_Income/MapServer">
                 <sublayer id="1" popupconfig="popups/PopUp_Demographics_BlockGroups.xml"/>

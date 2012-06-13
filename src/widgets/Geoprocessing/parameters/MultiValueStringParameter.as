@@ -16,7 +16,7 @@
 package widgets.Geoprocessing.parameters
 {
 
-public class MultiValueParameter extends BaseParameter
+public class MultiValueStringParameter extends BaseParameter
 {
     //--------------------------------------------------------------------------
     //
@@ -46,7 +46,7 @@ public class MultiValueParameter extends BaseParameter
 
     override public function get type():String
     {
-        return GPParameterTypes.MULTI_VALUE;
+        return GPParameterTypes.MULTI_VALUE_STRING;
     }
 
     //--------------------------------------------------------------------------

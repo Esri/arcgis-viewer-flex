@@ -16,10 +16,10 @@
 package com.esri.viewer.utils
 {
 
-import com.esri.ags.webmap.supportClasses.PopUpFieldFormat;
-import com.esri.ags.webmap.supportClasses.PopUpFieldInfo;
-import com.esri.ags.webmap.supportClasses.PopUpInfo;
-import com.esri.ags.webmap.supportClasses.PopUpMediaInfo;
+import com.esri.ags.portal.supportClasses.PopUpFieldFormat;
+import com.esri.ags.portal.supportClasses.PopUpFieldInfo;
+import com.esri.ags.portal.supportClasses.PopUpInfo;
+import com.esri.ags.portal.supportClasses.PopUpMediaInfo;
 
 /**
  * Helper class for parsing pop-up configuration XML file.

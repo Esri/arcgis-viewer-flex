@@ -54,6 +54,7 @@
                 toc.map = map;
                 toc.isMapServiceOnly = false; //gotta get this from the config file
                 toc.excludeLayers = getExcludeLayers();
+                toc.basemapLayers = getBasemapLayers();
                 toc.excludeGraphicsLayers = true;
                 if (expandLayerItems)
                 {
@@ -63,16 +64,7 @@
 
             private function getExcludeLayers():ArrayCollection
             {
-                var result:ArrayCollection = new ArrayCollection();
-
-                if (configData && configData.basemaps)
-                {
-                    // exclude basemaps
-                    for (var i:int = 0; i < configData.basemaps.length; i++)
-                    {
-                        result.addItem(configData.basemaps[i].label);
-                    }
-                }
+                var result:ArrayCollection = getBasemapLayers();
 
                 if (configXML)
                 {
@@ -81,6 +73,21 @@
                     for (var j:Number = 0; j < layers.length(); j++)
                     {
                         result.addItem(layers[j].toString());
+                    }
+                }
+
+                return result;
+            }
+
+            private function getBasemapLayers():ArrayCollection
+            {
+                var result:ArrayCollection = new ArrayCollection();
+
+                if (configData && configData.basemaps)
+                {
+                    for (var i:int = 0; i < configData.basemaps.length; i++)
+                    {
+                        result.addItem(configData.basemaps[i].label);
                     }
                 }
 

@@ -71,11 +71,11 @@
               rollOut="mouseOutHandler(event)"
               rollOver="mouseOverHandler(event)"
               verticalAlign="middle">
-        <mx:Image id="icon"
-                  width="25" height="100%"
-                  buttonMode="true"
-                  smoothBitmapContent="true"
-                  useHandCursor="true"/>
+        <s:Image id="icon"
+                 width="25" height="100%"
+                 buttonMode="true"
+                 smooth="true"
+                 useHandCursor="true"/>
         <s:Graphic>
             <s:Group>
                 <s:Path data="m 3 0 l -6 0 l 3 7 z">

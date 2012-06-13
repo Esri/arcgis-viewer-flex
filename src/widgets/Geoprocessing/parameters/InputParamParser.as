@@ -40,7 +40,7 @@ public class InputParamParser extends BaseParamParser
 
             if (paramXML.choicelist[0])
             {
-                if (param.type == GPParameterTypes.MULTI_VALUE)
+                if (param.type == GPParameterTypes.MULTI_VALUE_STRING)
                 {
                     param.choiceList = parseMultiValueChoiceList(paramXML.choicelist.choice);
                 }

@@ -32,18 +32,17 @@
             import com.esri.ags.geometry.Geometry;
             import com.esri.ags.layers.FeatureLayer;
             import com.esri.ags.layers.Layer;
+            import com.esri.ags.portal.supportClasses.PopUpFieldInfo;
+            import com.esri.ags.portal.supportClasses.PopUpMediaInfo;
             import com.esri.ags.symbols.SimpleFillSymbol;
             import com.esri.ags.symbols.SimpleLineSymbol;
             import com.esri.ags.symbols.Symbol;
             import com.esri.ags.tasks.supportClasses.Query;
             import com.esri.ags.tools.DrawTool;
-            import com.esri.ags.webmap.supportClasses.PopUpFieldInfo;
-            import com.esri.ags.webmap.supportClasses.PopUpMediaInfo;
             import com.esri.viewer.utils.PopUpInfoParser;
 
             import mx.collections.ArrayCollection;
             import mx.collections.ArrayList;
-            import mx.core.FlexVersion;
             import mx.events.FlexEvent;
             import mx.rpc.events.FaultEvent;
 
@@ -95,35 +94,30 @@
 
             private var selectedChartLayerDefinition:ChartLayerDefinition;
             private var sourceFeatureLayer:FeatureLayer;
-            private var isSourceLayerVisible:Boolean;
-            private var isSourceLayerInScaleRange:Boolean;
 
             private function basewidget_preinitializeHandler(event:FlexEvent):void
             {
-                if (FlexVersion.CURRENT_VERSION >= 0x04060000)
-                {
-                    // work-around for 4.6 regression
-                    copyStyleFromParent("mx.charts.chartClasses.ChartBase");
-                    copyStyleFromParent("mx.charts.chartClasses.CartesianChart");
-                    copyStyleFromParent("mx.charts.chartClasses.PolarChart");
-                    copyStyleFromParent("mx.charts.BarChart");
-                    copyStyleFromParent("mx.charts.ColumnChart");
-                    copyStyleFromParent("mx.charts.LineChart");
-                    copyStyleFromParent("mx.charts.PieChart");
-                    copyStyleFromParent("mx.charts.AxisRenderer");
-                    copyStyleFromParent(".blockCategoryAxis");
-                    copyStyleFromParent(".blockNumericAxis");
-                    copyStyleFromParent(".linedNumericAxis");
-                    copyStyleFromParent(".dashedNumericAxis");
-                    copyStyleFromParent(".dashedCategoryAxis");
-                    copyStyleFromParent(".hangingCategoryAxis");
-                    copyStyleFromParent("mx.charts.GridLines");
-                    copyStyleFromParent(".horizontalGridLines");
-                    copyStyleFromParent("mx.charts.series.BarSeries");
-                    copyStyleFromParent("mx.charts.series.ColumnSeries");
-                    copyStyleFromParent("mx.charts.series.LineSeries");
-                    copyStyleFromParent("mx.charts.series.PieSeries");
-                }
+                // work-around for 4.6 regression
+                copyStyleFromParent("mx.charts.chartClasses.ChartBase");
+                copyStyleFromParent("mx.charts.chartClasses.CartesianChart");
+                copyStyleFromParent("mx.charts.chartClasses.PolarChart");
+                copyStyleFromParent("mx.charts.BarChart");
+                copyStyleFromParent("mx.charts.ColumnChart");
+                copyStyleFromParent("mx.charts.LineChart");
+                copyStyleFromParent("mx.charts.PieChart");
+                copyStyleFromParent("mx.charts.AxisRenderer");
+                copyStyleFromParent(".blockCategoryAxis");
+                copyStyleFromParent(".blockNumericAxis");
+                copyStyleFromParent(".linedNumericAxis");
+                copyStyleFromParent(".dashedNumericAxis");
+                copyStyleFromParent(".dashedCategoryAxis");
+                copyStyleFromParent(".hangingCategoryAxis");
+                copyStyleFromParent("mx.charts.GridLines");
+                copyStyleFromParent(".horizontalGridLines");
+                copyStyleFromParent("mx.charts.series.BarSeries");
+                copyStyleFromParent("mx.charts.series.ColumnSeries");
+                copyStyleFromParent("mx.charts.series.LineSeries");
+                copyStyleFromParent("mx.charts.series.PieSeries");
             }
 
             private function copyStyleFromParent(selector:String):void
@@ -146,6 +140,12 @@
                     initChartLayerOptions(configXML.layers.layer);
                     configureLabels(configXML.labels);
                     highlightColor = parseInt(configXML.highlightcolor[0]) || 0xFFFF00;
+                    if (configXML.statistics.@precision[0])
+                    {
+                        var precision:Number = parseInt(configXML.statistics.@precision[0]);
+                        chartBrowser.precision = isNaN(precision) ? -1 : precision;
+                    }
+
                     configureViewTitlebarButtons();
                     map.addEventListener(KeyboardEvent.KEY_UP, keyUpHandler);
                     map.addEventListener(KeyboardEvent.KEY_DOWN, keyDownHandler);
@@ -264,7 +264,7 @@
                 drawToolMenuLabel = labels.drawtoolmenulabel[0] || getDefaultString("drawToolMenuLabel");
                 noLayersLabel = labels.nolayerslabel[0] || getDefaultString("noLayersLabel");
                 noChartDataToDisplayLabel = labels.nochartdatatodisplaylabel[0] || getDefaultString("noChartDataToDisplayLabel");
-                layerSourceNotVisibleLabel = labels.featurelayernotvisibletext || getDefaultString("featureLayerNotVisibleText");
+                layerSourceNotVisibleLabel = labels.featurelayernotvisibletext[0] || getDefaultString("featureLayerNotVisibleText");
 
                 polygonLabel = labels.polygonlabel[0] || getDefaultString("drawPolygonLabel");
                 freehandPolygonLabel = labels.freehandpolygonlabel[0] || getDefaultString("drawFreehandPolygonLabel");
@@ -550,6 +550,7 @@
             private function updateSelectedChartLayerDefinition():void
             {
                 selectedChartLayerDefinition = (layerSelection.selectedItem as ChartLayerDefinition);
+                removeSourceLayerListeners();
                 if (!selectedChartLayerDefinition.url)
                 {
                     sourceFeatureLayer = findFeatureLayerByLabel(selectedChartLayerDefinition.label);
@@ -560,6 +561,16 @@
                 {
                     sourceFeatureLayer = null;
                     highlightFeatureLayer.url = selectedChartLayerDefinition.url;
+                }
+                addSourceLayerListeners();
+            }
+
+            private function removeSourceLayerListeners():void
+            {
+                if (sourceFeatureLayer)
+                {
+                    sourceFeatureLayer.removeEventListener(FlexEvent.SHOW, selectedLayer_showHandler);
+                    sourceFeatureLayer.removeEventListener(FlexEvent.HIDE, selectedLayer_hideHandler);
                 }
             }
 
@@ -575,32 +586,23 @@
                 }
             }
 
-            private function removeLayerListeners():void
+            private function selectedLayer_showHandler(event:FlexEvent):void
+            {
+                updateHighlightFeatureLayerInclusion();
+            }
+
+            private function selectedLayer_hideHandler(event:FlexEvent):void
+            {
+                updateHighlightFeatureLayerInclusion();
+            }
+
+            private function addSourceLayerListeners():void
             {
                 if (sourceFeatureLayer)
                 {
-                    sourceFeatureLayer.removeEventListener(LayerEvent.IS_IN_SCALE_RANGE_CHANGE, selectedLayer_isInScaleRangeChangeHandler);
-                    sourceFeatureLayer.removeEventListener(FlexEvent.SHOW, selectedLayer_showHandler);
-                    sourceFeatureLayer.removeEventListener(FlexEvent.HIDE, selectedLayer_hideHandler);
+                    sourceFeatureLayer.addEventListener(FlexEvent.SHOW, selectedLayer_showHandler);
+                    sourceFeatureLayer.addEventListener(FlexEvent.HIDE, selectedLayer_hideHandler);
                 }
-            }
-
-            private function selectedLayer_isInScaleRangeChangeHandler(event:LayerEvent):void
-            {
-                isSourceLayerInScaleRange = event.isInScaleRange;
-                updateHighlightFeatureLayerInclusion();
-            }
-
-            private function selectedLayer_showHandler():void
-            {
-                isSourceLayerVisible = true;
-                updateHighlightFeatureLayerInclusion();
-            }
-
-            private function selectedLayer_hideHandler():void
-            {
-                isSourceLayerVisible = false;
-                updateHighlightFeatureLayerInclusion();
             }
         ]]>
     </fx:Script>

@@ -53,15 +53,17 @@
                 // set style on the label
                 templateLabel.setStyle("textAlign", TextAlign.CENTER);
 
+                var drawingToolShape:String;
                 if (value.featureTemplate)
                 {
                     templateLabel.text = value.featureTemplate.name;
                     toolTip = (value.featureTemplate.description != "") ? value.featureTemplate.name + ": " + value.featureTemplate.description : value.featureTemplate.name;
+                    drawingToolShape = value.featureTemplate.drawingTool; // show the swatch which matches the drawing tool shape
                 }
                 var symbol:Symbol = value.symbol;
                 if (symbol)
                 {
-                    contentGroup.addElement(IVisualElement(symbol.createSwatch(contentGroup.width, contentGroup.height)));
+                    contentGroup.addElement(IVisualElement(symbol.createSwatch(contentGroup.width, contentGroup.height, drawingToolShape)));
                 }
                 else
                 {

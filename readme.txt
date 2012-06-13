@@ -1,9 +1,9 @@
 ==========================
-ArcGIS Viewer for Flex 3.0Prerelease
-build date 2012-03-15
+ArcGIS Viewer for Flex 3.0
+build date 2012-06-06
 ==========================
 
-This file contains the complete source code for the ArcGIS Viewer for Flex 3.0Prerelease.
+This file contains the complete source code for the ArcGIS Viewer for Flex 3.0.
 
 ============================
 Getting Started - Developers
@@ -11,18 +11,26 @@ Getting Started - Developers
 
 See http://links.esri.com/flexviewer-gettingstarted-developers
 
-1. In Flash Builder 4.5, Go to File Menu -> Import -> Flash Builder project.
+1. In Adobe Flash Builder 4.6, go to "File" -> "Import Flash Builder project..."
 
 2. Keeping "File" option selected, click "Browse..." button.
 
-3. Select flexviewer-3.0Prerelease-src.zip downloaded in step 1, e.g. "C:\Documents and Settings\jack\My Documents\flexviewer-3.0Prerelease-src.zip".
+3. Select flexviewer-3.0-src.zip downloaded in step 1, e.g. "C:\Documents and Settings\jack\My Documents\flexviewer-3.0-src.zip".
 
 4. "Extract new project to:" textbox will be automatically set to location where the project source will reside,
-    e.g. "C:\Documents and Settings\jack\Adobe Flash Builder 4\FlexViewer.
+    e.g. "C:\Documents and Settings\jack\Adobe Flash Builder 4.6\FlexViewer.
     Do not put it onto your web server - you should separate your code location from your output.
 
-5. Click "Finish" button. Project will be created and displayed in the Package Explorer window of Flash Builder 4, e.g. in this case FlexViewer.
+5. Click "Finish" button. Project will be created and displayed in the Package Explorer window of Flash Builder 4.6, e.g. in this case FlexViewer.
 
+6. If prompted to upgrade the project (because it was created with a previous version of Flash Builder), click "OK"
+
+7. If prompted to choose Flex SDK version, select "Flex 4.6.0"
+
+8. If needed, download API Library from http://links.esri.com/flex-api/latest-download.
+   Go to "Project" -> "Properties" -> "Flex Build Path". 
+   Click "Add SWC" and navigate to the agslib-3.0-2012-06-06.swc file.
+      
 
 Optionally:
 
@@ -50,8 +58,8 @@ Optionally:
 More Information
 ================
 
-Flex Viewer: http://help.arcgis.com/en/webapps/flexviewer/index.html
-Flex API http://help.arcgis.com/en/webapi/flex/index.html
+Flex Viewer: http://resources.arcgis.com/en/communities/flex-viewer/
+Flex API http://resources.arcgis.com/en/communities/flex-api/
 
 Flex Viewer License agreement at http://www.apache.org/licenses/LICENSE-2.0.html
 Flex API License agreement at http://www.esri.com/legal/pdfs/mla_e204_e300/english.pdf

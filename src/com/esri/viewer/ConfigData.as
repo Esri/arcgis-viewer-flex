@@ -16,8 +16,6 @@
 package com.esri.viewer
 {
 
-import mx.collections.ArrayCollection;
-
 /**
  * ConfigData class is used to store configuration information from the config.xml file.
  */
@@ -41,7 +39,6 @@ public class ConfigData
     public var bingKey:String;
     public var proxyUrl:String;
     public var layoutDirection:String;
-    public var webMapLayers:ArrayCollection;
 
     public function ConfigData()
     {
