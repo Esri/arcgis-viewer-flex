@@ -491,8 +491,6 @@ Class used to configure the viewer map component (including layers) and handle m
 
             private function addLayerToMap(layerObject:Object):void
             {
-                //TODO: need to set when layerObject is created.
-                layerObject.proxyURL = m_configData.proxyUrl;
                 var layer:Layer = layerObject.layer ? layerObject.layer : LayerCreator.createLayerFromLayerObject(layerObject);
                 if (layer)
                 {

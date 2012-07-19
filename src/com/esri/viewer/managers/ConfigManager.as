@@ -622,7 +622,7 @@ public class ConfigManager extends EventDispatcher
                         {
                             if (isOpLayer)
                             {
-                                configData.opLayers.push(LayerObjectUtil.getLayerObject(lyrXML, i, true, bingKey, layer));
+                                configData.opLayers.push(LayerObjectUtil.getLayerObject(lyrXML, i, true, bingKey, layer, proxyUrl));
                             }
                             else
                             {
@@ -630,7 +630,7 @@ public class ConfigManager extends EventDispatcher
                                 {
                                     lyrXML.@reference = true;
                                 }
-                                configData.basemaps.push(LayerObjectUtil.getLayerObject(lyrXML, i, false, bingKey, layer));
+                                configData.basemaps.push(LayerObjectUtil.getLayerObject(lyrXML, i, false, bingKey, layer, proxyUrl));
                             }
                         }
                     }
@@ -679,7 +679,7 @@ public class ConfigManager extends EventDispatcher
 
                 for (i = 0; i < maplayerList.length(); i++)
                 {
-                    configBasemaps.push(LayerObjectUtil.getLayerObject(maplayerList[i], i, false, bingKey));
+                    configBasemaps.push(LayerObjectUtil.getLayerObject(maplayerList[i], i, false, bingKey, null, proxyUrl));
                 }
                 configData.basemaps = configBasemaps;
 
@@ -690,7 +690,7 @@ public class ConfigManager extends EventDispatcher
                 var opLayerList:XMLList = configXML.map.operationallayers.layer;
                 for (i = 0; i < opLayerList.length(); i++)
                 {
-                    configOpLayers.push(LayerObjectUtil.getLayerObject(opLayerList[i], i, true, bingKey));
+                    configOpLayers.push(LayerObjectUtil.getLayerObject(opLayerList[i], i, true, bingKey, null, proxyUrl));
                 }
                 configData.opLayers = configOpLayers;
             }
