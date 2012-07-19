@@ -21,7 +21,7 @@ import com.esri.ags.layers.Layer;
 
 public class LayerObjectUtil
 {
-    public static function getLayerObject(obj:XML, num:Number, isOpLayer:Boolean, bingKey:String, layer:Layer = null):Object
+    public static function getLayerObject(obj:XML, num:Number, isOpLayer:Boolean, bingKey:String, layer:Layer = null, proxyUrl:String = null):Object
     {
         var label:String = isOpLayer ? 'OpLayer ' + num : 'Map ' + num; // default label
         if (obj.@label[0]) // check that label attribute exist
@@ -197,6 +197,7 @@ public class LayerObjectUtil
                 mode: mode,
                 noData: noData,
                 password: password,
+                proxyUrl: proxyUrl,
                 serviceHost: serviceHost,
                 serviceName: serviceName,
                 serviceMode: serviceMode,
