@@ -21,8 +21,9 @@
                    xmlns:mx="library://ns.adobe.com/flex/mx"
                    xmlns:esri="http://www.esri.com/2008/ags"
                    xmlns:viewer="com.esri.viewer.*"
+                   initialize="basewidget_initializeHandler()"
                    layout="absolute"
-                   widgetConfigLoaded="init()">
+                   widgetConfigLoaded="basewidget_widgetConfigLoaded()">
 
     <fx:Script>
         <![CDATA[
@@ -48,7 +49,21 @@
             private var timeStopsUnits:String;
             private var timeStopsCount:Number;
 
-            protected function init():void
+            private function basewidget_initializeHandler():void
+            {
+                if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
+                {
+                    this.percentWidth = this.percentHeight = 100;
+                    wTemplate.percentWidth = wTemplate.percentHeight = 100;
+                }
+                else
+                {
+                    wTemplate.width = wTemplate.minWidth = 335;
+                    wTemplate.height = wTemplate.minHeight = 115;
+                }
+            }
+
+            protected function basewidget_widgetConfigLoaded():void
             {
                 if (configXML)
                 {
@@ -211,10 +226,7 @@
         <mx:DateFormatter id="myDateFormatter" formatString="MMMM, YYYY"/>
     </fx:Declarations>
     <viewer:WidgetTemplate id="wTemplate"
-                           width="335" height="115"
                            closed="widgetClosedHandler(event)"
-                           minHeight="115"
-                           minWidth="335"
                            open="widgetOpenedHandler(event)">
         <viewer:layout>
             <s:VerticalLayout gap="10"

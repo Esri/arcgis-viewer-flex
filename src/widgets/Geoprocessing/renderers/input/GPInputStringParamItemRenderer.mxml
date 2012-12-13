@@ -62,16 +62,18 @@
             }
         ]]>
     </fx:Script>
+
     <mx:FormItem width="100%"
                  label="{data.label}"
                  required="{data.required}">
-        <s:TextInput width="70%"
+        <s:TextInput width="100%"
                      includeInLayout="{!hasChoiceList}"
                      text="@{data.defaultValue}"
                      toolTip="{data.toolTip}"
                      visible="{!hasChoiceList}"/>
+
         <mx:ComboBox id="choiceSelection"
-                     width="70%"
+                     width="100%"
                      change="updateDefaultValueWithChoice()"
                      includeInLayout="{hasChoiceList}"
                      visible="{hasChoiceList}"/>

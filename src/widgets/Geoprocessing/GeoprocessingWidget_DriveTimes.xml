@@ -9,13 +9,11 @@
                required="true"
                type="featurerecordset"
                visible="true">
-            <renderer type="simple">
-                <defaultsymbol color="0xBEEFEE"
-                               size="15"
-                               type="simplemarker">
+            <simplerenderer>
+                <simplemarkersymbol color="0xBEEFEE" size="15">
                     <outline width="2" color="0x00AADD"/>
-                </defaultsymbol>
-            </renderer>
+                </simplemarkersymbol>
+            </simplerenderer>
         </param>
         <param name="Drive_Times"
                defaultvalue="5 10 15"
@@ -35,37 +33,33 @@
                 <title>{Name}</title>
                 <fields>
                     <field name="FromBreak"
-                           label="From Break"
+                           alias="From Break"
                            visible="true"/>
                     <field name="ToBreak"
-                           label="To Break"
+                           alias="To Break"
                            visible="true"/>
                 </fields>
             </popup>
-            <renderer attribute="ToBreak" type="uniquevalue">
-                <defaultsymbol alpha="0.5"
-                               color="0xFF00FF"
-                               type="simplefill">
+            <uniquevaluerenderer field="ToBreak">
+                <simplefillsymbol alpha="0.5" color="0xFF00FF">
                     <outline color="0x000000"/>
-                </defaultsymbol>
-                <infos>
-                    <symbol color="0xFF0000"
-                            type="simplefill"
-                            value="5">
+                </simplefillsymbol>
+                <uniquevalueinfo value="5">
+                    <simplefillsymbol color="0xFF0000">
                         <outline color="0x000000"/>
-                    </symbol>
-                    <symbol color="0x00FF00"
-                            type="simplefill"
-                            value="10">
+                    </simplefillsymbol>
+                </uniquevalueinfo>
+                <uniquevalueinfo value="10">
+                    <simplefillsymbol color="0x00FF00">
                         <outline color="0x000000"/>
-                    </symbol>
-                    <symbol color="0x0000FF"
-                            type="simplefill"
-                            value="15">
+                    </simplefillsymbol>
+                </uniquevalueinfo>
+                <uniquevalueinfo value="15">
+                    <simplefillsymbol color="0x0000FF">
                         <outline color="0x000000"/>
-                    </symbol>
-                </infos>
-            </renderer>
+                    </simplefillsymbol>
+                </uniquevalueinfo>
+            </uniquevaluerenderer>
         </param>
     </outputparams>
     <layerorder>Input_Location,Output_Drive_Time_Polygons</layerorder>

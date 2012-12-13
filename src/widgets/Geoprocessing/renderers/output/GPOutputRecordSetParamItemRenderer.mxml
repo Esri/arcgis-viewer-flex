@@ -19,26 +19,22 @@
 <s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
                 xmlns:s="library://ns.adobe.com/flex/spark"
                 xmlns:mx="library://ns.adobe.com/flex/mx"
+                width="100%"
                 autoDrawBackground="false">
     <fx:Script>
         <![CDATA[
+            import com.esri.viewer.utils.LocalizationUtil;
+
             import flash.desktop.Clipboard;
             import flash.desktop.ClipboardFormats;
 
             import mx.core.FlexGlobals;
             import mx.events.FlexEvent;
 
-            private const VIEWER_STRINGS:String = "ViewerStrings";
-
             private function recordSetDataGrid_initializeHandler(event:FlexEvent):void
             {
                 var backgroundColor:uint = FlexGlobals.topLevelApplication.styleManager.getStyleDeclaration("global").getStyle('contentBackgroundColor');
                 recordSetDataGrid.setStyle("alternatingItemColors", [ backgroundColor, backgroundColor ]);
-            }
-
-            public function getDefaultString(resourceName:String):String
-            {
-                return resourceManager.getString(VIEWER_STRINGS, resourceName);
             }
 
             private function copyRecordSetToClipboard():void
@@ -126,6 +122,7 @@
             }
         ]]>
     </fx:Script>
+
     <fx:Declarations>
         <mx:GlowFilter id="glowFilter"
                        alpha="1"
@@ -133,13 +130,16 @@
                        inner="true"
                        strength="2"/>
     </fx:Declarations>
+
     <s:layout>
         <s:VerticalLayout verticalAlign="middle"/>
     </s:layout>
+
     <s:HGroup verticalAlign="middle">
         <s:RichEditableText editable="false"
                             fontWeight="bold"
                             text="{data.label}"/>
+
         <mx:Image id="copyIcon"
                   height="24"
                   click="copyRecordSetToClipboard()"
@@ -147,9 +147,11 @@
                   rollOut="removeCopyIconHighlight()"
                   rollOver="applyCopyIconHighlight()"
                   source="assets/images/EditPaste32.png"
-                  toolTip="{getDefaultString('copyToClipboard')}"/>
+                  toolTip="{LocalizationUtil.getDefaultString('copyToClipboard')}"/>
     </s:HGroup>
+
     <mx:DataGrid id="recordSetDataGrid"
+                 width="100%"
                  dataProvider="{data.defaultValue.attributes}"
                  initialize="recordSetDataGrid_initializeHandler(event)"
                  selectable="true"/>

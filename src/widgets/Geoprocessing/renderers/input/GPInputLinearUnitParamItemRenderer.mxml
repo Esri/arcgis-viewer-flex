@@ -20,6 +20,7 @@
                 xmlns:s="library://ns.adobe.com/flex/spark"
                 xmlns:mx="library://ns.adobe.com/flex/mx"
                 xmlns:esri="http://www.esri.com/2008/ags"
+                width="100%"
                 autoDrawBackground="false">
     <fx:Script>
         <![CDATA[
@@ -69,15 +70,17 @@
             }
         ]]>
     </fx:Script>
+
     <mx:FormItem width="100%"
                  direction="horizontal"
                  label="{data.label}"
                  required="{data.required}">
         <esri:DoubleField id="distanceInput"
-                          width="80"
+                          width="100%"
                           change="updateDistance()"
                           text="{data.defaultValue.distance}"
                           toolTip="{data.toolTip}"/>
+
         <mx:ComboBox id="unitSelection"
                      width="100%"
                      change="updateUnits()"

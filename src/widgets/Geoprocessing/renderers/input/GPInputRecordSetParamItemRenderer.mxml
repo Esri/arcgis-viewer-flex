@@ -22,19 +22,12 @@
                 autoDrawBackground="false">
     <fx:Script>
         <![CDATA[
-            import mx.utils.StringUtil;
-
-            private const VIEWER_STRINGS:String = "ViewerStrings";
-
-            public function getDefaultString(resourceName:String):String
-            {
-                return resourceManager.getString(VIEWER_STRINGS, resourceName);
-            }
+            import com.esri.viewer.utils.LocalizationUtil;
         ]]>
     </fx:Script>
     <mx:FormItem width="100%"
                  label="{data.label}"
                  required="{data.required}">
-        <s:Label text="{StringUtil.substitute(getDefaultString('unsupportedInputType'), 'RecordSet')}"/>
+        <s:Label text="{LocalizationUtil.getDefaultString('unsupportedInputType', 'RecordSet')}"/>
     </mx:FormItem>
 </s:ItemRenderer>

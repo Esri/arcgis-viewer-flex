@@ -19,6 +19,7 @@
 <s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
                 xmlns:s="library://ns.adobe.com/flex/spark"
                 xmlns:mx="library://ns.adobe.com/flex/mx"
+                width="100%"
                 autoDrawBackground="false">
     <fx:Script>
         <![CDATA[
@@ -68,7 +69,9 @@
     <mx:FormItem width="100%"
                  label="{data.label}"
                  required="{data.required}">
-        <s:DataGroup dataProvider="{multiValueItemsList}" itemRenderer="widgets.Geoprocessing.renderers.input.multivalue.MultiValueItemRenderer">
+        <s:DataGroup width="100%"
+                     dataProvider="{multiValueItemsList}"
+                     itemRenderer="widgets.Geoprocessing.renderers.input.multivalue.MultiValueItemRenderer">
             <s:layout>
                 <s:VerticalLayout gap="2"/>
             </s:layout>

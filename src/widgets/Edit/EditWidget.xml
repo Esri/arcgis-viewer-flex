@@ -1,7 +1,6 @@
 <?xml version="1.0" ?>
 <!-- If compiling this widget, make sure to add -keep-all-type-selectors=true to your compiler arguments in the FB project properties. -->
 <configuration>
-    <!--
     <createoptions>
         <polygondrawtools>polygon,freehandpolygon,extent,autocomplete</polygondrawtools>
         <polylinedrawtools>polyline,freehandpolyline,line</polylinedrawtools>
@@ -13,12 +12,7 @@
     <toolbarmergevisible>false</toolbarmergevisible>
     <toolbarreshapevisible>false</toolbarreshapevisible>   
     <updategeometry>true</updategeometry>
-    <updateattributes>false</updateattributes> 
-    <showcreatorfield>true</showcreatorfield>    
-    <showcreationdatefield>true</showcreationdatefield>    
-    <showeditorfield>true</showeditorfield>    
-    <showeditdatefield>true</showeditdatefield>    
-    -->
+    <updateattributes>true</updateattributes>    
 </configuration>
 
 <!--

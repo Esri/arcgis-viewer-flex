@@ -22,7 +22,7 @@
                defaultvalue="Incident Areas,Incident Points"
                label="2. Select layers to extract"
                required="true"
-               type="multivalue"
+               type="multivalue:string"
                visible="true">
             <choicelist>
                 <choice value="Incident Areas"/>

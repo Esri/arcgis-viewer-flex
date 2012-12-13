@@ -21,10 +21,26 @@
                    xmlns:mx="library://ns.adobe.com/flex/mx"
                    xmlns:viewer="com.esri.viewer.*"
                    x="600" y="300"
-                   widgetConfigLoaded="init()">
+                   initialize="basewidget_initializeHandler()"
+                   widgetConfigLoaded="basewidget_widgetConfigLoaded()">
     <fx:Script>
         <![CDATA[
-            private function init():void
+            private function basewidget_initializeHandler():void
+            {
+                if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
+                {
+                    this.percentWidth = this.percentHeight = 100;
+                    wTemplate.percentWidth = wTemplate.percentHeight = 100;
+                }
+                else
+                {
+                    wTemplate.width = 355;
+                    wTemplate.height = 260;
+                    wTemplate.minHeight = 168;
+                }
+            }
+
+            private function basewidget_widgetConfigLoaded():void
             {
                 if (configXML)
                 {
@@ -38,7 +54,6 @@
             }
         ]]>
     </fx:Script>
-    <viewer:WidgetTemplate id="wTemplate"
-                           width="355" height="260"
-                           minHeight="168"/>
+    <viewer:WidgetTemplate id="wTemplate"/>
+
 </viewer:BaseWidget>

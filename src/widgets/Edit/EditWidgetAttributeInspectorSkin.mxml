@@ -24,7 +24,8 @@
          */
         [HostComponent("com.esri.ags.components.AttributeInspector")]
 
-        [Event(name="attachmentGroupClicked", type="flash.events.Event")]
+        [Event(name="attachmentGroupClicked", type="flash.events.Event")]     
+        [Event(name="relatedRecordsGroupClicked", type="flash.events.Event")]  
     </fx:Metadata>
 
     <fx:Script>
@@ -38,14 +39,11 @@
             [Bindable]
             public static var showAttachmentsText:String;
             [Bindable]
+            public static var showRelatedRecordsText:String;
+            [Bindable]
             public static var deleteLabel:String;
             [Bindable]
             public static var saveLabel:String;
-
-            private function attachmentGroup_clickHandler(event:MouseEvent):void
-            {
-                dispatchEvent(new Event("attachmentGroupClicked", true, true));
-            }
 
             private function isAttachmentGroupShown(activeFeature:Graphic):Boolean
             {
@@ -67,6 +65,38 @@
                 }
 
                 return result;
+            }
+
+            private function isRelatedRecordsGroupShown(activeFeatureLayer:FeatureLayer):Boolean
+            {
+                var result:Boolean;
+
+                if (activeFeatureLayer.layerDetails)
+                {
+                    if (activeFeatureLayer.layerDetails.relationships.length)
+                    {
+                        result = true;
+                    }
+                }
+                else if (activeFeatureLayer.tableDetails)
+                {
+                    if (activeFeatureLayer.tableDetails.relationships.length)
+                    {
+                        result = true;
+                    }
+                }
+
+                return result;
+            }
+
+            private function attachmentGroup_clickHandler(event:MouseEvent):void
+            {
+                dispatchEvent(new Event("attachmentGroupClicked", true, true));
+            }
+
+            private function relatedRecordsGroup_clickHandler(event:MouseEvent):void
+            {
+                dispatchEvent(new Event("relatedRecordsGroupClicked", true, true));
             }
         ]]>
     </fx:Script>
@@ -101,10 +131,12 @@
                   skinClass="com.esri.ags.skins.AttributeInspectorNextButtonSkin"/>
     </s:HGroup>
     <!--- List to display the attributes of the active feature. -->
+    <!--- @private -->
     <s:List id="list"
             width="100%" height="100%"
             borderVisible="false"
             enabled.disabled="false"
+            hasFocusableChildren="true"
             horizontalScrollPolicy="off"
             itemRenderer="com.esri.ags.skins.supportClasses.AttributeInspectorRenderer"
             maxHeight="{hostComponent.getStyle('formMaxHeight')}"
@@ -135,20 +167,25 @@
                   enabled.disabled="false"
                   label="{saveLabel}"/>
     </s:HGroup>
-    <s:HGroup id="attachmentGroup"
-              width="100%"
+
+    <s:VGroup width="100%"
               horizontalAlign="right"
-              includeInLayout="{isAttachmentGroupShown(hostComponent.activeFeature)}"
-              verticalAlign="middle"
-              visible="{isAttachmentGroupShown(hostComponent.activeFeature)}">
-        <s:Label buttonMode="true"
-                 click="attachmentGroup_clickHandler(event)"
-                 fontWeight="bold"
-                 text="{showAttachmentsText}"/>
-        <mx:Image id="img"
-                  width="25" height="25"
-                  buttonMode="true"
+              verticalAlign="middle">
+        <s:Button buttonMode="true"
                   click="attachmentGroup_clickHandler(event)"
-                  source="@Embed('/assets/images/edit_attachments.png')"/>
-    </s:HGroup>
+                  fontWeight="bold"
+                  includeInLayout="{isAttachmentGroupShown(hostComponent.activeFeature)}"
+                  label="{showAttachmentsText}"
+                  skinClass="com.esri.viewer.skins.ViewerLinkButtonSkin"
+                  visible="{isAttachmentGroupShown(hostComponent.activeFeature)}"/>
+        <s:Button buttonMode="true"
+                  click="relatedRecordsGroup_clickHandler(event)"
+                  fontWeight="bold"
+                  includeInLayout="{isRelatedRecordsGroupShown(hostComponent.activeFeatureLayer)}"
+                  label="{showRelatedRecordsText}"
+                  skinClass="com.esri.viewer.skins.ViewerLinkButtonSkin"
+                  textDecoration="underline"
+                  visible="{isRelatedRecordsGroupShown(hostComponent.activeFeatureLayer)}"/>
+    </s:VGroup>
+
 </s:SparkSkin>

@@ -27,6 +27,7 @@
     <fx:Script>
         <![CDATA[
             import com.esri.ags.symbols.Symbol;
+            import com.esri.viewer.utils.LocalizationUtil;
 
             import mx.events.FlexEvent;
 
@@ -54,9 +55,6 @@
                         }
                         lastResultSymbol = locateResult.symbol;
                         lastResultSwatch = lastResultSymbol.createSwatch(20, 20);
-                    }
-                    else
-                    {
                         resultIcon.addChild(lastResultSwatch);
                     }
                 }
@@ -134,7 +132,7 @@
                   buttonMode="true"
                   click="deleteLocateResult(event)"
                   source="assets/images/w_close_red.png"
-                  toolTip="{resourceManager.getString('ViewerStrings', 'deleteResultTooltip')}"
+                  toolTip="{LocalizationUtil.getDefaultString('deleteResultTooltip')}"
                   useHandCursor="true"/>
     </s:HGroup>
 </s:ItemRenderer>

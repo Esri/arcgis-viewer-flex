@@ -1,24 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <!--
-
-    ADOBE SYSTEMS INCORPORATED
-    Copyright 2008 Adobe Systems Incorporated
-    All Rights Reserved.
-
-    NOTICE: Adobe permits you to use, modify, and distribute this file
-    in accordance with the terms of the license agreement accompanying it.
-
+///////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2012 Esri. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+///////////////////////////////////////////////////////////////////////////
 -->
-
-<!--- The default skin class for the Spark Button component.
-
-       @see spark.components.Button
-
-      @langversion 3.0
-      @playerversion Flash 10
-      @playerversion AIR 1.5
-      @productversion Flex 4
+<!---
+@private
 -->
 <s:SparkButtonSkin xmlns:fx="http://ns.adobe.com/mxml/2009"
                    xmlns:s="library://ns.adobe.com/flex/spark"
@@ -261,21 +260,21 @@
         </s:stroke>
     </s:Rect>
 
-    <!-- layer 8: text -->
+    <!-- layer 8: icon-->
+    <s:BitmapImage id="icon"
+                   left="10"
+                   minWidth="16"
+                   source="assets/images/i_basemap.png"
+                   verticalCenter="1"/>
+
+    <!-- layer 8: text-->
     <!--- @copy spark.components.supportClasses.ButtonBase#labelDisplay  -->
-    <s:HGroup left="10" right="10" top="2" bottom="2"
-              gap="8"
-              horizontalCenter="0"
-              verticalAlign="middle"
-              verticalCenter="1">
-        <s:BitmapImage id="icon"
-                       minWidth="16"
-                       source="assets/images/i_basemap.png"/>
-        <s:Label id="labelDisplay"
-                 maxDisplayedLines="1"
-                 textAlign="center"
-                 verticalAlign="middle">
-        </s:Label>
-    </s:HGroup>
+    <s:Label id="labelDisplay"
+             left="34" right="10" top="2" bottom="2"
+             maxDisplayedLines="1"
+             showTruncationTip="true"
+             verticalAlign="middle"
+             verticalCenter="1">
+    </s:Label>
 
 </s:SparkButtonSkin>

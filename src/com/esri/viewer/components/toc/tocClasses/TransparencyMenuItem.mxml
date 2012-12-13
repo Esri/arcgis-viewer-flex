@@ -23,7 +23,7 @@
                    xmlns:s="library://ns.adobe.com/flex/spark"
                    xmlns:mx="library://ns.adobe.com/flex/mx"
                    xmlns:layers="com.esri.ags.layers.*"
-                   width="200" height="65"
+                   width="205" height="65"
                    backgroundColor="{getStyle('contentBackgroundColor')}"
                    borderColor="{getStyle('accentColor')}"
                    initialize="transparencyBorderContainer_initializeHandler(event)"
@@ -32,6 +32,7 @@
     <fx:Script>
         <![CDATA[
             import com.esri.viewer.AppEvent;
+            import com.esri.viewer.utils.LocalizationUtil;
 
             import mx.events.FlexEvent;
             import mx.events.SliderEvent;
@@ -65,10 +66,12 @@
               paddingBottom="2"
               paddingLeft="10"
               paddingRight="10">
-        <s:HGroup width="100%" paddingTop="2">
-            <s:Label text="{resourceManager.getString('ViewerStrings', 'tocMapLayerOpaqueLabel')}"/>
-            <mx:Spacer width="100%"/>
-            <s:Label text="{resourceManager.getString('ViewerStrings', 'tocMapLayerTransparentLabel')}"/>
+        <s:HGroup width="100%"
+                  gap="2"
+                  paddingTop="2">
+            <s:Label text="{LocalizationUtil.getDefaultString('tocMapLayerOpaqueLabel')}"/>
+            <s:Spacer width="100%"/>
+            <s:Label text="{LocalizationUtil.getDefaultString('tocMapLayerTransparentLabel')}"/>
         </s:HGroup>
         <mx:HSlider id="transparencySlider"
                     width="100%"

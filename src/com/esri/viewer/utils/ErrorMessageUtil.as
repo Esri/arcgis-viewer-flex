@@ -16,37 +16,45 @@
 package com.esri.viewer.utils
 {
 
+import mx.rpc.Fault;
+
 /**
  * Utility class for mapping error codes with application error messages.
  */
 public class ErrorMessageUtil
 {
-    public static function getKnownErrorCauseMessage(faultCode:String):String
+    public static function getKnownErrorCauseMessage(fault:Fault):String
     {
         var message:String;
 
-        switch (faultCode)
+        switch (fault.faultCode)
         {
             case "Channel.Security.Error":
             {
-                message = "GIS Server is missing a crossdomain file.";
+                message = LocalizationUtil.getDefaultString("serverMissingCrossDomain");
                 break;
             }
             case "Server.Error.Request":
             case "400":
             case "404":
             {
-                message = "Service does not exist or is inaccessible.";
+                message = LocalizationUtil.getDefaultString("serviceIsInaccessible");
                 break;
             }
             case "499":
             {
-                message = "You don't have permissions to access this service.";
+                message = LocalizationUtil.getDefaultString("unauthorizedAccess");
+                break;
+            }
+            case "403":
+            {
+                message = LocalizationUtil.getDefaultString("resourceAccessDenied");
                 break;
             }
             default:
             {
-                message = "Unknown error cause.";
+                message = (fault.faultString == "Sign in aborted") ?
+                    LocalizationUtil.getDefaultString("signInAborted") : LocalizationUtil.getDefaultString("unknownErrorCause");
             }
         }
 
@@ -58,6 +66,28 @@ public class ErrorMessageUtil
         content = content.replace(/>/g, "&gt;");
         content = content.replace(/</g, "&lt;");
         return content;
+    }
+
+    public static function buildFaultMessage(fault:Fault):String
+    {
+        var faultMessage:String = "";
+
+        if (fault.faultCode)
+        {
+            faultMessage += LocalizationUtil.getDefaultString('faultCode', fault.faultCode) + "\n\n";
+        }
+
+        if (fault.faultString)
+        {
+            faultMessage += LocalizationUtil.getDefaultString('faultInfo', fault.faultString) + "\n\n";
+        }
+
+        if (fault.faultDetail)
+        {
+            faultMessage += LocalizationUtil.getDefaultString('faultDetail', fault.faultDetail);
+        }
+
+        return faultMessage;
     }
 }
 

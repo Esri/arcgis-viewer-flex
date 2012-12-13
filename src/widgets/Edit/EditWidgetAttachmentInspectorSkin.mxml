@@ -19,7 +19,6 @@
              xmlns:mx="library://ns.adobe.com/flex/mx"
              xmlns:s="library://ns.adobe.com/flex/spark"
              xmlns:supportClasses="com.esri.ags.skins.supportClasses.*"
-             xmlns:edit="widgets.Edit.*"
              creationComplete="sparkskin1_creationCompleteHandler(event)"
              initialize="sparkskin1_initializeHandler(event)">
 
@@ -44,10 +43,10 @@
             import com.esri.ags.layers.supportClasses.FeatureLayerDetails;
             import com.esri.ags.layers.supportClasses.FeatureTableDetails;
             import com.esri.ags.skins.supportClasses.AttachmentMouseEvent;
+            import com.esri.viewer.utils.LocalizationUtil;
 
             import mx.binding.utils.ChangeWatcher;
             import mx.events.FlexEvent;
-            import mx.utils.StringUtil;
 
             import spark.components.DataGroup;
             import spark.components.HScrollBar;
@@ -142,11 +141,11 @@
                 {
                     if (hostComponent.attachmentInfos.length == 1)
                     {
-                        numAttachments.text = StringUtil.substitute(resourceManager.getString('ViewerStrings', 'singleAttachmentText'), 1);
+                        numAttachments.text = LocalizationUtil.getDefaultString('singleAttachmentText', 1);
                     }
                     else
                     {
-                        numAttachments.text = StringUtil.substitute(resourceManager.getString('ViewerStrings', 'multipleAttachmentsText'), hostComponent.attachmentInfos.length);
+                        numAttachments.text = LocalizationUtil.getDefaultString('multipleAttachmentsText', hostComponent.attachmentInfos.length);
                     }
                 }
             }
@@ -154,27 +153,6 @@
             private function attributeGroup_clickHandler(event:MouseEvent):void
             {
                 dispatchEvent(new Event("attributeGroupClicked", true, true));
-            }
-
-            private function isAddingAttachmentAllowed(featureLayer:FeatureLayer):Boolean
-            {
-                var result:Boolean;
-
-                if (featureLayer.layerDetails is FeatureLayerDetails)
-                {
-                    result = (featureLayer.layerDetails as FeatureLayerDetails).isCreateAllowed;
-                }
-                else if (featureLayer.tableDetails is FeatureTableDetails)
-                {
-                    result = (featureLayer.layerDetails as FeatureTableDetails).isCreateAllowed;
-                }
-                if (!result)
-                {
-                    // check if update is allowed, as adding attachments is also considered an update
-                    result = featureLayer.isUpdateAllowed(hostComponent.feature);
-                }
-
-                return result;
             }
         ]]>
     </fx:Script>
@@ -191,56 +169,58 @@
         <s:VerticalLayout horizontalAlign="center"/>
     </s:layout>
     <!--- @private -->
-    <mx:Image horizontalAlign="center"
-              includeIn="queryAttachmentInfosGroup"
-              source="assets/images/loader.swf"/>
+    <mx:SWFLoader horizontalAlign="center"
+                  includeIn="queryAttachmentInfosGroup"
+                  source="assets/images/loader.swf"/>
     <s:Label id="numAttachments"
              excludeFrom="noAttachmentsState, disabled"
              fontWeight="bold"
              includeInLayout.queryAttachmentInfos="false"
              visible.queryAttachmentInfos="false"/>
-    <mx:Spacer/>
+    <s:Spacer/>
     <s:BorderContainer width="80%"
                        cornerRadius="3"
                        excludeFrom="noAttachmentsState, queryAttachmentInfos, disabled">
         <s:borderStroke>
             <mx:SolidColorStroke weight="2"/>
         </s:borderStroke>
-        <edit:EditWidgetAttachmentInfoList id="attachmentInfoList"
+        <supportClasses:AttachmentInfoList id="attachmentInfoList"
                                            width="100%" height="100%"
                                            add="callLater(attachmentInfoList_addHandler)"
                                            caretChange="attachmentInfoList_caretChangeHandler(event)"
                                            click="attachmentInfoList_clickHandler(event)"
                                            dataProvider="{hostComponent.attachmentInfos}"
-                                           deleteEnabled="{hostComponent.deleteEnabled &amp;&amp; hostComponent.featureLayer.isUpdateAllowed(hostComponent.feature)}"
+                                           deleteEnabled="{hostComponent.deleteEnabled 
+                                           &amp;&amp; hostComponent.featureLayer.isUpdateAllowed(hostComponent.feature) 
+                                           &amp;&amp; hostComponent.featureLayer.isDeleteAllowed(hostComponent.feature)}"
                                            doubleClick="attachmentInfoList_clickHandler(event)"
                                            doubleClickEnabled="true"
                                            enabled.disabled="false"
                                            excludeFrom="noAttachmentsState,queryAttachmentInfosGroup,disabled"
                                            isEditable="{hostComponent.featureLayer.isEditable}"
-                                           itemRenderer="widgets.Edit.EditWidgetAttachmentRenderer"
+                                           itemRenderer="com.esri.viewer.skins.supportClasses.AttachmentRenderer"
                                            keyUp="attachmentInfoList_keyUpHandler(event)"
                                            minHeight="140"
                                            minWidth="200"
                                            useVirtualLayout="false">
-            <edit:layout>
+            <supportClasses:layout>
                 <supportClasses:AttachmentLayout id="attachmentLayout"
                                                  distance="100"
                                                  index="{attachmentInfoList.selectedIndex}"/>
-            </edit:layout>
-        </edit:EditWidgetAttachmentInfoList>
+            </supportClasses:layout>
+        </supportClasses:AttachmentInfoList>
     </s:BorderContainer>
     <s:Label fontWeight="bold"
              includeIn="noAttachmentsInList"
              text="{noAttachmentsText}"/>
-    <mx:Spacer/>
+    <s:Spacer/>
     <s:Button id="browseButton"
               enabled.disabled="false"
               enabled.queryAttachmentInfos="false"
               excludeFrom="loadState"
-              includeInLayout="{hostComponent.featureLayer.isEditable &amp;&amp; hostComponent.addEnabled &amp;&amp; isAddingAttachmentAllowed(hostComponent.featureLayer)}"
+              includeInLayout="{hostComponent.addEnabled &amp;&amp; hostComponent.featureLayer.isUpdateAllowed(hostComponent.feature)}"
               label="{chooseFileText}"
-              visible="{hostComponent.featureLayer.isEditable &amp;&amp; hostComponent.addEnabled &amp;&amp; isAddingAttachmentAllowed(hostComponent.featureLayer)}"/>
+              visible="{hostComponent.addEnabled &amp;&amp; hostComponent.featureLayer.isUpdateAllowed(hostComponent.feature)}"/>
     <s:HGroup includeIn="loadState" verticalAlign="middle">
         <s:Label text="{hostComponent.attachmentName}"/>
         <s:Label text="{numberFormatter.format(hostComponent.attachmentSize / 1024.0)+' '+resourceManager.getString('ESRIMessages', 'attachmentInspectorKiloBytes')}"/>
@@ -252,25 +232,22 @@
         <s:Button id="addButton"
                   height="30"
                   label="{attachmentSubmitLabel}"
-                  skinClass="widgets.Edit.EditWidgetAttachmentInspectorSubmitButtonSkin"/>
+                  skinClass="com.esri.viewer.skins.AttachmentInspectorSubmitButtonSkin"/>
         <s:Button id="cancelButton"
                   height="30"
                   label="{attachmentCancelLabel}"
-                  skinClass="widgets.Edit.EditWidgetAttachmentInspectorCancelButtonSkin"/>
+                  skinClass="com.esri.viewer.skins.AttachmentInspectorCancelButtonSkin"/>
     </s:HGroup>
-    <mx:Spacer width="100%" height="100%"/>
+    <s:Spacer width="100%" height="100%"/>
     <s:HGroup width="100%"
               horizontalAlign="left"
+              paddingBottom="5"
+              paddingLeft="5"
               verticalAlign="middle">
-        <mx:Image id="img1"
-                  width="25" height="25"
-                  buttonMode="true"
+        <s:Button buttonMode="true"
                   click="attributeGroup_clickHandler(event)"
-                  source="@Embed('/assets/images/edit_attributes.png')"/>
-        <s:Label buttonMode="true"
-                 click="attributeGroup_clickHandler(event)"
-                 fontWeight="bold"
-                 paddingLeft="2"
-                 text="{showAttributesText}"/>
+                  fontWeight="bold"
+                  label="{showAttributesText}"
+                  skinClass="com.esri.viewer.skins.ViewerLinkButtonSkin"/>
     </s:HGroup>
 </s:SparkSkin>

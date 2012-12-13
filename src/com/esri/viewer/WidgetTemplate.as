@@ -16,7 +16,9 @@
 package com.esri.viewer
 {
 
+import com.esri.viewer.components.FocusableImage;
 import com.esri.viewer.components.TitlebarButton;
+import com.esri.viewer.utils.LocalizationUtil;
 
 import flash.events.Event;
 import flash.events.MouseEvent;
@@ -52,13 +54,13 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
     public var headerToolGroup:Group;
 
     [SkinPart(required="false")]
-    public var icon:Image;
+    public var icon:FocusableImage;
 
     [SkinPart(required="false")]
-    public var closeButton:Image;
+    public var closeButton:FocusableImage;
 
     [SkinPart(required="false")]
-    public var minimizeButton:Image;
+    public var minimizeButton:FocusableImage;
 
     [SkinPart(required="false")]
     public var resizeButton:Image;
@@ -113,6 +115,11 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
     public function set baseWidget(value:IBaseWidget):void
     {
         _baseWidget = value;
+
+        if (value.isPartOfPanel)
+        {
+            this.enableIcon = this.enableCloseButton = this.enableMinimizeButton = this.enableDraging = false;
+        }
         this.resizable = value.isResizeable;
         this.draggable = value.isDraggable;
         this.widgetId = value.widgetId;
@@ -243,6 +250,8 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
         this.width = 300;
         this.height = 300;
 
+        this.hasFocusableChildren = true;
+
         this.addEventListener(FlexEvent.CREATION_COMPLETE, creationCompleteHandler);
     }
 
@@ -251,8 +260,8 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
         widgetWidth = width;
         widgetHeight = height;
 
-        this.closeButton.toolTip = resourceManager.getString("ViewerStrings", "close");
-        this.minimizeButton.toolTip = resourceManager.getString("ViewerStrings", "minimize");
+        this.closeButton.toolTip = LocalizationUtil.getDefaultString("close");
+        this.minimizeButton.toolTip = LocalizationUtil.getDefaultString("minimize");
     }
 
     protected override function partAdded(partName:String, instance:Object):void

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+                xmlns:s="library://ns.adobe.com/flex/spark"
+                xmlns:mx="library://ns.adobe.com/flex/mx"
+                autoDrawBackground="true"
+                dataChange="updateSuggestionLabel()">
+    <fx:Script>
+        <![CDATA[
+            import flashx.textLayout.conversion.TextConverter;
+
+            private function updateSuggestionLabel():void
+            {
+                if (!data)
+                {
+                    return;
+                }
+
+                const suggestionMatches:RegExp = new RegExp("(" + (owner as ResultList).searchText + ")", "gi");
+                var suggestionText:String = SearchResultUtil.searchResultToLabel(data);
+                suggestionText = suggestionText.replace(suggestionMatches, "<b>$&</b>");
+                suggestionLabel.textFlow = TextConverter.importToFlow(suggestionText, TextConverter.TEXT_FIELD_HTML_FORMAT);
+            }
+        ]]>
+    </fx:Script>
+
+    <s:RichText id="suggestionLabel"
+                left="3" right="3" top="5" bottom="5"/>
+</s:ItemRenderer>

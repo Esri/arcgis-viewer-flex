@@ -25,6 +25,8 @@
                 buttonMode="true"
                 click="itemrenderer_clickHandler(event)"
                 dataChange="itemrenderer_dataChangeHandler(event)"
+                focusEnabled="true"
+                implements="mx.managers.IFocusManagerComponent"
                 minHeight="30"
                 useHandCursor="true">
 
@@ -32,7 +34,6 @@
         <![CDATA[
             import flashx.textLayout.formats.TextAlign;
 
-            import mx.events.EffectEvent;
             import mx.events.FlexEvent;
 
             private const WIDGET_ITEM_CLICK:String = "widgetListItemClick";
@@ -85,7 +86,7 @@
             <s:VGroup width="25" height="30"
                       horizontalAlign="center">
                 <s:Image id="icon"
-                         width="100%" height="100%"
+                         width="25" height="25"
                          smooth="true"/>
                 <HeaderController:WidgetUnderline id="underline"/>
             </s:VGroup>

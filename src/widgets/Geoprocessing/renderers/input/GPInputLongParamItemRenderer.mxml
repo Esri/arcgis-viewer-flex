@@ -20,6 +20,7 @@
                 xmlns:s="library://ns.adobe.com/flex/spark"
                 xmlns:mx="library://ns.adobe.com/flex/mx"
                 xmlns:esri="http://www.esri.com/2008/ags"
+                width="100%"
                 autoDrawBackground="false">
     <fx:Script>
         <![CDATA[
@@ -29,10 +30,12 @@
             }
         ]]>
     </fx:Script>
+
     <mx:FormItem width="100%"
                  label="{data.label}"
                  required="{data.required}">
         <esri:IntegerField id="numberInput"
+                           width="50%"
                            change="updateDefaultValue()"
                            text="{data.defaultValue}"
                            toolTip="{data.toolTip}"/>

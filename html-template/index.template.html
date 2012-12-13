@@ -3,6 +3,7 @@
     <head>
         <title>${title}</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="requiresActiveX=true" />
         <meta name="description" content="Esri ArcGIS viewer for Flex"/>
         <meta name="keywords" content="Esri, ArcGIS, Flex Viewer"/>
         <meta name="author" content="Esri"/>
@@ -27,19 +28,11 @@
         <script type="text/javascript" src="history/history.js"></script>
         <!${useBrowserHistory} END Browser History required section -->
 
-        <script type="text/javascript">
-            var isIElt9 = false;
-        </script>
-        <!--[if lt IE 9]>
-            <script type="text/javascript">
-                isIElt9 = true;
-            </script>
-        <![endif]-->
         <script type="text/javascript" src="swfobject.js"></script>
         <script type="text/javascript">
-            <!-- For version detection, set to min. required Flash Player version, or 0 (or 0.0.0), for no version detection. -->
+            // For version detection, set to min. required Flash Player version, or 0 (or 0.0.0), for no version detection.
             var swfVersionStr = "${version_major}.${version_minor}.${version_revision}";
-            <!-- To use express install, set to playerProductInstall.swf, otherwise the empty string. -->
+            // To use express install, set to playerProductInstall.swf, otherwise the empty string.
             var xiSwfUrlStr = "${expressInstallSwf}";
             var flashvars = {};
             var params = {};
@@ -47,12 +40,10 @@
             params.bgcolor = "${bgcolor}";
             params.allowscriptaccess = "sameDomain";
             params.allowfullscreen = "true";
-            var isAIR = navigator.userAgent.indexOf("AdobeAIR") != -1;
-            if (isAIR || isIElt9)
+            var wmode = swfobject.getQueryParamValue("wmode");
+            if (wmode)
             {
-                // workaround for overlaying tool tips and other content when loaded into an AIR app
-                // workaround for cursor issue - https://bugs.adobe.com/jira/browse/SDK-26818
-                params.wmode = "opaque";
+                params.wmode = wmode;
             }
             var attributes = {};
             attributes.id = "${application}";
@@ -63,7 +54,7 @@
                 "${width}", "${height}",
                 swfVersionStr, xiSwfUrlStr,
                 flashvars, params, attributes);
-            <!-- JavaScript enabled so display the flashContent div in case it is not replaced with a swf object. -->
+            // JavaScript enabled so display the flashContent div in case it is not replaced with a swf object.
             swfobject.createCSS("#flashContent", "display:block;text-align:left;");
         </script>
     </head>

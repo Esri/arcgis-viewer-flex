@@ -17,7 +17,9 @@ package widgets.Geoprocessing.supportClasses
 {
 
 import com.esri.ags.FeatureSet;
+import com.esri.ags.Graphic;
 import com.esri.ags.geometry.Extent;
+import com.esri.ags.geometry.Polygon;
 import com.esri.ags.layers.GraphicsLayer;
 import com.esri.ags.utils.GraphicUtil;
 
@@ -25,12 +27,14 @@ import flash.utils.Dictionary;
 
 import mx.collections.ArrayCollection;
 
+import widgets.Geoprocessing.parameters.BaseParamParser;
+import widgets.Geoprocessing.parameters.FeatureLayerParameter;
 import widgets.Geoprocessing.parameters.GPParameterTypes;
 import widgets.Geoprocessing.parameters.IGPFeatureParameter;
 import widgets.Geoprocessing.parameters.IGPParameter;
-import widgets.Geoprocessing.parameters.BaseParamParser;
 import widgets.Geoprocessing.parameters.InputParamParser;
 import widgets.Geoprocessing.parameters.OutputParamParser;
+
 
 public class GPParamHandler
 {
@@ -253,7 +257,6 @@ public class GPParamHandler
             case GPParameterTypes.LINEAR_UNIT:
             case GPParameterTypes.RASTER_DATA_LAYER:
             case GPParameterTypes.RECORD_SET:
-            case GPParameterTypes.FEATURE_RECORD_SET_LAYER:
             {
                 isVisibleOutput = true;
                 break;
@@ -275,6 +278,21 @@ public class GPParamHandler
     public function hideFeatureLayers():void
     {
         toggleFeatureParameterLayerVisibility(false);
+    }
+
+    public function getOutputFeatureParams():Array
+    {
+        var outputFeatureParams:Array = [];
+
+        for each (var param:IGPParameter in _outputParams)
+        {
+            if (param.type == GPParameterTypes.FEATURE_RECORD_SET_LAYER)
+            {
+                outputFeatureParams.push(param);
+            }
+        }
+
+        return outputFeatureParams;
     }
 
     public function getOutputFeaturesExtent():Extent
@@ -338,14 +356,57 @@ public class GPParamHandler
 
     public function clearOutputFeatures():void
     {
-        for each (var outputParam:IGPParameter in _outputParams)
+        clearFeatures(_outputParams);
+    }
+
+    private function clearFeatures(params:Array):void
+    {
+        for each (var param:IGPParameter in params)
         {
-            if (outputParam.type == GPParameterTypes.FEATURE_RECORD_SET_LAYER)
+            if (param.type == GPParameterTypes.FEATURE_RECORD_SET_LAYER)
             {
-                (outputParam as IGPFeatureParameter).layer.clear();
+                (param as IGPFeatureParameter).layer.clear();
+            }
+        }
+    }
+
+    public function clearInputFeatures():void
+    {
+        clearFeatures(_inputParams);
+    }
+
+    public function hasMapExtentInputParams():Boolean
+    {
+        var hasParamWithMapExtentMode:Boolean = false;
+
+        var featureParam:IGPFeatureParameter;
+        for each (var param:IGPParameter in _inputParams)
+        {
+            featureParam = param as IGPFeatureParameter;
+            if (featureParam && featureParam.mode == FeatureLayerParameter.MAP_EXTENT_SOURCE)
+            {
+                hasParamWithMapExtentMode = true;
+                break;
+            }
+        }
+
+        return hasParamWithMapExtentMode;
+    }
+
+    public function updateMapExtentInputParams(extent:Extent):void
+    {
+        const extentPolygon:Polygon = extent.toPolygon();
+
+        var featureParam:IGPFeatureParameter;
+        for each (var param:IGPParameter in _inputParams)
+        {
+            featureParam = param as IGPFeatureParameter;
+            if (featureParam && featureParam.mode == FeatureLayerParameter.MAP_EXTENT_SOURCE)
+            {
+                featureParam.layer.clear();
+                featureParam.layer.add(new Graphic(extentPolygon));
             }
         }
     }
 }
-
 }

@@ -43,12 +43,11 @@
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.components.toc.TOC;
+            import com.esri.viewer.utils.LocalizationUtil;
 
             import mx.collections.ArrayCollection;
             import mx.events.FlexEvent;
             import mx.managers.PopUpManager;
-
-            private static const WEB_MERCATOR_IDS:Array = [ 102100, 3857, 102113 ];
 
             private var _item:Object;
             private var _layer:Layer;
@@ -114,11 +113,11 @@
                     // based on layer type, add Description/Download label
                     if (layer is KMLLayer)
                     {
-                        this.descriptionOrDownloadLabel.text = resourceManager.getString("ViewerStrings", "tocMapLayerDownloadLabel");
+                        this.descriptionOrDownloadLabel.text = LocalizationUtil.getDefaultString("tocMapLayerDownloadLabel");
                     }
                     else
                     {
-                        this.descriptionOrDownloadLabel.text = resourceManager.getString("ViewerStrings", "tocMapLayerDescriptionLabel");
+                        this.descriptionOrDownloadLabel.text = LocalizationUtil.getDefaultString("tocMapLayerDescriptionLabel");
                     }
 
                     if (!layer.initialExtent)
@@ -145,10 +144,10 @@
                 }
 
                 var layerExtent:Extent = _layer.initialExtent;
-                if (_map.extent.spatialReference.wkid != layerExtent.spatialReference.wkid)
+                if (!_map.extent.spatialReference.equals(layerExtent.spatialReference))
                 {
                     // convert client side.
-                    if (WEB_MERCATOR_IDS.indexOf(_map.extent.spatialReference.wkid) != -1 && layerExtent.spatialReference.wkid == 4326)
+                    if (_map.extent.spatialReference.isWebMercator() && layerExtent.spatialReference.wkid == 4326)
                     {
                         // clip the layer extent, so it's not going to Infinity; otherwise gives an error
                         layerExtent.xmin = Math.max(layerExtent.xmin, -180);
@@ -158,7 +157,7 @@
                         layerExtent = WebMercatorUtil.geographicToWebMercator(layerExtent) as Extent;
                         updateMapExtent(layerExtent);
                     }
-                    else if (WEB_MERCATOR_IDS.indexOf(layerExtent.spatialReference.wkid) != -1 && _map.extent.spatialReference.wkid == 4326)
+                    else if (layerExtent.spatialReference.isWebMercator() && _map.extent.spatialReference.wkid == 4326)
                     {
                         layerExtent = WebMercatorUtil.webMercatorToGeographic(layerExtent) as Extent;
                         updateMapExtent(layerExtent);
@@ -198,7 +197,7 @@
                     _transparencyMenuItem = new TransparencyMenuItem();
 
                     _transparencyMenuItem.x = this.x - _transparencyMenuItem.width;
-                    _transparencyMenuItem.y = event.stageY - (_transparencyMenuItem.height / 2); // allign with the layer option popup
+                    _transparencyMenuItem.y = this.y; // allign with the layer option popup
                     _transparencyMenuItem.layer = _layer;
                     PopUpManager.addPopUp(_transparencyMenuItem, this.parent);
                 }
@@ -343,30 +342,42 @@
               paddingRight="10"
               paddingTop="2">
         <s:HGroup id="zoomToGroup"
+                  width="100%"
                   buttonMode="true"
                   verticalAlign="bottom">
-            <mx:Image click="zoomToLabel_clickHandler(event)" source="assets/images/LayerZoomTo16.png"/>
-            <s:Label id="zoomToLabel"
+            <s:Image width="16"
                      click="zoomToLabel_clickHandler(event)"
+                     source="assets/images/LayerZoomTo16.png"/>
+            <s:Label id="zoomToLabel"
+                     width="100%"
+                     click="zoomToLabel_clickHandler(event)"
+                     maxDisplayedLines="1"
                      rollOut="label_rollOutHandler(event)"
                      rollOver="label_rollOverHandler(event)"
-                     text="{resourceManager.getString('ViewerStrings', 'tocMapLayerZoomToLabel')}"/>
+                     showTruncationTip="true"
+                     text="{LocalizationUtil.getDefaultString('tocMapLayerZoomToLabel')}"/>
         </s:HGroup>
         <s:HGroup verticalAlign="bottom">
-            <mx:Image buttonMode="true"
-                      click="transparencyLabel_clickHandler(event)"
-                      source="assets/images/EffectsTransparency16.png"/>
-            <s:Label id="transparencyLabel"
+            <s:Image width="16"
                      buttonMode="true"
                      click="transparencyLabel_clickHandler(event)"
+                     source="assets/images/EffectsTransparency16.png"/>
+            <s:Label id="transparencyLabel"
+                     width="100%"
+                     buttonMode="true"
+                     click="transparencyLabel_clickHandler(event)"
+                     maxDisplayedLines="1"
                      rollOut="label_rollOutHandler(event)"
                      rollOver="label_rollOverHandler(event)"
-                     text="{resourceManager.getString('ViewerStrings', 'tocMapLayerTransparencyLabel')}"/>
+                     showTruncationTip="true"
+                     text="{LocalizationUtil.getDefaultString('tocMapLayerTransparencyLabel')}"/>
         </s:HGroup>
     </s:VGroup>
-    <mx:HRule width="100%"
-              strokeColor="{getStyle('accentColor')}"
-              visible="{topGroup.visible}"/>
+    <s:Line width="100%" visible="{topGroup.visible}">
+        <s:stroke>
+            <s:SolidColorStroke color="{getStyle('accentColor')}"/>
+        </s:stroke>
+    </s:Line>
     <s:VGroup id="midGroup"
               width="100%"
               gap="2"
@@ -375,33 +386,47 @@
               paddingRight="10"
               paddingTop="2">
         <s:HGroup id="moveUpGroup"
+                  width="100%"
                   buttonMode="true"
                   verticalAlign="bottom">
-            <mx:Image id="moveUpImage"
-                      click="moveUpLabel_clickHandler(event)"
-                      source="assets/images/LayerUp16.png"/>
-            <s:Label id="moveUpLabel"
+            <s:Image id="moveUpImage"
+                     width="16"
                      click="moveUpLabel_clickHandler(event)"
+                     source="assets/images/LayerUp16.png"/>
+            <s:Label id="moveUpLabel"
+                     width="100%"
+                     click="moveUpLabel_clickHandler(event)"
+                     maxDisplayedLines="1"
                      rollOut="label_rollOutHandler(event)"
                      rollOver="label_rollOverHandler(event)"
-                     text="{resourceManager.getString('ViewerStrings', 'tocMapLayerMoveUpLabel')}"/>
+                     showTruncationTip="true"
+                     text="{LocalizationUtil.getDefaultString('tocMapLayerMoveUpLabel')}"/>
         </s:HGroup>
         <s:HGroup id="moveDownGroup"
+                  width="100%"
                   buttonMode="true"
                   verticalAlign="bottom">
-            <mx:Image id="moveDownImage"
-                      click="moveDownLabel_clickHandler(event)"
-                      source="assets/images/LayerDown16.png"/>
-            <s:Label id="moveDownLabel"
+            <s:Image id="moveDownImage"
+                     width="16"
                      click="moveDownLabel_clickHandler(event)"
+                     source="assets/images/LayerDown16.png"/>
+            <s:Label id="moveDownLabel"
+                     width="100%"
+                     click="moveDownLabel_clickHandler(event)"
+                     maxDisplayedLines="1"
                      rollOut="label_rollOutHandler(event)"
                      rollOver="label_rollOverHandler(event)"
-                     text="{resourceManager.getString('ViewerStrings', 'tocMapLayerMoveDownLabel')}"/>
+                     showTruncationTip="true"
+                     text="{LocalizationUtil.getDefaultString('tocMapLayerMoveDownLabel')}"/>
         </s:HGroup>
     </s:VGroup>
-    <mx:HRule width="100%"
-              strokeColor="{getStyle('accentColor')}"
-              visible="{midGroup.visible}"/>
+
+    <s:Line width="100%" visible="{midGroup.visible}">
+        <s:stroke>
+            <s:SolidColorStroke color="{getStyle('accentColor')}"/>
+        </s:stroke>
+    </s:Line>
+
     <s:VGroup id="bottomGroup"
               width="100%"
               gap="2"
@@ -409,12 +434,19 @@
               paddingLeft="10"
               paddingRight="10"
               paddingTop="2">
-        <s:HGroup buttonMode="true" verticalAlign="bottom">
-            <mx:Image click="descriptionOrDownloadLabel_clickHandler(event)" source="assets/images/GenericSpatialFile16.png"/>
-            <s:Label id="descriptionOrDownloadLabel"
+        <s:HGroup width="100%"
+                  buttonMode="true"
+                  verticalAlign="bottom">
+            <s:Image width="16"
                      click="descriptionOrDownloadLabel_clickHandler(event)"
+                     source="assets/images/GenericSpatialFile16.png"/>
+            <s:Label id="descriptionOrDownloadLabel"
+                     width="100%"
+                     click="descriptionOrDownloadLabel_clickHandler(event)"
+                     maxDisplayedLines="1"
                      rollOut="label_rollOutHandler(event)"
-                     rollOver="label_rollOverHandler(event)"/>
+                     rollOver="label_rollOverHandler(event)"
+                     showTruncationTip="true"/>
         </s:HGroup>
     </s:VGroup>
 </s:BorderContainer>

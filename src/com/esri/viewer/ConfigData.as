@@ -39,6 +39,7 @@ public class ConfigData
     public var bingKey:String;
     public var proxyUrl:String;
     public var layoutDirection:String;
+    public var webMapData:Object;
 
     public function ConfigData()
     {

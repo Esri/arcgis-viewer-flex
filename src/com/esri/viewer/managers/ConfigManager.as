@@ -21,11 +21,13 @@ import com.esri.ags.geometry.Extent;
 import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
 import com.esri.ags.layers.ArcGISImageServiceLayer;
 import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
+import com.esri.ags.layers.CSVLayer;
 import com.esri.ags.layers.FeatureLayer;
 import com.esri.ags.layers.KMLLayer;
 import com.esri.ags.layers.Layer;
 import com.esri.ags.layers.OpenStreetMapLayer;
 import com.esri.ags.layers.WMSLayer;
+import com.esri.ags.layers.supportClasses.Field;
 import com.esri.ags.layers.supportClasses.LOD;
 import com.esri.ags.portal.WebMapUtil;
 import com.esri.ags.tasks.GeometryServiceSingleton;
@@ -33,7 +35,9 @@ import com.esri.ags.virtualearth.VETiledLayer;
 import com.esri.viewer.AppEvent;
 import com.esri.viewer.ConfigData;
 import com.esri.viewer.ViewerContainer;
+import com.esri.viewer.utils.ErrorMessageUtil;
 import com.esri.viewer.utils.LayerObjectUtil;
+import com.esri.viewer.utils.LocalizationUtil;
 import com.esri.viewer.utils.PortalBasemapAppender;
 
 import flash.events.Event;
@@ -42,13 +46,11 @@ import flash.events.IOErrorEvent;
 import flash.events.SecurityErrorEvent;
 
 import mx.collections.ArrayCollection;
-import mx.resources.ResourceManager;
 import mx.rpc.Fault;
 import mx.rpc.Responder;
 import mx.rpc.events.FaultEvent;
 import mx.rpc.events.ResultEvent;
 import mx.rpc.http.HTTPService;
-import mx.utils.StringUtil;
 
 [Event(name="configLoaded", type="com.esri.viewer.AppEvent")]
 
@@ -98,7 +100,7 @@ public class ConfigManager extends EventDispatcher
             // Missing config file
             if (ioe.errorID == 2032)
             {
-                sInfo += StringUtil.substitute(getDefaultString('missingConfigFileText'), ViewerContainer.configFile) + "\n\n";
+                sInfo += LocalizationUtil.getDefaultString('missingConfigFileText', ViewerContainer.configFile) + "\n\n";
             }
             else
             {
@@ -113,7 +115,7 @@ public class ConfigManager extends EventDispatcher
             // config file with crossdomain issue
             if (sec.errorID == 2048)
             {
-                sInfo += StringUtil.substitute(getDefaultString('configFileCrossDomain'), "\n", sec.toString()) + "\n\n";
+                sInfo += LocalizationUtil.getDefaultString('configFileCrossDomain', "\n", sec.toString()) + "\n\n";
             }
             // some other Security error
             else
@@ -124,12 +126,12 @@ public class ConfigManager extends EventDispatcher
 
         if (event.statusCode) // e.g. 404 - Not Found - http://en.wikipedia.org/wiki/List_of_HTTP_status_codes
         {
-            sInfo += StringUtil.substitute(getDefaultString('httpResponseStatus'), event.statusCode) + "\n\n";
+            sInfo += LocalizationUtil.getDefaultString('httpResponseStatus', event.statusCode) + "\n\n";
         }
 
-        sInfo += StringUtil.substitute(getDefaultString('faultCode'), event.fault.faultCode) + "\n\n";
-        sInfo += StringUtil.substitute(getDefaultString('faultInfo'), event.fault.faultString) + "\n\n";
-        sInfo += StringUtil.substitute(getDefaultString('faultDetail'), event.fault.faultDetail);
+        sInfo += LocalizationUtil.getDefaultString('faultCode', event.fault.faultCode) + "\n\n";
+        sInfo += LocalizationUtil.getDefaultString('faultInfo', event.fault.faultString) + "\n\n";
+        sInfo += LocalizationUtil.getDefaultString('faultDetail', event.fault.faultDetail);
 
         AppEvent.showError(sInfo, CONFIG_MANAGER);
     }
@@ -469,12 +471,12 @@ public class ConfigManager extends EventDispatcher
             mapAttrs.push(size);
 
             var wkid:Number;
-            var wkt:String
-            if (configXML.map.@wkid)
+            var wkt:String;
+            if (configXML.map.@wkid[0])
             {
                 wkid = Number(configXML.map.@wkid);
             }
-            if (configXML.map.@wkt)
+            if (configXML.map.@wkt[0])
             {
                 wkt = configXML.map.@wkt;
             }
@@ -495,12 +497,14 @@ public class ConfigManager extends EventDispatcher
             mapAttrs.push(zoomSliderVisibility);
 
             var scaleBarVisible:Boolean = configXML.map.@scalebarvisible[0] ? configXML.map.@scalebarvisible == "true" : true;
-            var scaleBarVisibility:Object =
+            var scaleBarStyleName:String = configXML.map.@scalebar[0];
+            var scaleBarProperties:Object =
                 {
                     id: "scaleBar",
-                    scaleBarVisible: scaleBarVisible
+                    scaleBarVisible: scaleBarVisible,
+                    scaleBarStyleName: scaleBarStyleName
                 };
-            mapAttrs.push(scaleBarVisibility);
+            mapAttrs.push(scaleBarProperties);
 
             var esriLogoVisible:Boolean = configXML.map.@esrilogovisible[0] ? configXML.map.@esrilogovisible == "true" : true;
             var esriLogoVisibility:Object =
@@ -525,6 +529,17 @@ public class ConfigManager extends EventDispatcher
                     wrapAround180: wrapAround180
                 };
             mapAttrs.push(wrapAround180Attr);
+
+            var mapRotation:Number = parseFloat(configXML.map.@rotation[0]);
+            if (!isNaN(mapRotation))
+            {
+                var mapRotationAttr:Object =
+                    {
+                        id: "mapRotation",
+                        mapRotation: mapRotation
+                    };
+                mapAttrs.push(mapRotationAttr);
+            }
 
             var panEasingFactor:Number = parseFloat(configXML.map.@paneasingfactor[0]);
             if (!isNaN(panEasingFactor))
@@ -561,18 +576,27 @@ public class ConfigManager extends EventDispatcher
                 mapAttrs.push({ id: "lods", lods: lods });
             }
 
+            if (configXML.map.@attributionvisible[0])
+            {
+                var attributionVisible:Boolean = configXML.map.@attributionvisible[0] != "false";
+                var attributionVisibleAttr:Object =
+                    {
+                        id: "attributionVisible",
+                        attributionVisible: attributionVisible
+                    };
+                mapAttrs.push(attributionVisibleAttr);
+            }
+
             configData.mapAttrs = mapAttrs;
 
-            var arcGISWebMapItemID:String = configXML.map.@itemid[0];
-            if (ViewerContainer.urlConfigParams.itemid)
-            {
-                arcGISWebMapItemID = ViewerContainer.urlConfigParams.itemid;
-            }
+            var configWebMapItemID:String = configXML.map.@webmap[0] || configXML.map.@itemid[0];
+            var urlConfigWebMapItemID:String = ViewerContainer.urlConfigParams.webmap || ViewerContainer.urlConfigParams.itemid;
+            var webMapItemID:String = urlConfigWebMapItemID ? urlConfigWebMapItemID : configWebMapItemID;
 
             var portalURL:String = configXML.map.@portalurl[0] || configXML.map.@arcgissharingurl[0];
             var addArcGISBasemaps:Boolean = configXML.map.@addarcgisbasemaps[0] == "true";
 
-            if (arcGISWebMapItemID)
+            if (webMapItemID)
             {
                 var webMapUtil:WebMapUtil = new WebMapUtil();
                 webMapUtil.bingMapsKey = configData.bingKey;
@@ -585,7 +609,7 @@ public class ConfigManager extends EventDispatcher
                 {
                     webMapUtil.portalURL = portalURL;
                 }
-                webMapUtil.createMapById(arcGISWebMapItemID, new Responder(webMapUtil_createMapByIdResultHandler, webMapUtil_createMapByIdFaultHandler));
+                webMapUtil.createMapById(webMapItemID, new Responder(webMapUtil_createMapByIdResultHandler, webMapUtil_createMapByIdFaultHandler));
                 function webMapUtil_createMapByIdResultHandler(result:WebMapEvent):void
                 {
                     if (!title.value)
@@ -649,9 +673,11 @@ public class ConfigManager extends EventDispatcher
                         }
                     }
 
+                    configData.webMapData = result.itemData;
+
                     if (addArcGISBasemaps)
                     {
-                        appendPortalBasemaps();
+                        appendPortalBasemaps(portalURL);
                     }
                     else
                     {
@@ -661,7 +687,9 @@ public class ConfigManager extends EventDispatcher
 
                 function webMapUtil_createMapByIdFaultHandler(error:Fault):void
                 {
-                    AppEvent.showError(error.faultString, CONFIG_MANAGER);
+                    AppEvent.showError(
+                        ErrorMessageUtil.getKnownErrorCauseMessage(error)
+                        + "\n\n" + ErrorMessageUtil.buildFaultMessage(error), CONFIG_MANAGER);
                 }
             }
             else
@@ -701,22 +729,27 @@ public class ConfigManager extends EventDispatcher
             var configWidgets:Array = [];
             var widgetContainerList:XMLList = configXML.widgetcontainer;
             var widgetId:Number = 0;
-            for (i = 0; i < widgetContainerList.children().length(); i++)
+            for (var w:int = 0; w < widgetContainerList.length(); w++)
             {
-                var xmlObject:XML = widgetContainerList.children()[i];
-                if (xmlObject.name() == "widgetgroup")
+                var wContainer:XML = widgetContainerList[w] as XML;
+                var isPartOfPanel:Boolean = wContainer.@paneltype[0] ? true : false;
+                for (i = 0; i < wContainer.children().length(); i++)
                 {
-                    var widgetGroupList:XMLList = XMLList(xmlObject);
-                    createWidgets(widgetGroupList.widget, true, widgetGroupList.widget.length(), widgetGroupList.@label, widgetGroupList.@icon);
-                }
-                else
-                {
-                    var widgetList:XMLList = XMLList(xmlObject);
-                    createWidgets(widgetList, false);
+                    var xmlObject:XML = wContainer.children()[i];
+                    if (xmlObject.name() == "widgetgroup")
+                    {
+                        var widgetGroupList:XMLList = XMLList(xmlObject);
+                        createWidgets(widgetGroupList.widget, true, isPartOfPanel, widgetGroupList.widget.length(), widgetGroupList.@label, widgetGroupList.@icon);
+                    }
+                    else
+                    {
+                        var widgetList:XMLList = XMLList(xmlObject);
+                        createWidgets(widgetList, false, isPartOfPanel);
+                    }
                 }
             }
 
-            function createWidgets(widgetList:XMLList, grouped:Boolean, groupLength:Number = 0, groupLabel:String = null, groupIcon:String = null):void
+            function createWidgets(widgetList:XMLList, grouped:Boolean, isPartOfPanel:Boolean, groupLength:Number = 0, groupLabel:String = null, groupIcon:String = null):void
             {
                 var widgetListLength:int = widgetList.length();
                 for (var p:int = 0; p < widgetListLength; p++)
@@ -776,7 +809,8 @@ public class ConfigManager extends EventDispatcher
                             top: wTop,
                             right: wRight,
                             bottom: wBottom,
-                            url: wUrl
+                            url: wUrl,
+                            isPartOfPanel: isPartOfPanel
                         };
                     configWidgets.push(widget);
                     widgetId++;
@@ -791,119 +825,60 @@ public class ConfigManager extends EventDispatcher
 
             var wContainers:XMLList = configXML.widgetcontainer;
             var configWContainers:Array = [];
+            var wid:uint;
+            var n:int;
+            var xmlObj:XML;
             for (i = 0; i < wContainers.length(); i++)
             {
-                //get container parameters
-                var wcLeft:String = wContainers[i].@left;
-                var wcRight:String = wContainers[i].@right;
-                var wcTop:String = wContainers[i].@top;
-                var wcBottom:String = wContainers[i].@bottom;
-                var wcLayout:String = wContainers[i].@layout;
-                var wcUrl:String = wContainers[i].@url;
+                //get container parameters                
+                var wcPanelType:String = wContainers[i].@paneltype;
 
-                if (!wcLayout)
-                {
-                    wcLayout = ViewerContainer.DEFAULT_WIDGET_LAYOUT;
-                }
-
-                if (!wcUrl)
-                {
-                    wcUrl = ViewerContainer.DEFAULT_WIDGET_CONTAINER_WIDGET;
-                }
-
-                var wgContainer:Object =
-                    {
-                        id: i,
-                        left: wcLeft,
-                        right: wcRight,
-                        top: wcTop,
-                        bottom: wcBottom,
-                        layout: wcLayout,
-                        url: wcUrl,
-                        obj: null
-                    };
-
-                //get widgets for this container
+                var wgContainer:Object;
                 var contWidgets:Array = [];
-                var wid:uint = 0;
-                for (var n:int = 0; n < wContainers[i].children().length(); n++)
+                if (wcPanelType)
                 {
-                    var xmlObj:XML = wContainers[i].children()[n];
-                    if (xmlObj.name() == "widgetgroup")
+                    var wcSize:String = wContainers[i].@size;
+                    var wcInitialState:String = "open";
+                    if (wContainers[i].@initialstate[0])
                     {
-                        var widgetGrpList:XMLList = XMLList(xmlObj);
-                        getWidgetList(widgetGrpList.widget, true, widgetGrpList.widget.length(), widgetGrpList.@label, widgetGrpList.@icon);
+                        wcInitialState = wContainers[i].@initialstate;
                     }
-                    else
-                    {
-                        var wdgtList:XMLList = XMLList(xmlObj);
-                        getWidgetList(wdgtList, false);
-                    }
-                }
+                    wgContainer =
+                        {
+                            id: i,
+                            panelType: wcPanelType,
+                            initialState: wcInitialState,
+                            size: wcSize,
+                            obj: null
+                        };
 
-                function getWidgetList(wgList:XMLList, grouped:Boolean, groupLength:Number = 0, groupLabel:String = null, groupIcon:String = null):void
-                {
-                    for (j = 0; j < wgList.length(); j++)
+                    //get widget for this container                 
+                    wid = 0;
+                    for (n = 0; n < wContainers[i].children().length(); n++)
                     {
-                        // if grouped
-                        var wgGrouped:Boolean = grouped;
-                        var wgGroupLength:Number = groupLength;
-                        var wgGroupIcon:String = groupIcon;
-                        var wgGroupLabel:String = groupLabel;
+                        xmlObj = wContainers[i].children()[n];
 
-                        var wgLabel:String = wgList[j].@label;
-                        var wgIcon:String = wgList[j].@icon;
-                        var wgConfig:String = wgList[j].@config;
-                        var wgPreload:String = wgList[j].@preload;
-                        var wgWidth:String = wgList[j].@width;
-                        var wgHeight:String = wgList[j].@height;
-                        var wgUrl:String = wgList[j].@url;
-                        var wgx:String = wgList[j].@x;
-                        var wgy:String = wgList[j].@y;
-                        var wgLeft:String = wgList[j].@left;
-                        var wgTop:String = wgList[j].@top;
-                        var wgRight:String = wgList[j].@right;
-                        var wgBottom:String = wgList[j].@bottom;
-                        var wHorizontalCenter:String = wgList[j].@horizontalcenter;
-                        var wVerticalCenter:String = wgList[j].@verticalcenter;
+                        var wgLabel:String = xmlObj.@label;
+                        var wgConfig:String = xmlObj.@config;
+                        var wgWidth:String = xmlObj.@width;
+                        var wgHeight:String = xmlObj.@height;
+                        var wgUrl:String = xmlObj.@url;
 
                         var wgConfigXML:XML = null;
                         if (wgConfig.charAt(0) === "#")
                         {
                             wgConfigXML = configXML.configuration.(@id == wgConfig.substr(1))[0];
                         }
-                        if (!wgGroupIcon)
-                        {
-                            wgGroupIcon = ViewerContainer.DEFAULT_WIDGET_GROUP_ICON;
-                        }
-                        if (!wgIcon)
-                        {
-                            wgIcon = ViewerContainer.DEFAULT_WIDGET_ICON;
-                        }
-
                         var wg:Object =
                             {
                                 id: wid,
-                                grouped: wgGrouped,
-                                groupLength: wgGroupLength,
-                                groupIcon: wgGroupIcon,
-                                groupLabel: wgGroupLabel,
                                 label: wgLabel,
-                                icon: wgIcon,
                                 config: wgConfig,
                                 configXML: wgConfigXML, // reference to enbedded XML configuration (if any)
-                                preload: wgPreload,
                                 width: wgWidth,
                                 height: wgHeight,
-                                x: wgx,
-                                y: wgy,
-                                left: wgLeft,
-                                right: wgRight,
-                                top: wgTop,
-                                bottom: wgBottom,
-                                horizontalCenter: wHorizontalCenter,
-                                verticalCenter: wVerticalCenter,
-                                url: wgUrl
+                                url: wgUrl,
+                                isPartOfPanel: true
                             };
                         contWidgets.push(wg);
 
@@ -913,20 +888,142 @@ public class ConfigManager extends EventDispatcher
                         wid++;
                     }
                 }
+                else
+                {
+                    var wcUrl:String = wContainers[i].@url;
+                    if (!wcUrl)
+                    {
+                        wcUrl = ViewerContainer.DEFAULT_WIDGET_CONTAINER_WIDGET;
+                    }
+
+                    var wcLeft:String = wContainers[i].@left;
+                    var wcRight:String = wContainers[i].@right;
+                    var wcTop:String = wContainers[i].@top;
+                    var wcBottom:String = wContainers[i].@bottom;
+                    var wcLayout:String = wContainers[i].@layout;
+
+                    if (!wcLayout)
+                    {
+                        wcLayout = ViewerContainer.DEFAULT_WIDGET_LAYOUT;
+                    }
+
+                    wgContainer =
+                        {
+                            id: i,
+                            left: wcLeft,
+                            right: wcRight,
+                            top: wcTop,
+                            bottom: wcBottom,
+                            layout: wcLayout,
+                            url: wcUrl,
+                            obj: null
+                        };
+
+                    //get widgets for this container
+                    wid = 0;
+                    for (n = 0; n < wContainers[i].children().length(); n++)
+                    {
+                        xmlObj = wContainers[i].children()[n];
+                        if (xmlObj.name() == "widgetgroup")
+                        {
+                            var widgetGrpList:XMLList = XMLList(xmlObj);
+                            getWidgetList(widgetGrpList.widget, true, widgetGrpList.widget.length(), widgetGrpList.@label, widgetGrpList.@icon);
+                        }
+                        else
+                        {
+                            var wdgtList:XMLList = XMLList(xmlObj);
+                            getWidgetList(wdgtList, false);
+                        }
+                    }
+
+                    function getWidgetList(wgList:XMLList, grouped:Boolean, groupLength:Number = 0, groupLabel:String = null, groupIcon:String = null):void
+                    {
+                        for (j = 0; j < wgList.length(); j++)
+                        {
+                            // if grouped
+                            var wgGrouped:Boolean = grouped;
+                            var wgGroupLength:Number = groupLength;
+                            var wgGroupIcon:String = groupIcon;
+                            var wgGroupLabel:String = groupLabel;
+
+                            var wgLabel:String = wgList[j].@label;
+                            var wgIcon:String = wgList[j].@icon;
+                            var wgConfig:String = wgList[j].@config;
+                            var wgPreload:String = wgList[j].@preload;
+                            var wgWidth:String = wgList[j].@width;
+                            var wgHeight:String = wgList[j].@height;
+                            var wgUrl:String = wgList[j].@url;
+                            var wgx:String = wgList[j].@x;
+                            var wgy:String = wgList[j].@y;
+                            var wgLeft:String = wgList[j].@left;
+                            var wgTop:String = wgList[j].@top;
+                            var wgRight:String = wgList[j].@right;
+                            var wgBottom:String = wgList[j].@bottom;
+                            var wHorizontalCenter:String = wgList[j].@horizontalcenter;
+                            var wVerticalCenter:String = wgList[j].@verticalcenter;
+
+                            var wgConfigXML:XML = null;
+                            if (wgConfig.charAt(0) === "#")
+                            {
+                                wgConfigXML = configXML.configuration.(@id == wgConfig.substr(1))[0];
+                            }
+                            if (!wgGroupIcon)
+                            {
+                                wgGroupIcon = ViewerContainer.DEFAULT_WIDGET_GROUP_ICON;
+                            }
+                            if (!wgIcon)
+                            {
+                                wgIcon = ViewerContainer.DEFAULT_WIDGET_ICON;
+                            }
+
+                            var wg:Object =
+                                {
+                                    id: wid,
+                                    grouped: wgGrouped,
+                                    groupLength: wgGroupLength,
+                                    groupIcon: wgGroupIcon,
+                                    groupLabel: wgGroupLabel,
+                                    label: wgLabel,
+                                    icon: wgIcon,
+                                    config: wgConfig,
+                                    configXML: wgConfigXML, // reference to enbedded XML configuration (if any)
+                                    preload: wgPreload,
+                                    width: wgWidth,
+                                    height: wgHeight,
+                                    x: wgx,
+                                    y: wgy,
+                                    left: wgLeft,
+                                    right: wgRight,
+                                    top: wgTop,
+                                    bottom: wgBottom,
+                                    horizontalCenter: wHorizontalCenter,
+                                    verticalCenter: wVerticalCenter,
+                                    url: wgUrl,
+                                    isPartOfPanel: false
+                                };
+                            contWidgets.push(wg);
+
+                            //indexing
+                            var windex:Object = { container: i, widget: wid };
+                            configData.widgetIndex.push(windex);
+                            wid++;
+                        }
+                    }
+                }
 
                 var container:Object = { container: wgContainer, widgets: contWidgets };
                 configWContainers.push(container);
             }
             configData.widgetContainers = configWContainers;
 
-            if (!arcGISWebMapItemID)
+            if (!webMapItemID)
             {
                 //================================================
                 //announce configuration is complete
                 //================================================
                 if (addArcGISBasemaps)
                 {
-                    appendPortalBasemaps();
+                    appendPortalBasemaps(portalURL);
                 }
                 else
                 {
@@ -936,7 +1033,7 @@ public class ConfigManager extends EventDispatcher
         }
         catch (error:Error)
         {
-            AppEvent.showError(StringUtil.substitute(getDefaultString("parseConfigErrorText"), ViewerContainer.configFile + "\n" + error.message), CONFIG_MANAGER);
+            AppEvent.showError(LocalizationUtil.getDefaultString("parseConfigErrorText", ViewerContainer.configFile + "\n" + error.message), CONFIG_MANAGER);
         }
     }
 
@@ -985,7 +1082,7 @@ public class ConfigManager extends EventDispatcher
                 lyrXML.@displaylevels = tiledLyr.displayLevels.join();
             }
         }
-        else if (layer is FeatureLayer)
+        else if (layer is FeatureLayer && !(layer is CSVLayer))
         {
             var feaLyr:FeatureLayer = layer as FeatureLayer;
             if (feaLyr.featureCollection)
@@ -993,7 +1090,8 @@ public class ConfigManager extends EventDispatcher
                 lyrXML = <layer label={label}
                         type="feature"
                         visible={feaLyr.visible}
-                        alpha={feaLyr.alpha}/>
+                        alpha={feaLyr.alpha}
+                        iseditable={feaLyr.isEditable}/>
             }
             else
             {
@@ -1003,7 +1101,8 @@ public class ConfigManager extends EventDispatcher
                         alpha={feaLyr.alpha}
                         mode={feaLyr.mode}
                         useproxy={feaLyr.proxyURL != null}
-                        url={feaLyr.url}/>;
+                        url={feaLyr.url}
+                        iseditable={feaLyr.isEditable}/>;
             }
         }
         else if (layer is OpenStreetMapLayer)
@@ -1060,17 +1159,36 @@ public class ConfigManager extends EventDispatcher
                 lyrXML.@visiblelayers = wmsLayer.visibleLayers.toArray().join();
             }
         }
+        else if (layer is CSVLayer)
+        {
+            var csvLyr:CSVLayer = layer as CSVLayer;
+            lyrXML = <layer label={label}
+                    type="csv"
+                    visible={csvLyr.visible}
+                    alpha={csvLyr.alpha}
+                    url={csvLyr.url}
+                    longitudefieldname={csvLyr.longitudeFieldName}
+                    latitudefieldname={csvLyr.latitudeFieldName}/>;
+            if (csvLyr.columnDelimiter != ",")
+            {
+                lyrXML.@columndelimiter = csvLyr.columnDelimiter;
+            }
+            if (csvLyr.sourceFields)
+            {
+                var fields:Array = [];
+                for each (var field:Field in csvLyr.sourceFields)
+                {
+                    fields.push(field.name + "|" + field.alias + "|" + field.type);
+                }
+                lyrXML.@sourcefields = fields.join();
+            }
+        }
         return lyrXML;
     }
 
-    private function getDefaultString(token:String):String
+    private function appendPortalBasemaps(portalURL:String):void
     {
-        return ResourceManager.getInstance().getString("ViewerStrings", token);
-    }
-
-    private function appendPortalBasemaps():void
-    {
-        var basemapAppender:PortalBasemapAppender = new PortalBasemapAppender("http://www.arcgis.com", configData);
+        var basemapAppender:PortalBasemapAppender = new PortalBasemapAppender(portalURL, configData);
         basemapAppender.addEventListener(Event.COMPLETE, basemapAppender_completeHandler);
         basemapAppender.fetchAndAppendPortalBasemaps();
     }

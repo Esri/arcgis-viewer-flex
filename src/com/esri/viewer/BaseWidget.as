@@ -18,6 +18,7 @@ package com.esri.viewer
 
 import com.esri.ags.Map;
 import com.esri.ags.symbols.Symbol;
+import com.esri.viewer.utils.LocalizationUtil;
 
 import flash.events.Event;
 import flash.events.IOErrorEvent;
@@ -33,7 +34,6 @@ import mx.utils.StringUtil;
 
 [Event(name="widgetConfigLoaded", type="flash.events.Event")]
 [Event(name="onChainRequest", type="com.esri.viewer.AppEvent")]
-[ResourceBundle("ViewerStrings")]
 
 /**
  * BaseWidget is the foundation of all widgets. All widgets need to be derived from this BaseWidget class.
@@ -50,7 +50,6 @@ public class BaseWidget extends Module implements IBaseWidget
     //
     //--------------------------------------------------------------------------
 
-    private static const VIEWER_STRINGS:String = "ViewerStrings";
     private static const WIDGET_CONFIG_LOADED:String = "widgetConfigLoaded";
 
     //--------------------------------------------------------------------------
@@ -116,6 +115,8 @@ public class BaseWidget extends Module implements IBaseWidget
     private var _initialHeight:Number = 0;
 
     private var _waitForCreationComplete:Boolean = true;
+
+    private var _isPartOfPanel:Boolean = false;
 
     //--------------------------------------------------------------------------
     //
@@ -307,6 +308,20 @@ public class BaseWidget extends Module implements IBaseWidget
         _widgetIcon = value;
     }
 
+    //----------------------------------
+    //  isPartOfPanel
+    //----------------------------------
+    [Bindable]
+    public function get isPartOfPanel():Boolean
+    {
+        return _isPartOfPanel;
+    }
+
+    public function set isPartOfPanel(value:Boolean):void
+    {
+        _isPartOfPanel = value;
+    }
+
     //--------------------------------------------------------------------------
     //
     //  Methods
@@ -447,7 +462,7 @@ public class BaseWidget extends Module implements IBaseWidget
         AppEvent.dispatch(AppEvent.SHOW_INFOWINDOW, infoData);
     }
 
-    public function setMapAction(action:String, status:String, symbol:Symbol, callback:Function, showDrawTips:Boolean = true, enableGraphicsLayerMouseEvents:Boolean = false):void
+    public function setMapAction(action:String, status:String, symbol:Symbol, callback:Function, callback2:Function = null, showDrawTips:Boolean = true, enableGraphicsLayerMouseEvents:Boolean = false):void
     {
         var data:Object =
             {
@@ -456,7 +471,8 @@ public class BaseWidget extends Module implements IBaseWidget
                 symbol: symbol,
                 handler: callback,
                 showDrawTips: showDrawTips,
-                enableGraphicsLayerMouseEvents: enableGraphicsLayerMouseEvents
+                enableGraphicsLayerMouseEvents: enableGraphicsLayerMouseEvents,
+                handler2: callback2
             };
         AppEvent.dispatch(AppEvent.SET_MAP_ACTION, data);
     }
@@ -624,9 +640,10 @@ public class BaseWidget extends Module implements IBaseWidget
         isDraggable = true;
     }
 
-    public function getDefaultString(resourceName:String):String
+    public function getDefaultString(resourceName:String, ... params):String
     {
-        return resourceManager.getString(VIEWER_STRINGS, resourceName);
+        //use Function#apply to avoid passing rest argument as Array
+        return LocalizationUtil.getDefaultString.apply(null, [ resourceName ].concat(params));
     }
 }
 

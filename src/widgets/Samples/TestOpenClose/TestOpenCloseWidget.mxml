@@ -28,11 +28,9 @@
             import com.esri.viewer.ViewerContainer;
 
             import mx.collections.ArrayCollection;
-            import mx.controls.Alert;
-            import mx.utils.StringUtil;
 
-            import spark.collections.SortField;
             import spark.collections.Sort;
+            import spark.collections.SortField;
 
             //this function called when the widget's configuration is loaded
             private function init():void
@@ -45,11 +43,10 @@
             private function populateLoadedWidgets():void
             {
                 var widgetItems:ArrayCollection = new ArrayCollection();
-                var itemTemplate:String = "Widget Id: {0}, widget label: {1}";
 
                 for each (var widgetId:Number in ViewerContainer.getInstance().widgetManager.getAllLoadedWidgetIds())
                 {
-                    widgetItems.addItem(StringUtil.substitute(itemTemplate, widgetId, ViewerContainer.getInstance().widgetManager.getWidget(widgetId).widgetTitle));
+                    widgetItems.addItem(getDefaultString("widgetIDWidgetLabelTemplate", widgetId, ViewerContainer.getInstance().widgetManager.getWidget(widgetId).widgetTitle));
                 }
                 lstLoaderWidgets.dataProvider = widgetItems;
             }
@@ -89,12 +86,11 @@
                     var widget:IBaseWidget = ViewerContainer.getInstance().widgetManager.getWidget(new Number(txtId1.text), showWidget.selected);
                     if (widget == null)
                     {
-                        widgetDesc.text = "loading...";
+                        widgetDesc.text = getDefaultString("loadingLabel");
                     }
                     else
                     {
-                        var descTemplate:String = "Widget Id: {0}, widget state: {1}";
-                        widgetDesc.text = StringUtil.substitute(descTemplate, widget.widgetId, widget.getState());
+                        widgetDesc.text = getDefaultString("widgetIDWidgetStateTemplate", widget.widgetId, widget.getState());
                     }
                 }
                 catch (error:Error)
@@ -118,7 +114,7 @@
             protected function button4_clickHandler(event:MouseEvent):void
             {
                 var selectedItem:Object = widgetLabels.selectedItem;
-                getIDLabel.text = selectedItem != null ? selectedItem.label + " " + "Widget ID: " + selectedItem.id : "";
+                getIDLabel.text = selectedItem != null ? getDefaultString("itemLabelWidgetIDItemIDTemplate", selectedItem.label, selectedItem.id) : "";
             }
         ]]>
     </fx:Script>

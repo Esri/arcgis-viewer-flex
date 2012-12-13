@@ -22,8 +22,10 @@
                    xmlns:Search="widgets.Search.*"
                    xmlns:viewer="com.esri.viewer.*"
                    xmlns:esri="http://www.esri.com/2008/ags"
+                   xmlns:components="com.esri.viewer.components.*"
                    x="600" y="300"
-                   widgetConfigLoaded="init()">
+                   initialize="basewidget_initializeHandler()"
+                   widgetConfigLoaded="basewidget_widgetConfigLoaded()">
 
     <viewer:states>
         <s:State name="graphicalInput"/>
@@ -42,6 +44,7 @@
             import com.esri.ags.FeatureSet;
             import com.esri.ags.Graphic;
             import com.esri.ags.Map;
+            import com.esri.ags.clusterers.IClusterer;
             import com.esri.ags.events.DrawEvent;
             import com.esri.ags.events.GeometryServiceEvent;
             import com.esri.ags.events.LayerEvent;
@@ -50,12 +53,12 @@
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.geometry.Polygon;
             import com.esri.ags.layers.FeatureLayer;
-            import com.esri.ags.layers.GraphicsLayer;
-            import com.esri.ags.layers.supportClasses.CodedValue;
-            import com.esri.ags.layers.supportClasses.CodedValueDomain;
-            import com.esri.ags.layers.supportClasses.FeatureType;
-            import com.esri.ags.layers.supportClasses.Field;
+            import com.esri.ags.layers.supportClasses.FeatureCollection;
             import com.esri.ags.layers.supportClasses.LayerDetails;
+            import com.esri.ags.portal.PopUpRenderer;
+            import com.esri.ags.portal.supportClasses.PopUpInfo;
+            import com.esri.ags.portal.supportClasses.PopUpMediaInfo;
+            import com.esri.ags.renderers.SimpleRenderer;
             import com.esri.ags.symbols.PictureMarkerSymbol;
             import com.esri.ags.symbols.SimpleFillSymbol;
             import com.esri.ags.symbols.SimpleLineSymbol;
@@ -65,19 +68,19 @@
             import com.esri.ags.tasks.supportClasses.Query;
             import com.esri.ags.tools.DrawTool;
             import com.esri.ags.utils.GeometryUtil;
-            import com.esri.ags.portal.PopUpRenderer;
-            import com.esri.ags.portal.supportClasses.PopUpInfo;
-            import com.esri.ags.portal.supportClasses.PopUpMediaInfo;
             import com.esri.viewer.AppEvent;
+            import com.esri.viewer.utils.ClustererParser;
+            import com.esri.viewer.utils.ErrorMessageUtil;
 
             import mx.collections.ArrayCollection;
+            import mx.collections.ArrayList;
             import mx.events.FlexEvent;
-            import mx.formatters.DateFormatter;
             import mx.rpc.AsyncResponder;
             import mx.rpc.events.FaultEvent;
 
             import spark.components.supportClasses.ItemRenderer;
 
+            import widgets.supportClasses.FeatureSetUtil;
             import widgets.supportClasses.ResultAttributes;
             import widgets.supportClasses.ResultItem;
 
@@ -87,7 +90,6 @@
             private var configSearchText:Array;
             private var finishDrawing:Boolean;
             private var graphicalsearchLabel:String;
-            private var graphicsLayer:GraphicsLayer;
             private var loadingLabel:String;
             private var nolayerLabel:String;
             private var queryLayer:FeatureLayer;
@@ -99,10 +101,9 @@
             private var queryLinkAlias:String;
             private var resultsLabel:String;
             private var selectionLabel:String;
-            private var selectedDrawingIcon:Image;
+            private var selectedDrawingIcon:FocusableImage;
             private var textsearchLabel:String;
             private var zoomScale:Number = 50000;
-            private var dateFormatter:DateFormatter = new DateFormatter();
             private var textDirection:String;
 
             [Bindable]
@@ -136,12 +137,28 @@
             private var resultMarkerSymbol:Symbol;
             private var resultLineSymbol:Symbol;
             private var resultFillSymbol:Symbol;
+            private var shareResults:Boolean;
 
             private var pointSearchTolerance:Number = 6;
 
             private var popUpRenderer:PopUpRenderer = new PopUpRenderer();
+            private var resultFeatureLayer:FeatureLayer;
 
-            private function init():void
+            private function basewidget_initializeHandler():void
+            {
+                if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
+                {
+                    this.percentWidth = this.percentHeight = 100;
+                    wTemplate.percentWidth = wTemplate.percentHeight = 100;
+                }
+                else
+                {
+                    wTemplate.width = 430;
+                    wTemplate.height = 240;
+                }
+            }
+
+            private function basewidget_widgetConfigLoaded():void
             {
                 if (configXML)
                 {
@@ -170,6 +187,8 @@
                     selectionLabel = configXML.labels.selectionlabel || getDefaultString("selectionLabel");
                     noResultLabel = configXML.labels.noresultlabel || getDefaultString("noFeatures");
 
+                    shareResults = configXML.shareresults[0] && configXML.shareresults == "true";
+
                     configSearchGraphical = [];
                     configSearchText = [];
                     var lyrList:XMLList = configXML..layer;
@@ -187,7 +206,18 @@
                         var useAMF:String = lyrList[i].useamf;
                         var useProxy:Boolean = lyrList[i].useproxy[0] && lyrList[i].useproxy == "true";
 
-                        var layer:FeatureLayer = new FeatureLayer(lyrURL);
+                        const orderByFieldsText:String = lyrList[i].orderbyfields[0];
+                        var lyrOrderByFields:Array;
+                        if (orderByFieldsText)
+                        {
+                            lyrOrderByFields = orderByFieldsText.split(',');
+                        }
+
+                        var layer:FeatureLayer = new FeatureLayer();
+                        layer.addEventListener(LayerEvent.LOAD, searchLayer_loadHandler);
+                        layer.addEventListener(LayerEvent.LOAD_ERROR, searchLayer_faultHandler);
+                        layer.url = lyrURL;
+
                         if (useProxy && configData.proxyUrl)
                         {
                             layer.proxyURL = configData.proxyUrl;
@@ -221,6 +251,7 @@
                                 graphicallabel: lyrGraphicalLabel,
                                 expr: lyrExpr,
                                 fields: lyrFields,
+                                orderbyfields: lyrOrderByFields,
                                 titlefield: lyrTitleField,
                                 linkfield: lyrLinkField,
                                 linkalias: linkAlias
@@ -233,8 +264,10 @@
                     }
 
                     const resultMarkerSymbolURL:String = configXML.symbols.picturemarkersymbol.@url || widgetIcon;
-                    const resultMarkerSymbolHeight:Number = (configXML.symbols.picturemarkersymbol.@height != null) ? configXML.symbols.picturemarkersymbol.@height : 30;
-                    const resultMarkerSymbolWidth:Number = (configXML.symbols.picturemarkersymbol.@width != null) ? configXML.symbols.picturemarkersymbol.@width : 30;
+                    const parsedResultMarkerSymbolHeight:Number = parseFloat(configXML.symbols.picturemarkersymbol.@height[0]);
+                    const resultMarkerSymbolHeight:Number = isNaN(parsedResultMarkerSymbolHeight) ? 0 : parsedResultMarkerSymbolHeight;
+                    const parsedResultMarkerSymbolWidth:Number = parseFloat(configXML.symbols.picturemarkersymbol.@width[0]);
+                    const resultMarkerSymbolWidth:Number = isNaN(parsedResultMarkerSymbolWidth) ? 0 : parsedResultMarkerSymbolWidth;
                     const resultMarkerSymbolXOffset:Number = (configXML.symbols.picturemarkersymbol.@xoffset != null) ? configXML.symbols.picturemarkersymbol.@xoffset : 0;
                     const resultMarkerSymbolYOffset:Number = (configXML.symbols.picturemarkersymbol.@yoffset != null) ? configXML.symbols.picturemarkersymbol.@yoffset : 0;
                     resultMarkerSymbol = new PictureMarkerSymbol(resultMarkerSymbolURL, resultMarkerSymbolWidth, resultMarkerSymbolHeight, resultMarkerSymbolXOffset, resultMarkerSymbolYOffset);
@@ -251,11 +284,22 @@
                     const resultFillSymbolOutlineWidth:Number = (configXML.symbols.simplefillsymbol.outline.@width[0] != null) ? configXML.symbols.simplefillsymbol.outline.@width : 2;
                     resultFillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, resultFillSymbolColor, resultFillSymbolAlpha, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, resultFillSymbolOutlineColor, resultFillSymbolOutlineAlpha, resultFillSymbolOutlineWidth));
 
-                    graphicsLayer = new GraphicsLayer();
-                    graphicsLayer.name = configXML.layername || widgetTitle;
-                    graphicsLayer.symbol = resultMarkerSymbol;
-                    graphicsLayer.addEventListener(FlexEvent.HIDE, graphicsLayer_hideHandler);
-                    map.addLayer(graphicsLayer);
+                    resultFeatureLayer = new FeatureLayer();
+                    resultFeatureLayer.visible = false;
+                    resultFeatureLayer.isEditable = false;
+
+                    var layerName:String = configXML.layername || widgetTitle;
+                    resultFeatureLayer.name = shareResults ? layerName : "hiddenLayer_" + layerName;
+
+                    var clustererParser:ClustererParser = new ClustererParser();
+                    var clusterer:IClusterer = clustererParser.parseClusterer(configXML.clustering[0]);
+                    if (clusterer)
+                    {
+                        resultFeatureLayer.clusterer = clusterer;
+                    }
+
+                    resultFeatureLayer.addEventListener(FlexEvent.HIDE, resultFeatureLayer_hideHandler);
+                    map.addLayer(resultFeatureLayer);
 
                     var userTolerance:Number = configXML.tolerance;
                     if (userTolerance > 0)
@@ -263,13 +307,11 @@
                         pointSearchTolerance = userTolerance;
                     }
 
-                    // TODO: for non-point, zoom to feature extent
                     if (Number(configXML.zoomscale) > 0)
                     {
                         zoomScale = Number(configXML.zoomscale);
                     }
                 }
-
                 wTemplate.addTitlebarButton(ICON_URL + "i_searchgraphical.png", graphicalsearchLabel, showStateGraphicalSearch);
                 if (configSearchText.length)
                 {
@@ -284,6 +326,35 @@
                 setupTextSearch();
                 setupGraphicalSearch();
                 AppEvent.addListener(AppEvent.DATA_PUBLISH, sharedDataUpdated);
+            }
+
+            private function searchLayer_loadHandler(event:LayerEvent):void
+            {
+                var layer:FeatureLayer = event.layer as FeatureLayer;
+                layer.removeEventListener(LayerEvent.LOAD, searchLayer_loadHandler);
+                layer.removeEventListener(LayerEvent.LOAD_ERROR, searchLayer_faultHandler);
+
+                layer.layerDetails.minScale = 0; // removing scale dependency
+                layer.layerDetails.maxScale = 0;
+            }
+
+            private function searchLayer_faultHandler(event:LayerEvent):void
+            {
+                var layer:FeatureLayer = event.currentTarget as FeatureLayer;
+
+                layer.removeEventListener(LayerEvent.LOAD, searchLayer_loadHandler);
+                layer.removeEventListener(LayerEvent.LOAD_ERROR, searchLayer_faultHandler);
+
+                showLoadErrorMessage(event);
+            }
+
+            private function showLoadErrorMessage(event:LayerEvent):void
+            {
+                var errorMessage:String = getDefaultString("layerFailedToLoad",
+                                                           event.layer.name,
+                                                           ErrorMessageUtil.makeHTMLSafe(ErrorMessageUtil.buildFaultMessage(event.fault)));
+
+                showError(errorMessage);
             }
 
             private function setInitialView(view:String):void
@@ -302,7 +373,7 @@
             {
                 if (configSearchText.length)
                 {
-                    cboLayerText.dataProvider = configSearchText;
+                    cboLayerText.dataProvider = new ArrayList(configSearchText);
                     txtLabelText.text = configSearchText[0].textlabel;
                     if (configSearchText.length == 1)
                     {
@@ -332,11 +403,13 @@
                 else
                 {
                     boxGraphical.visible = false;
+                    imageGroup.visible = false;
+                    clearGroup.visible = false;
                     txtLabelGraphical.text = nolayerLabel;
                 }
             }
 
-            private function graphicsLayer_hideHandler(event:FlexEvent):void
+            private function resultFeatureLayer_hideHandler(event:FlexEvent):void
             {
                 hideInfoWindow();
             }
@@ -358,7 +431,7 @@
                 addSharedData("Deactivate_DrawTool", null); // to be able to deactivate drawTool on other widgets
 
                 // apply glow
-                selectedDrawingIcon = Image(event.currentTarget);
+                selectedDrawingIcon = FocusableImage(event.currentTarget);
                 clearSelectionFilter();
                 selectedDrawingIcon.filters = [ glowFilter ];
 
@@ -446,9 +519,22 @@
                 if (queryLayer && !queryLayer.loaded)
                 {
                     queryLayer.addEventListener(LayerEvent.LOAD, queryLayer_loadHandler);
+                    queryLayer.addEventListener(LayerEvent.LOAD_ERROR, queryLayer_loadErrorHandler);
+
                     function queryLayer_loadHandler(event:LayerEvent):void
                     {
-                        queryFeaturesText()
+                        queryLayer.removeEventListener(LayerEvent.LOAD, queryLayer_loadHandler);
+                        queryLayer.removeEventListener(LayerEvent.LOAD_ERROR, queryLayer_loadErrorHandler);
+
+                        queryFeaturesText();
+                    }
+
+                    function queryLayer_loadErrorHandler(event:LayerEvent):void
+                    {
+                        queryLayer.removeEventListener(LayerEvent.LOAD, queryLayer_loadHandler);
+                        queryLayer.removeEventListener(LayerEvent.LOAD_ERROR, queryLayer_loadErrorHandler);
+
+                        showLoadErrorMessage(event);
                     }
                     return;
                 }
@@ -466,6 +552,16 @@
 
                     query.where = expr;
                     query.outSpatialReference = map.spatialReference;
+
+                    const supportsServerSideSorting:Boolean = queryLayer.layerDetails
+                        && queryLayer.layerDetails.version >= 10.1
+                        && queryLayer.layerDetails.supportsAdvancedQueries;
+                    const orderByFields:Array = configSearchText[i].orderbyfields;
+                    if (supportsServerSideSorting && orderByFields)
+                    {
+                        query.orderByFields = orderByFields;
+                    }
+
                     queryLayer.queryFeatures(query, new AsyncResponder(onResult, onFault, queryFields));
                     showMessage(loadingLabel, true);
                     showStateResults();
@@ -474,6 +570,11 @@
                     {
                         try
                         {
+                            if (!supportsServerSideSorting && orderByFields)
+                            {
+                                FeatureSetUtil.sortFeaturesByFieldName(featureSet, orderByFields);
+                            }
+
                             searchResultAC = createSearchResults(featureSet, token);
 
                             addSharedData(widgetTitle, searchResultAC);
@@ -509,9 +610,22 @@
                 if (queryLayer && !queryLayer.loaded)
                 {
                     queryLayer.addEventListener(LayerEvent.LOAD, queryLayer_loadHandler);
+                    queryLayer.addEventListener(LayerEvent.LOAD_ERROR, queryLayer_faultHandler);
+
                     function queryLayer_loadHandler(event:LayerEvent):void
                     {
-                        queryFeaturesGraphical(geom)
+                        queryLayer.removeEventListener(LayerEvent.LOAD, queryLayer_loadHandler);
+                        queryLayer.removeEventListener(LayerEvent.LOAD_ERROR, queryLayer_faultHandler);
+
+                        queryFeaturesGraphical(geom);
+                    }
+
+                    function queryLayer_faultHandler(event:LayerEvent):void
+                    {
+                        queryLayer.removeEventListener(LayerEvent.LOAD, queryLayer_loadHandler);
+                        queryLayer.removeEventListener(LayerEvent.LOAD_ERROR, queryLayer_faultHandler);
+
+                        showLoadErrorMessage(event);
                     }
                     return;
                 }
@@ -528,6 +642,16 @@
                     query.geometry = queryGeom;
                     query.spatialRelationship = Query.SPATIAL_REL_INTERSECTS;
                     query.outSpatialReference = map.spatialReference;
+
+                    const supportsServerSideSorting:Boolean = queryLayer.layerDetails
+                        && queryLayer.layerDetails.version >= 10.1
+                        && queryLayer.layerDetails.supportsAdvancedQueries;
+                    const orderByFields:Array = configSearchText[i].orderbyfields;
+                    if (supportsServerSideSorting && orderByFields)
+                    {
+                        query.orderByFields = orderByFields;
+                    }
+
                     queryLayer.queryFeatures(query, new AsyncResponder(onResult, onFault, queryFields));
                     showMessage(loadingLabel, true);
                     showStateResults();
@@ -536,6 +660,11 @@
                     {
                         try
                         {
+                            if (!supportsServerSideSorting && orderByFields)
+                            {
+                                FeatureSetUtil.sortFeaturesByFieldName(featureSet, orderByFields);
+                            }
+
                             searchResultAC = createSearchResults(featureSet, token);
 
                             addSharedData(widgetTitle, searchResultAC);
@@ -563,12 +692,9 @@
 
             private function createSearchResults(featureSet:FeatureSet, queryFields:XMLList):ArrayCollection
             {
-                graphicsLayer.clear();
+                var result:ArrayCollection = new ArrayCollection();
 
                 var layerDetails:LayerDetails = queryLayer.layerDetails;
-                var fields:XMLList = queryFields ? queryFields.field : null;
-
-                var result:ArrayCollection = new ArrayCollection();
                 if (!queryTitleField)
                 {
                     queryTitleField = featureSet.displayFieldName;
@@ -576,187 +702,50 @@
 
                 for each (var graphic:Graphic in featureSet.features)
                 {
-                    var value:String = "";
-                    var title:String = "";
-                    var content:String = "";
-                    var link:String = "";
-                    var linkAlias:String;
-
-                    if (queryFields && queryFields[0].@all[0] == "true")
-                    {
-                        if (layerDetails.fields)
-                        {
-                            for each (var field:Field in layerDetails.fields)
-                            {
-                                if (field.name in graphic.attributes)
-                                {
-                                    displayFields(field.name, getFieldXML(field.name, fields), field);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            for (var fieldName:String in graphic.attributes)
-                            {
-                                displayFields(fieldName, getFieldXML(fieldName, fields), null);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        for each (var fieldXML:XML in fields) // display the fields in the same order as specified
-                        {
-                            if (fieldXML.@name[0] in graphic.attributes)
-                            {
-                                displayFields(fieldXML.@name[0], fieldXML, getField(fieldXML.@name[0]));
-                            }
-                        }
-                    }
-
-                    function displayFields(fieldName:String, fieldXML:XML, field:Field):void
-                    {
-                        value = graphic.attributes[fieldName] ? String(graphic.attributes[fieldName]) : "";
-
-                        if (value)
-                        {
-                            var isDateField:Boolean;
-                            var useUTC:Boolean;
-                            var dateFormat:String;
-                            if (fieldXML)
-                            {
-                                useUTC = fieldXML.@useutc[0] == "true";
-                                dateFormat = fieldXML.@dateformat[0];
-                                if (dateFormat)
-                                {
-                                    isDateField = true;
-                                }
-                            }
-                            if (!isDateField && field)
-                            {
-                                isDateField = field.type == Field.TYPE_DATE;
-                            }
-                            if (isDateField)
-                            {
-                                var dateMS:Number = Number(value);
-                                if (!isNaN(dateMS))
-                                {
-                                    value = msToDate(dateMS, dateFormat, useUTC);
-                                }
-                            }
-                            else
-                            {
-                                var typeID:String = layerDetails.typeIdField ? graphic.attributes[layerDetails.typeIdField] : null;
-                                if (fieldName == layerDetails.typeIdField)
-                                {
-                                    var featureType:FeatureType = getFeatureType(typeID);
-                                    if (featureType && featureType.name)
-                                    {
-                                        value = featureType.name;
-                                    }
-                                }
-                                else
-                                {
-                                    var codedValue:CodedValue = getCodedValue(fieldName, value, typeID);
-                                    if (codedValue)
-                                    {
-                                        value = codedValue.name;
-                                    }
-                                }
-                            }
-                        }
-
-                        if (fieldName.toUpperCase() == queryTitleField.toUpperCase())
-                        {
-                            title = value;
-                            if (!title)
-                            {
-                                title = widgetTitle;
-                            }
-                        }
-                        else if (fieldName.toUpperCase() == queryLinkField.toUpperCase())
-                        {
-                            link = value;
-                            linkAlias = queryLinkAlias;
-                        }
-                        else if (fieldName.toUpperCase() != "SHAPE_LENGTH" && fieldName.toUpperCase() != "SHAPE_AREA")
-                        {
-                            var fieldLabel:String;
-
-                            if (fieldXML && fieldXML.@alias[0])
-                            {
-                                fieldLabel = fieldXML.@alias[0];
-                            }
-                            else
-                            {
-                                fieldLabel = featureSet.fieldAliases[fieldName];
-                            }
-
-                            if (textDirection == "rtl")
-                            {
-                                content += value + " :" + fieldLabel + "\n";
-                            }
-                            else
-                            {
-                                content += fieldLabel + ": " + value + "\n";
-                            }
-                        }
-                    }
-
-                    graphic.checkForMouseListeners = false;
-
-                    var resultAttributes:ResultAttributes = new ResultAttributes();
-                    resultAttributes.title = title;
-                    resultAttributes.content = content;
-                    resultAttributes.link = link ? link : null;
-                    resultAttributes.linkAlias = linkAlias;
+                    var resultAttributes:ResultAttributes =
+                        ResultAttributes.toResultAttributes(queryFields, textDirection, graphic, featureSet, queryLayer, layerDetails, widgetTitle, queryTitleField, queryLinkField, queryLinkAlias);
 
                     var searchResult:ResultItem = new ResultItem(graphic, resultAttributes);
-
-                    if (graphic.geometry)
-                    {
-                        switch (graphic.geometry.type)
-                        {
-                            case Geometry.MAPPOINT:
-                            {
-                                graphic.symbol = resultMarkerSymbol;
-                                break;
-                            }
-                            case Geometry.POLYLINE:
-                            {
-                                graphic.symbol = resultLineSymbol;
-                                break;
-                            }
-                            case Geometry.POLYGON:
-                            {
-                                graphic.symbol = resultFillSymbol;
-                                break;
-                            }
-                        }
-                    }
-
-                    graphic.attributes = resultAttributes;
                     result.addItem(searchResult);
-                    var isValidPoint:Boolean = searchResult.center && !isNaN(searchResult.center.x) && !isNaN(searchResult.center.y);
-
-                    if (isValidPoint)
-                    {
-                        graphicsLayer.add(graphic);
-                    }
 
                     var infoWindowRenderer:ClassFactory = new ClassFactory(PopUpRenderer);
-                    infoWindowRenderer.properties = { popUpInfo: configurePopUpInfo(link, linkAlias)};
+                    infoWindowRenderer.properties = { popUpInfo: configurePopUpInfo(resultAttributes)};
                     graphic.infoWindowRenderer = infoWindowRenderer;
                 }
+                resultFeatureLayer.visible = true;
+                resultFeatureLayer.featureCollection = new FeatureCollection(featureSet, layerDetails);
+                switch (featureSet.geometryType)
+                {
+                    case Geometry.MAPPOINT:
+                    {
+                        resultFeatureLayer.renderer = new SimpleRenderer(resultMarkerSymbol);
+                        break;
+                    }
+                    case Geometry.POLYLINE:
+                    {
+                        resultFeatureLayer.renderer = new SimpleRenderer(resultLineSymbol);
+                        break;
+                    }
+                    case Geometry.POLYGON:
+                    {
+                        resultFeatureLayer.renderer = new SimpleRenderer(resultFillSymbol);
+                        break;
+                    }
+                }
+
                 return result;
             }
 
-            private function configurePopUpInfo(link:String, alias:String = null):PopUpInfo
+
+            private function configurePopUpInfo(resultAttributes:ResultAttributes):PopUpInfo
             {
                 var popUpInfo:PopUpInfo = new PopUpInfo;
 
-                popUpInfo.title = "{title}";
-                popUpInfo.description = "{content}";
+                popUpInfo.title = resultAttributes.title;
+                popUpInfo.description = resultAttributes.content;
 
+                var link:String = resultAttributes.link;
+                var linkAlias:String = resultAttributes.linkAlias
                 if (link)
                 {
                     var pos:Number = link.length - 4;
@@ -772,159 +761,22 @@
                     }
                     else
                     {
-                        var linkText:String = alias ? alias : "{link}";
-                        popUpInfo.description += "<br/><a href='{link}'>" + linkText + "</a>"
+                        var linkText:String = linkAlias ? linkAlias : link;
+                        popUpInfo.description += "<br/><a href='" + link + "'>" + linkText + "</a>";
                     }
                 }
 
                 return popUpInfo;
             }
 
-            private function getFieldXML(fieldName:String, fields:XMLList):XML
-            {
-                var result:XML;
-
-                for each (var fieldXML:XML in fields)
-                {
-                    if (fieldName == fieldXML.@name[0])
-                    {
-                        result = fieldXML;
-                        break;
-                    }
-                }
-
-                return result;
-            }
-
-            private function getField(fieldName:String):Field
-            {
-                var result:Field;
-
-                if (queryLayer)
-                {
-                    for each (var field:Field in queryLayer.layerDetails.fields)
-                    {
-                        if (fieldName == field.name)
-                        {
-                            result = field;
-                            break;
-                        }
-                    }
-                }
-
-                return result;
-            }
-
-            private function getFeatureType(typeID:String):FeatureType
-            {
-                var result:FeatureType;
-
-                if (queryLayer)
-                {
-                    for each (var featureType:FeatureType in queryLayer.layerDetails.types)
-                    {
-                        if (typeID == featureType.id)
-                        {
-                            result = featureType;
-                            break;
-                        }
-                    }
-                }
-
-                return result;
-            }
-
-            private function msToDate(ms:Number, dateFormat:String, useUTC:Boolean):String
-            {
-                var date:Date = new Date(ms);
-                if (date.milliseconds == 999) // workaround for REST bug
-                {
-                    date.milliseconds++;
-                }
-                if (useUTC)
-                {
-                    date.minutes += date.timezoneOffset;
-                }
-
-                if (dateFormat)
-                {
-                    dateFormatter.formatString = dateFormat;
-                    var result:String = dateFormatter.format(date);
-                    if (result)
-                    {
-                        return result;
-                    }
-                    else
-                    {
-                        return dateFormatter.error;
-                    }
-                }
-                else
-                {
-                    return date.toLocaleString();
-                }
-            }
-
-            private var layerDomainsCache:Dictionary = new Dictionary(); // map from queryLayer to domainsCache
-
-            private function getCodedValue(fieldName:String, fieldValue:String, typeID:String):CodedValue
-            {
-                var result:CodedValue;
-
-                var domainsCache:Object = layerDomainsCache[queryLayer];
-                if (!domainsCache)
-                {
-                    domainsCache = {}; // map from (fieldName + typeID) to CodedValueDomain
-                    layerDomainsCache[queryLayer] = domainsCache;
-                }
-
-                var domainsKey:String = fieldName + typeID;
-                var codedValueDomain:CodedValueDomain;
-
-                if (domainsKey in domainsCache)
-                {
-                    codedValueDomain = domainsCache[domainsKey];
-                }
-                else
-                {
-                    if (typeID)
-                    {
-                        var featureType:FeatureType = getFeatureType(typeID);
-                        if (featureType)
-                        {
-                            codedValueDomain = featureType.domains[fieldName] as CodedValueDomain;
-                        }
-                    }
-                    else
-                    {
-                        var field:Field = getField(fieldName);
-                        if (field)
-                        {
-                            codedValueDomain = field.domain as CodedValueDomain;
-                        }
-                    }
-                    domainsCache[domainsKey] = codedValueDomain;
-                }
-
-                if (codedValueDomain)
-                {
-                    for each (var codedValue:CodedValue in codedValueDomain.codedValues)
-                    {
-                        if (fieldValue == codedValue.code)
-                        {
-                            result = codedValue;
-                            break;
-                        }
-                    }
-                }
-
-                return result;
-            }
-
             private function clear():void
             {
                 hideInfoWindow();
-                graphicsLayer.clear();
+                if (resultFeatureLayer)
+                {
+                    resultFeatureLayer.featureCollection = new FeatureCollection(new FeatureSet(), resultFeatureLayer.layerDetails); // empty featureset to clear
+                }
+
                 clearMessage();
                 txtSearch.text = "";
                 if (searchResultAC)
@@ -937,17 +789,20 @@
 
             private function mouseOverSearchResult(event:Event):void
             {
-                clearTimeout(hitimer);
-                var searchResult:ResultItem = ItemRenderer(event.target).data as ResultItem;
-                var mapExtentContainsSearchResult:Boolean = map.extent.containsXY(searchResult.center.x, searchResult.center.y);
+                if (resultFeatureLayer.visible)
+                {
+                    clearTimeout(hitimer);
+                    var searchResult:ResultItem = ItemRenderer(event.target).data as ResultItem;
+                    var mapExtentContainsSearchResult:Boolean = map.extent.containsXY(searchResult.center.x, searchResult.center.y);
 
-                if (mapExtentContainsSearchResult)
-                {
-                    hitimer = setTimeout(showHighlight, 300, [ searchResult ]);
-                }
-                else
-                {
-                    hideInfoWindow();
+                    if (mapExtentContainsSearchResult)
+                    {
+                        hitimer = setTimeout(showHighlight, 300, [ searchResult ]);
+                    }
+                    else
+                    {
+                        hideInfoWindow();
+                    }
                 }
             }
 
@@ -958,30 +813,33 @@
 
             private function clickSearchResult(event:Event):void
             {
-                var searchResult:ResultItem = ItemRenderer(event.target).data as ResultItem;
-                if (searchResult.geometry)
+                if (resultFeatureLayer.visible)
                 {
-                    if (searchResult.geometry.type == Geometry.MAPPOINT)
+                    var searchResult:ResultItem = ItemRenderer(event.target).data as ResultItem;
+                    if (searchResult.geometry)
                     {
-                        if (map.scale > zoomScale)
+                        if (searchResult.geometry.type == Geometry.MAPPOINT)
                         {
-                            map.scale = zoomScale;
+                            if (map.scale > zoomScale)
+                            {
+                                map.scale = zoomScale;
+                            }
+
+                            map.centerAt(searchResult.center);
                         }
-
-                        map.centerAt(searchResult.center);
-                    }
-                    else
-                    {
-                        map.extent = searchResult.geometry.extent;
-
-                        if (!map.extent.contains(searchResult.geometry))
+                        else
                         {
-                            map.level--;
+                            map.extent = searchResult.geometry.extent;
+
+                            if (!map.extent.contains(searchResult.geometry))
+                            {
+                                map.level--;
+                            }
                         }
                     }
+                    clearTimeout(hitimer);
+                    hitimer = setTimeout(showHighlight, 300, [ searchResult ]);
                 }
-                clearTimeout(hitimer);
-                hitimer = setTimeout(showHighlight, 300, [ searchResult ]);
             }
 
             private function showHighlight(params:Array):void
@@ -990,7 +848,7 @@
                 var showHighlightPoint:MapPoint = searchResult.center as MapPoint;
                 var linkAlias:String = searchResult.attributes.linkAlias;
 
-                popUpRenderer.popUpInfo = configurePopUpInfo(searchResult.attributes.link, linkAlias);
+                popUpRenderer.popUpInfo = configurePopUpInfo(searchResult.attributes);
                 popUpRenderer.graphic = searchResult.graphic;
 
                 map.infoWindow.content = popUpRenderer;
@@ -1012,7 +870,14 @@
 
             private function widgetClosedHandler(event:Event):void
             {
-                graphicsLayer.visible = false;
+                if (shareResults)
+                {
+                    map.removeLayer(resultFeatureLayer);
+                }
+                else
+                {
+                    resultFeatureLayer.visible = false;
+                }
                 hideInfoWindow();
                 setMapNavigation(null, null);
 
@@ -1026,9 +891,16 @@
 
             private function widgetOpenedHandler(event:Event):void
             {
-                if (graphicsLayer)
+                if (resultFeatureLayer)
                 {
-                    graphicsLayer.visible = true;
+                    if (shareResults)
+                    {
+                        map.addLayer(resultFeatureLayer);
+                    }
+                    else
+                    {
+                        resultFeatureLayer.visible = true;
+                    }
                 }
             }
 
@@ -1093,7 +965,7 @@
             private function hideInfoWindow():void
             {
                 if (map.infoWindow.contentOwner &&
-                    ((map.infoWindow.contentOwner is Graphic && Graphic(map.infoWindow.contentOwner).graphicsLayer === graphicsLayer) || map.infoWindow.contentOwner is Map))
+                    ((map.infoWindow.contentOwner is Graphic && Graphic(map.infoWindow.contentOwner).graphicsLayer === resultFeatureLayer) || map.infoWindow.contentOwner is Map))
                 {
                     map.infoWindow.hide();
                 }
@@ -1123,7 +995,6 @@
     </fx:Declarations>
 
     <viewer:WidgetTemplate id="wTemplate"
-                           width="430" height="240"
                            closed="widgetClosedHandler(event)"
                            open="widgetOpenedHandler(event)"
                            visible="false">
@@ -1150,71 +1021,72 @@
                       width="100%"
                       gap="10"
                       horizontalAlign="center">
-                <mx:Image name="{DrawTool.MAPPOINT}"
-                          width="40" height="40"
-                          buttonMode="true"
-                          click="activateDrawTool(event)"
-                          rollOut="iconRollOutHandler(event)"
-                          rollOver="iconRollOverHandler(event)"
-                          source="assets/images/i_draw_point.png"
-                          toolTip="{pointLabel}"
-                          useHandCursor="true"/>
-                <mx:Image name="{DrawTool.POLYLINE}"
-                          width="40" height="40"
-                          buttonMode="true"
-                          click="activateDrawTool(event)"
-                          rollOut="iconRollOutHandler(event)"
-                          rollOver="iconRollOverHandler(event)"
-                          source="assets/images/i_draw_line.png"
-                          toolTip="{lineLabel}"
-                          useHandCursor="true"/>
-                <mx:Image name="{DrawTool.FREEHAND_POLYLINE}"
-                          width="40" height="40"
-                          buttonMode="true"
-                          click="activateDrawTool(event)"
-                          rollOut="iconRollOutHandler(event)"
-                          rollOver="iconRollOverHandler(event)"
-                          source="assets/images/i_draw_freeline.png"
-                          toolTip="{freehandLineLabel}"
-                          useHandCursor="true"/>
-                <mx:Image name="{DrawTool.EXTENT}"
-                          width="40" height="40"
-                          buttonMode="true"
-                          click="activateDrawTool(event)"
-                          rollOut="iconRollOutHandler(event)"
-                          rollOver="iconRollOverHandler(event)"
-                          source="assets/images/i_draw_rect.png"
-                          toolTip="{rectangleLabel}"
-                          useHandCursor="true"/>
-                <mx:Image name="{DrawTool.CIRCLE}"
-                          width="40" height="40"
-                          buttonMode="true"
-                          click="activateDrawTool(event)"
-                          rollOut="iconRollOutHandler(event)"
-                          rollOver="iconRollOverHandler(event)"
-                          source="assets/images/i_draw_circle.png"
-                          toolTip="{circleLabel}"
-                          useHandCursor="true"/>
-                <mx:Image name="{DrawTool.POLYGON}"
-                          width="40" height="40"
-                          buttonMode="true"
-                          click="activateDrawTool(event)"
-                          rollOut="iconRollOutHandler(event)"
-                          rollOver="iconRollOverHandler(event)"
-                          source="assets/images/i_draw_poly.png"
-                          toolTip="{polygonLabel}"
-                          useHandCursor="true"/>
-                <mx:Image name="{DrawTool.FREEHAND_POLYGON}"
-                          width="40" height="40"
-                          buttonMode="true"
-                          click="activateDrawTool(event)"
-                          rollOut="iconRollOutHandler(event)"
-                          rollOver="iconRollOverHandler(event)"
-                          source="assets/images/i_draw_freepoly.png"
-                          toolTip="{freehandPolygonLabel}"
-                          useHandCursor="true"/>
+                <components:FocusableImage name="{DrawTool.MAPPOINT}"
+                                           width="40" height="40"
+                                           buttonMode="true"
+                                           click="activateDrawTool(event)"
+                                           rollOut="iconRollOutHandler(event)"
+                                           rollOver="iconRollOverHandler(event)"
+                                           source="assets/images/i_draw_point.png"
+                                           toolTip="{pointLabel}"
+                                           useHandCursor="true"/>
+                <components:FocusableImage name="{DrawTool.POLYLINE}"
+                                           width="40" height="40"
+                                           buttonMode="true"
+                                           click="activateDrawTool(event)"
+                                           rollOut="iconRollOutHandler(event)"
+                                           rollOver="iconRollOverHandler(event)"
+                                           source="assets/images/i_draw_line.png"
+                                           toolTip="{lineLabel}"
+                                           useHandCursor="true"/>
+                <components:FocusableImage name="{DrawTool.FREEHAND_POLYLINE}"
+                                           width="40" height="40"
+                                           buttonMode="true"
+                                           click="activateDrawTool(event)"
+                                           rollOut="iconRollOutHandler(event)"
+                                           rollOver="iconRollOverHandler(event)"
+                                           source="assets/images/i_draw_freeline.png"
+                                           toolTip="{freehandLineLabel}"
+                                           useHandCursor="true"/>
+                <components:FocusableImage name="{DrawTool.EXTENT}"
+                                           width="40" height="40"
+                                           buttonMode="true"
+                                           click="activateDrawTool(event)"
+                                           rollOut="iconRollOutHandler(event)"
+                                           rollOver="iconRollOverHandler(event)"
+                                           source="assets/images/i_draw_rect.png"
+                                           toolTip="{rectangleLabel}"
+                                           useHandCursor="true"/>
+                <components:FocusableImage name="{DrawTool.CIRCLE}"
+                                           width="40" height="40"
+                                           buttonMode="true"
+                                           click="activateDrawTool(event)"
+                                           rollOut="iconRollOutHandler(event)"
+                                           rollOver="iconRollOverHandler(event)"
+                                           source="assets/images/i_draw_circle.png"
+                                           toolTip="{circleLabel}"
+                                           useHandCursor="true"/>
+                <components:FocusableImage name="{DrawTool.POLYGON}"
+                                           width="40" height="40"
+                                           buttonMode="true"
+                                           click="activateDrawTool(event)"
+                                           rollOut="iconRollOutHandler(event)"
+                                           rollOver="iconRollOverHandler(event)"
+                                           source="assets/images/i_draw_poly.png"
+                                           toolTip="{polygonLabel}"
+                                           useHandCursor="true"/>
+                <components:FocusableImage name="{DrawTool.FREEHAND_POLYGON}"
+                                           width="40" height="40"
+                                           buttonMode="true"
+                                           click="activateDrawTool(event)"
+                                           rollOut="iconRollOutHandler(event)"
+                                           rollOver="iconRollOverHandler(event)"
+                                           source="assets/images/i_draw_freepoly.png"
+                                           toolTip="{freehandPolygonLabel}"
+                                           useHandCursor="true"/>
             </s:HGroup>
-            <s:HGroup width="100%"
+            <s:HGroup id="clearGroup"
+                      width="100%"
                       horizontalAlign="right"
                       paddingRight="10"
                       paddingTop="2">

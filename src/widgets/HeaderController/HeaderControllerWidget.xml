@@ -1,19 +1,23 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <configuration>
-    <about>
-        <width>300</width>
-        <height>300</height>
-        <content>
-            <![CDATA[
-                <p align='center' width='139' height='131'>
-                    <img src='assets/images/globe.png'/>
-                    <br/>
-                    <br/>
-                    <font size="+2"><b><a href="http://resourcesbeta.arcgis.com/en/communities/flex-viewer/" target='_blank'>ArcGIS Viewer for Flex</a></b></font>
-                </p>
-           ]]>
-        </content>
-    </about>
+    <search>
+        <geocoding>
+            <locator>http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer</locator>
+        </geocoding>
+    </search>
+    <links>
+        <link label="About">
+            <content>
+                <![CDATA[
+                     <p align='center'>
+                         <img src='assets/images/globe.png'/>
+                         <br/>
+                         <b><a href="http://links.esri.com/flexviewer" target='_blank'><font size="+2" color="#FFFF00">ArcGIS Viewer for Flex</font></a></b>
+                     </p>
+                ]]>
+            </content>
+        </link>
+    </links>
 </configuration>
 
 <!--

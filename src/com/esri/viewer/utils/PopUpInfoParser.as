@@ -55,6 +55,16 @@ public final class PopUpInfoParser
             popUpInfo.showAttachments = (popUpXML.showattachments == "true");
         }
 
+        if (popUpXML.showrelatedrecords[0])
+        {
+            popUpInfo.showRelatedRecords = (popUpXML.showrelatedrecords == "true");
+        }
+
+        if (popUpXML.showzoomtobutton[0])
+        {
+            popUpInfo.showZoomToButton = (popUpXML.showzoomtobutton == "true");
+        }
+
         return popUpInfo;
     }
 
@@ -66,7 +76,7 @@ public final class PopUpInfoParser
         for each (var fieldXML:XML in fieldsXML.field)
         {
             field = new PopUpFieldInfo();
-            field.label = fieldXML.@label;
+            field.label = fieldXML.@alias[0] || fieldXML.@label[0];
             field.fieldName = fieldXML.@name;
             field.visible = fieldXML.@visible == "true";
             if (fieldXML.format[0])

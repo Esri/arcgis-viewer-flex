@@ -20,8 +20,6 @@ import com.esri.viewer.managers.EventBus;
 
 import flash.events.Event;
 
-import widgets.Bookmark.Bookmark;
-
 /**
  * AppEvent is used within the application to send messages among components
  * through the EventBus. All event driven messaging in the Flex Viewer is
@@ -282,6 +280,11 @@ public class AppEvent extends Event
     public static const SUSPEND_TOC_HIDE_TIMER:String = "suspendTOCHideTimer";
 
     public static const LAUNCHING_TOC_LAYER_MENU:String = "launchingTocLayerMenu";
+
+    /**
+     * Legend(Widget) Refresh
+     */
+    public static const REFRESH_LEGEND:String = "refreshLegend";
 
     //--------------------------------------------------------------------------
     //

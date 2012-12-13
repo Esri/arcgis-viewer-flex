@@ -21,12 +21,15 @@ import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
 import com.esri.ags.layers.ArcGISImageServiceLayer;
 import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
 import com.esri.ags.layers.ArcIMSMapServiceLayer;
+import com.esri.ags.layers.CSVLayer;
 import com.esri.ags.layers.FeatureLayer;
+import com.esri.ags.layers.GeoRSSLayer;
 import com.esri.ags.layers.KMLLayer;
 import com.esri.ags.layers.Layer;
 import com.esri.ags.layers.OpenStreetMapLayer;
 import com.esri.ags.layers.WMSLayer;
 import com.esri.ags.layers.WMTSLayer;
+import com.esri.ags.layers.supportClasses.Field;
 import com.esri.ags.virtualearth.VETiledLayer;
 
 import flash.utils.setInterval;
@@ -85,6 +88,14 @@ public class LayerCreator
         {
             return createKMLLayer(layerCreationProperties);
         }
+        else if (layerType == "csv")
+        {
+            return createCSVLayer(layerCreationProperties);
+        }
+        else if (layerType == "georss")
+        {
+            return createGeoRSSLayer(layerCreationProperties);
+        }
         else
         {
             //TODO: throw meaningful error instead.
@@ -133,6 +144,7 @@ public class LayerCreator
         dynLayer.token = layerCreationProperties.token;
         dynLayer.visible = layerCreationProperties.visible;
         dynLayer.useMapTime = layerCreationProperties.useMapTime;
+        dynLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
         if (layerCreationProperties.autoRefresh > 0)
         {
             setInterval(dynLayer.refresh, layerCreationProperties.autoRefresh * 1000);
@@ -187,6 +199,15 @@ public class LayerCreator
         featureLayer.visible = layerCreationProperties.visible;
         featureLayer.useMapTime = layerCreationProperties.useMapTime;
         featureLayer.clusterer = layerCreationProperties.clusterer;
+        featureLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
+        if (layerCreationProperties.renderer)
+        {
+            featureLayer.renderer = layerCreationProperties.renderer;
+        }
+        if (layerCreationProperties.autoRefresh > 0)
+        {
+            setInterval(featureLayer.refresh, layerCreationProperties.autoRefresh * 1000);
+        }
         if (layerCreationProperties.useAMF)
         {
             featureLayer.useAMF = (layerCreationProperties.useAMF == "true");
@@ -211,8 +232,12 @@ public class LayerCreator
         {
             featureLayer.maxScale = layerCreationProperties.maxScale;
         }
+        if (!layerCreationProperties.isEditable)
+        {
+            featureLayer.isEditable = false; // only set it if it is 'false'
+        }
         // example for hard-coding layer symbology, e.g. for pre-10.0 ArcGIS Servers
-        /* if (label == "Traffic Cameras") // the layer label in main configuration file
+        /* if (layerCreationProperties.label == "Traffic Cameras") // the layer label in main configuration file
         {
         var picSymbol:PictureMarkerSymbol = new PictureMarkerSymbol("assets/images/i_camera.png",30,30,0,0,0);
         var rend:Renderer = new SimpleRenderer(picSymbol);
@@ -266,6 +291,7 @@ public class LayerCreator
         imgLayer.visible = layerCreationProperties.visible;
         imgLayer.noData = layerCreationProperties.noData;
         imgLayer.useMapTime = layerCreationProperties.useMapTime;
+        imgLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
         if (layerCreationProperties.imageFormat)
         {
             imgLayer.imageFormat = layerCreationProperties.imageFormat;
@@ -342,6 +368,7 @@ public class LayerCreator
         wmsLayer.id = layerCreationProperties.label;
         wmsLayer.name = layerCreationProperties.label;
         wmsLayer.visible = layerCreationProperties.visible;
+        wmsLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
         if (layerCreationProperties.wkid)
         {
             wmsLayer.spatialReference = new SpatialReference(layerCreationProperties.wkid);
@@ -418,6 +445,14 @@ public class LayerCreator
         {
             wmtsLayer.layerId = layerCreationProperties.layerId;
         }
+        if (layerCreationProperties.tileMatrixSetId)
+        {
+            wmtsLayer.tileMatrixSetId = layerCreationProperties.tileMatrixSetId;
+        }
+        if (layerCreationProperties.style)
+        {
+            wmtsLayer.style = layerCreationProperties.style;
+        }
         if (!isNaN(layerCreationProperties.minScale))
         {
             wmtsLayer.minScale = layerCreationProperties.minScale;
@@ -454,6 +489,7 @@ public class LayerCreator
         kmlLayer.alpha = layerCreationProperties.alpha;
         kmlLayer.id = layerCreationProperties.label;
         kmlLayer.name = layerCreationProperties.label;
+        kmlLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
         if (layerCreationProperties.serviceURL)
         {
             kmlLayer.serviceURL = layerCreationProperties.serviceURL;
@@ -469,5 +505,77 @@ public class LayerCreator
         kmlLayer.visible = layerCreationProperties.visible;
         return kmlLayer;
     }
+
+    private static function createCSVLayer(layerCreationProperties:LayerCreationProperties):CSVLayer
+    {
+        var csvLayer:CSVLayer = new CSVLayer(layerCreationProperties.url);
+
+        csvLayer.alpha = layerCreationProperties.alpha;
+        csvLayer.id = layerCreationProperties.label;
+        csvLayer.name = layerCreationProperties.label;
+        csvLayer.latitudeFieldName = layerCreationProperties.latitudeFieldName;
+        csvLayer.longitudeFieldName = layerCreationProperties.longitudeFieldName;
+        if (layerCreationProperties.renderer)
+        {
+            csvLayer.renderer = layerCreationProperties.renderer;
+        }
+        if (layerCreationProperties.columnDelimiter)
+        {
+            csvLayer.columnDelimiter = layerCreationProperties.columnDelimiter;
+        }
+        if (layerCreationProperties.sourceFields)
+        {
+            var sFields:Array = layerCreationProperties.sourceFields.split(",");
+            var fields:Array = [];
+            for (var i:int = 0; i < sFields.length; i++)
+            {
+                var field:Field = new Field;
+                var fieldProps:Array = String(sFields[i]).split("|");
+                if (fieldProps.length == 1) // field name only     
+                {
+                    field.name = fieldProps[0];
+                }
+                else if (fieldProps.length == 2) // field name and alias
+                {
+                    field.name = fieldProps[0];
+                    field.alias = fieldProps[1];
+                }
+                else if (fieldProps.length == 3) // field name, alias and type
+                {
+                    field.name = fieldProps[0];
+                    field.alias = fieldProps[1];
+                    field.type = fieldProps[2];
+                }
+                fields.push(field);
+            }
+            csvLayer.sourceFields = fields;
+        }
+        return csvLayer;
+    }
+
+    private static function createGeoRSSLayer(layerCreationProperties:LayerCreationProperties):GeoRSSLayer
+    {
+        var geoRSSLayer:GeoRSSLayer = new GeoRSSLayer(layerCreationProperties.url);
+
+        geoRSSLayer.alpha = layerCreationProperties.alpha;
+        geoRSSLayer.id = layerCreationProperties.label;
+        geoRSSLayer.name = layerCreationProperties.label;
+        geoRSSLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
+        if (layerCreationProperties.serviceURL)
+        {
+            geoRSSLayer.serviceURL = layerCreationProperties.serviceURL;
+        }
+        if (!isNaN(layerCreationProperties.minScale))
+        {
+            geoRSSLayer.minScale = layerCreationProperties.minScale;
+        }
+        if (!isNaN(layerCreationProperties.maxScale))
+        {
+            geoRSSLayer.maxScale = layerCreationProperties.maxScale;
+        }
+        geoRSSLayer.visible = layerCreationProperties.visible;
+        return geoRSSLayer;
+    }
 }
+
 }

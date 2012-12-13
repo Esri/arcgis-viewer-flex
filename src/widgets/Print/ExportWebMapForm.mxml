@@ -23,6 +23,7 @@
             import com.esri.viewer.utils.ErrorMessageUtil;
 
             import mx.collections.IList;
+            import mx.rpc.Fault;
             import mx.rpc.events.FaultEvent;
 
             [Bindable]
@@ -44,6 +45,8 @@
             private var shouldShowTemplateOptions:Boolean;
             [Bindable]
             private var shouldShowFormatOptions:Boolean;
+
+            private var excludeLayersFromLegend:Array;
 
             private var _hostBaseWidget:BaseWidget;
 
@@ -74,6 +77,14 @@
             {
                 if (configXML)
                 {
+                    //excludeLayersFromLegend
+                    excludeLayersFromLegend = [];
+                    var layers:XMLList = configXML.excludelayerfromlegend as XMLList;
+                    for (var n:Number = 0; n < layers.length(); n++)
+                    {
+                        excludeLayersFromLegend.push(layers[n].toString());
+                    }
+
                     printTask.url = configXML.taskurl;
                     printTask.getServiceInfo();
                     printButton.label = configXML.labels.submitlabel[0] || hostBaseWidget.getDefaultString("printSubmitLabel");
@@ -124,7 +135,6 @@
                 {
                     if (layer.name.indexOf("hiddenLayer_") == -1 && !(layer is GraphicsLayer && !(layer is FeatureLayer)))
                     {
-
                         var isBaseMapLayer:Boolean = false;
                         for each (var baseMapLayer:Object in hostBaseWidget.configData.basemaps)
                         {
@@ -136,9 +146,22 @@
                         }
                         if (!isBaseMapLayer)
                         {
-                            var legendLayer:LegendLayer = new LegendLayer();
-                            legendLayer.layerId = layer.id;
-                            legendLayers.push(legendLayer);
+                            // filter the layer through the list of names of excluded layers.
+                            var isExcludedLayer:Boolean = false;
+                            for each (var excludeName:String in excludeLayersFromLegend)
+                            {
+                                if (excludeName == layer.id)
+                                {
+                                    isExcludedLayer = true;
+                                    break;
+                                }
+                            }
+                            if (!isExcludedLayer)
+                            {
+                                var legendLayer:LegendLayer = new LegendLayer();
+                                legendLayer.layerId = layer.id;
+                                legendLayers.push(legendLayer);
+                            }
                         }
                     }
                 }
@@ -171,8 +194,23 @@
 
             protected function printTask_faultHandler(event:FaultEvent):void
             {
-                hostBaseWidget.showError("Error executing print task:\n\n" + ErrorMessageUtil.makeHTMLSafe(event.fault.toString()));
+                var errorMessage:String = printTask.getServiceInfoLastResult ?
+                    createPrintExecutionErrorMessage(event.fault) : createPrintServiceInfoErrorMessage(event.fault);
+                hostBaseWidget.showError(errorMessage);
                 swfMessage.visible = false;
+            }
+
+            private function createPrintExecutionErrorMessage(fault:Fault):String
+            {
+                return hostBaseWidget.getDefaultString("printTaskExecutionError", ErrorMessageUtil.makeHTMLSafe(fault.toString()));
+            }
+
+            private function createPrintServiceInfoErrorMessage(fault:Fault):String
+            {
+                return hostBaseWidget.getDefaultString("gpServiceConnectionError",
+                                                       printTask.url,
+                                                       ErrorMessageUtil.getKnownErrorCauseMessage(fault),
+                                                       ErrorMessageUtil.makeHTMLSafe(fault.toString()));
             }
 
             private function printTask_getResultDataCompleteHandler(event:PrintEvent):void
@@ -242,7 +280,7 @@
             private function initUseScale():void
             {
                 shouldShowUseScale = true;
-                scaleCheckbox.label = configXML.labels.scalelabel[0] || hostBaseWidget.getDefaultString("printScaleLabel");
+                scaleFI.label = configXML.labels.scalelabel[0] || hostBaseWidget.getDefaultString("printScaleLabel");
                 hostBaseWidget.map.addEventListener(ZoomEvent.ZOOM_END, map_zoomEndHandler, false, 0, true);
                 updatePrintScale();
 
@@ -271,12 +309,40 @@
 
                 if (configXML.layouttemplates[0])
                 {
-                    printParameters.layoutTemplate = configXML.layouttemplates.@defaultvalue[0] || configXML.layouttemplates[0];
+                    var layoutTemplateWhitelist:Array = [];
+                    for each (var layoutTemplateXML:XML in configXML.layouttemplates.layouttemplate)
+                    {
+                        layoutTemplateWhitelist.push(layoutTemplateXML.toString());
+                    }
+
+                    if (layoutTemplateWhitelist.length > 0)
+                    {
+                        var totalLayoutTemplates:int = layoutTemplates.length;
+                        var layoutTemplate:String;
+                        //removing backwards to avoid problems altering index & items
+                        for (var i:int = totalLayoutTemplates - 1; i >= 0; i--)
+                        {
+                            layoutTemplate = layoutTemplates.getItemAt(i) as String;
+                            if (layoutTemplateWhitelist.indexOf(layoutTemplate) == -1)
+                            {
+                                layoutTemplates.removeItemAt(i);
+                            }
+                        }
+                    }
+
+                    var configDefaultLayoutTemplate:String = configXML.layouttemplates.@defaultvalue[0];
+                    if (configDefaultLayoutTemplate && isContained(configDefaultLayoutTemplate, layoutTemplates))
+                    {
+                        printParameters.layoutTemplate = configDefaultLayoutTemplate;
+                    }
+
                     layoutTemplatesVisibility = configXML.layouttemplates[0].@visible[0] != "false";
                 }
                 shouldShowTemplateOptions = layoutTemplatesVisibility && (layoutTemplates && layoutTemplates.length > 1);
 
-                var shouldUseServiceInfoDefault:Boolean = (!printParameters.layoutTemplate && serviceInfo.defaultLayoutTemplate);
+                var shouldUseServiceInfoDefault:Boolean = (!printParameters.layoutTemplate
+                    && serviceInfo.defaultLayoutTemplate
+                    && isContained(serviceInfo.defaultLayoutTemplate, layoutTemplates));
                 if (shouldUseServiceInfoDefault)
                 {
                     layoutTemplatesDDL.selectedItem = serviceInfo.defaultLayoutTemplate;
@@ -287,6 +353,12 @@
                 }
             }
 
+            private function isContained(item:*, list:IList):Boolean
+            {
+                var listContents:Array = list.toArray();
+                return listContents.indexOf(item) > -1;
+            }
+
             private function initFormats(serviceInfo:PrintServiceInfo):void
             {
                 var formatsVisibility:Boolean = true;
@@ -295,12 +367,40 @@
 
                 if (configXML.formats[0])
                 {
-                    printParameters.format = configXML.formats.@defaultvalue[0] || configXML.formats[0];
+                    var formatTemplateWhitelist:Array = [];
+                    for each (var formatXML:XML in configXML.formats.format)
+                    {
+                        formatTemplateWhitelist.push(formatXML.toString());
+                    }
+
+                    if (formatTemplateWhitelist.length > 0)
+                    {
+                        var totalFormats:int = formats.length;
+                        var format:String;
+                        //removing backwards to avoid problems altering index & items
+                        for (var i:int = totalFormats - 1; i >= 0; i--)
+                        {
+                            format = formats.getItemAt(i) as String;
+                            if (formatTemplateWhitelist.indexOf(format) == -1)
+                            {
+                                formats.removeItemAt(i);
+                            }
+                        }
+                    }
+
+                    var configDefaultFormat:String = configXML.formats.@defaultvalue[0];
+                    if (configDefaultFormat && isContained(configDefaultFormat, formats))
+                    {
+                        printParameters.format = configDefaultFormat;
+                    }
+
                     formatsVisibility = configXML.formats[0].@visible[0] != "false";
                 }
                 shouldShowFormatOptions = formatsVisibility && (formats && formats.length > 1);
 
-                var shouldUseServiceInfoDefault:Boolean = (!printParameters.format && serviceInfo.defaultFormat);
+                var shouldUseServiceInfoDefault:Boolean = (!printParameters.format
+                    && serviceInfo.defaultFormat
+                    && isContained(serviceInfo.defaultFormat, formats));
                 if (shouldUseServiceInfoDefault)
                 {
                     formatsDDL.selectedItem = serviceInfo.defaultFormat;
@@ -325,6 +425,7 @@
             }
         ]]>
     </fx:Script>
+
     <fx:Declarations>
         <esri:PrintTask id="printTask"
                         executeComplete="printTask_executeCompleteHandler(event)"
@@ -333,6 +434,7 @@
                         getServiceInfoComplete="printTask_getServiceInfoCompleteHandler(event)"
                         jobComplete="printTask_jobCompleteHandler(event)"
                         showBusyCursor="true"/>
+
         <esri:PrintParameters id="printParameters"
                               format="{formatsDDL.selectedItem}"
                               layoutTemplate="{layoutTemplatesDDL.selectedItem}"
@@ -343,6 +445,7 @@
             </esri:layoutOptions>
         </esri:PrintParameters>
     </fx:Declarations>
+
     <mx:FormItem id="titleFI"
                  width="100%"
                  includeInLayout="{shouldShowTitle}"
@@ -351,6 +454,7 @@
                      width="100%"
                      text="{title}"/>
     </mx:FormItem>
+
     <mx:FormItem id="authorFI"
                  width="100%"
                  includeInLayout="{shouldShowAuthor}"
@@ -359,6 +463,7 @@
                      width="100%"
                      text="{author}"/>
     </mx:FormItem>
+
     <mx:FormItem id="copyrightFI"
                  width="100%"
                  includeInLayout="{shouldShowCopyright}"
@@ -367,6 +472,7 @@
                      width="100%"
                      text="{copyright}"/>
     </mx:FormItem>
+
     <mx:FormItem id="layoutTemplatesFI"
                  width="100%"
                  includeInLayout="{shouldShowTemplateOptions}"
@@ -376,6 +482,7 @@
                         dataProvider="{printTask.getServiceInfoLastResult.layoutTemplates}"
                         requireSelection="true"/>
     </mx:FormItem>
+
     <mx:FormItem id="formatsFI"
                  width="100%"
                  includeInLayout="{shouldShowFormatOptions}"
@@ -385,21 +492,27 @@
                         dataProvider="{printTask.getServiceInfoLastResult.formats}"
                         requireSelection="true"/>
     </mx:FormItem>
-    <s:HGroup id="scaleFI"
-              width="100%"
-              horizontalAlign="center"
-              includeInLayout="{shouldShowUseScale}"
-              visible="{shouldShowUseScale}">
+
+    <mx:FormItem id="scaleFI"
+                 width="100%"
+                 direction="horizontal"
+                 horizontalGap="0"
+                 includeInLayout="{shouldShowUseScale}"
+                 visible="{shouldShowUseScale}">
         <s:CheckBox id="scaleCheckbox"/>
+
         <s:TextInput id="scaleInput"
                      width="100%"
                      enabled="{scaleCheckbox.selected}"
                      restrict="0-9"/>
-    </s:HGroup>
+    </mx:FormItem>
+
+
     <s:HGroup width="100%" horizontalAlign="center">
         <s:Button id="printButton"
                   click="printButton_exportWebMapClickHandler(event)"
                   enabled="false"/>
+
         <mx:Image id="swfMessage"
                   source="assets/images/loader.swf"
                   visible="false"/>

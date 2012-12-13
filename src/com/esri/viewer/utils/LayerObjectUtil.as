@@ -18,6 +18,7 @@ package com.esri.viewer.utils
 
 import com.esri.ags.clusterers.ESRIClusterer;
 import com.esri.ags.layers.Layer;
+import com.esri.ags.renderers.IRenderer;
 
 public class LayerObjectUtil
 {
@@ -122,6 +123,8 @@ public class LayerObjectUtil
 
         var clustererParser:ClustererParser = new ClustererParser();
         var clusterer:ESRIClusterer = clustererParser.parseClusterer(obj.clustering[0]);
+        var rendererParser:RendererParser = new RendererParser();
+        var renderer:IRenderer = rendererParser.parseRenderer(obj);
         var useProxy:Boolean = obj.@useproxy[0] && obj.@useproxy == "true"; // default false
         var useMapTime:Boolean = obj.@usemaptime[0] ? obj.@usemaptime == "true" : true; // default true
         var useAMF:String = obj.@useamf[0] ? obj.@useamf : "";
@@ -138,10 +141,12 @@ public class LayerObjectUtil
         var url:String = obj.@url;
         var serviceURL:String = obj.@serviceurl[0];
         var serviceMode:String = obj.@servicemode[0];
+        var tileMatrixSetId:String = obj.@tilematrixsetid[0];
         var username:String = obj.@username;
         var password:String = obj.@password;
+        var disableClientCaching:Boolean = obj.@disableclientcaching[0] && obj.@disableclientcaching == "true"; // default false
 
-        // ve tiled layer
+        // ve tiled layer or wmts layer
         var style:String = obj.@style[0] ? obj.@style : "";
         var key:String;
         if (bingKey)
@@ -161,6 +166,12 @@ public class LayerObjectUtil
         // definitionExpression for featurelayer
         var definitionExpression:String = obj.@definitionexpression[0] ? obj.@definitionexpression : "";
         var gdbVersion:String = obj.@gdbversion[0];
+        // isEditable for feature layer
+        var isEditable:Boolean = true;
+        if (obj.@iseditable[0])
+        {
+            isEditable = obj.iseditable == "true";
+        }
 
         //sublayers
         var subLayers:Array = [];
@@ -173,22 +184,33 @@ public class LayerObjectUtil
             }
         }
 
+        //csv layer
+        var latitudeFieldName:String = obj.@latitudefieldname;
+        var longitudeFieldName:String = obj.@longitudefieldname;
+        var sourceFields:String = obj.@sourcefields;
+        var columnDelimiter:String = obj.@columndelimiter;
+
         var resultObject:Object =
             {
                 id: String(num),
                 alpha: alpha,
                 bandIds: bandIds,
                 autoRefresh: autoRefresh,
+                columnDelimiter: columnDelimiter,
                 culture: culture,
                 clusterer: clusterer,
                 definitionExpression: definitionExpression,
+                disableClientCaching: disableClientCaching,
                 displayLevels: displayLevels,
                 gdbVersion: gdbVersion,
                 icon: icon,
                 imageFormat: imageFormat,
+                isEditable: isEditable,
                 key: key,
                 label: label,
                 layerId: layerId,
+                latitudeFieldName: latitudeFieldName,
+                longitudeFieldName: longitudeFieldName,
                 maxAllowableOffset: maxAllowableOffset,
                 maxImageHeight: maxImageHeight,
                 maxImageWidth: maxImageWidth,
@@ -198,13 +220,16 @@ public class LayerObjectUtil
                 noData: noData,
                 password: password,
                 proxyUrl: proxyUrl,
+                renderer: renderer,
                 serviceHost: serviceHost,
                 serviceName: serviceName,
                 serviceMode: serviceMode,
                 serviceURL: serviceURL,
                 skipGetCapabilities: skipGetCapabilities,
+                sourceFields: sourceFields,
                 style: style,
                 subLayers: subLayers,
+                tileMatrixSetId: tileMatrixSetId,
                 token: token,
                 type: type,
                 url: url,

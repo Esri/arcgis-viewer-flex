@@ -16,7 +16,11 @@
 package widgets.HeaderController
 {
 
+import flash.events.KeyboardEvent;
+import flash.ui.Keyboard;
+
 import mx.core.ClassFactory;
+import mx.managers.IFocusManagerComponent;
 
 import spark.components.DataGroup;
 
@@ -32,6 +36,8 @@ public class WidgetItemDataGroup extends DataGroup
         super();
 
         this.itemRendererFunction = rendererFunction;
+
+        addEventListener(KeyboardEvent.KEY_UP, keyboardKeyUpHandler);
     }
 
     private function rendererFunction(item:Object):ClassFactory
@@ -43,6 +49,25 @@ public class WidgetItemDataGroup extends DataGroup
         else
         {
             return new ClassFactory(WidgetItemDataGroupRenderer);
+        }
+    }
+
+    private function keyboardKeyUpHandler(event:KeyboardEvent):void
+    {
+        var comp:IFocusManagerComponent;
+
+        if (event.keyCode == Keyboard.LEFT)
+        {
+            comp = focusManager.getNextFocusManagerComponent(true);
+        }
+        else if (event.keyCode == Keyboard.RIGHT)
+        {
+            comp = focusManager.getNextFocusManagerComponent();
+        }
+
+        if (comp && (comp is WidgetItemDataGroupRenderer || comp is GroupWidgetItemDataGroupRenderer))
+        {
+            comp.setFocus();
         }
     }
 }

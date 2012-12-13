@@ -20,7 +20,7 @@
 
     <widget left="10" top="50" config="widgets/Navigation/NavigationWidget.xml" url="widgets/Navigation/NavigationWidget.swf"/>
     <widget bottom="35" right="5" config="widgets/StaticImage/StaticImageWidget.xml" url="widgets/StaticImage/StaticImageWidget.swf"/>
-    <widget right="-2" bottom="-2" config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf"/>
+    <widget right="0" bottom="0" config="widgets/OverviewMap/OverviewMapWidget.xml" url="widgets/OverviewMap/OverviewMapWidget.swf"/>
     <widget right="15" top="55" config="widgets/MapSwitcher/MapSwitcherWidget.xml" url="widgets/MapSwitcher/MapSwitcherWidget.swf"/>
     <widget left="0" top="0" config="widgets/HeaderController/HeaderControllerWidget.xml" url="widgets/HeaderController/HeaderControllerWidget.swf"/>
     <widget left="3" bottom="3" config="widgets/Coordinate/CoordinateWidget.xml" url="widgets/Coordinate/CoordinateWidget.swf"/>
@@ -48,7 +48,7 @@
             icon="assets/images/i_bookmark.png"
             config="widgets/Bookmark/BookmarkWidget.xml"
             url="widgets/Bookmark/BookmarkWidget.swf"/>
-        <widget label="Draw and Measure"
+        <widget label="Draw"
             icon="assets/images/i_draw2.png"
             config="widgets/Draw/DrawWidget.xml"
             url="widgets/Draw/DrawWidget.swf"/>
@@ -104,32 +104,6 @@
                 config="widgets/Geoprocessing/GeoprocessingWidget_PopulationSummary.xml"
                 icon="assets/images/i_demographics.png"
                 url="widgets/Geoprocessing/GeoprocessingWidget.swf"/>
-        <widget label="Surface profile"
-                config="widgets/Geoprocessing/GeoprocessingWidget_SurfaceProfile.xml"
-                icon="assets/images/i_options.png"
-                url="widgets/Geoprocessing/GeoprocessingWidget.swf"/>
-        </widgetgroup>
-        <widgetgroup label="Locators">
-            <widget label="Find anything anywhere"
-                icon="assets/images/i_target.png"
-                config="widgets/Locate/LocateWidget.xml"
-                url="widgets/Locate/LocateWidget.swf"/>
-            <widget label="Find U.S. address"
-                icon="assets/images/i_target.png"
-                config="widgets/Locate/LocateWidget_US.xml"
-                url="widgets/Locate/LocateWidget.swf"/>
-            <widget label="Find European addresses"
-                icon="assets/images/i_pin2.png"
-                config="widgets/Locate/LocateWidget_EU.xml"
-                url="widgets/Locate/LocateWidget.swf"/>
-            <widget label="Find address in Canada and USA"
-                icon="assets/images/i_pin3.png"
-                config="widgets/Locate/LocateWidget_NA.xml"
-                url="widgets/Locate/LocateWidget.swf"/>
-            <widget label="Find places around the world"
-                icon="assets/images/i_flag.png"
-                config="widgets/Locate/LocateWidget_WorldGaz.xml"
-                url="widgets/Locate/LocateWidget.swf"/>
         </widgetgroup>
         <widgetgroup label="More widgets">
             <widget label="Data Extract"
@@ -149,5 +123,10 @@
                 config="widgets/Time/TimeWidget_QuakesSince1970.xml"
                 url="widgets/Time/TimeWidget.swf"/>
         </widgetgroup>
+    </widgetcontainer>
+    <widgetcontainer paneltype="bottom" initialstate="collapsed" height="250">
+            <widget label="Attribute Table"
+                config="widgets/AttributeTable/AttributeTableWidget.xml"
+                url="widgets/AttributeTable/AttributeTableWidget.swf"/>
     </widgetcontainer>
 </configuration>

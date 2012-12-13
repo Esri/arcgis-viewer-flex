@@ -133,6 +133,9 @@ public interface IBaseWidget extends IEventDispatcher
     function get isResizeable():Boolean;
     function set isResizeable(value:Boolean):void;
 
+    function get isPartOfPanel():Boolean;
+    function set isPartOfPanel(value:Boolean):void;
+
     function get proxyUrl():String;
 
     function run():void;

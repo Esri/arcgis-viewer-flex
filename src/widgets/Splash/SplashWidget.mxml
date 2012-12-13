@@ -36,8 +36,8 @@
                 {
                     content = configXML.content || "...";
                     btnLabel = configXML.labels.btnlabel[0] || configXML.btnlabel || getDefaultString("okLabel");
-                    txtareaWidth = configXML.width || 500;
-                    txtareaHeight = configXML.height || 500;
+                    txtareaWidth = configXML.width || 300;
+                    txtareaHeight = configXML.height || 300;
 
                     HTMLPopup.show(content, btnLabel, txtareaWidth, txtareaHeight);
                 }

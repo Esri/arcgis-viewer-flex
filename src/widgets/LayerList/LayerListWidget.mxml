@@ -21,8 +21,8 @@
                    xmlns:mx="library://ns.adobe.com/flex/mx"
                    xmlns:viewer="com.esri.viewer.*"
                    xmlns:toc="com.esri.viewer.components.toc.*"
-                   x="600" y="400"
-                   widgetConfigLoaded="init()">
+                   initialize="basewidget_initializeHandler()"
+                   widgetConfigLoaded="basewidget_widgetConfigLoaded()">
     <fx:Script>
         <![CDATA[
             import com.esri.viewer.AppEvent;
@@ -32,7 +32,20 @@
             [Bindable]
             private var title:String;
 
-            private function init():void
+            private function basewidget_initializeHandler():void
+            {
+                if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
+                {
+                    this.percentWidth = this.percentHeight = 100;
+                    wTemplate.percentWidth = wTemplate.percentHeight = 100;
+                }
+                else
+                {
+                    wTemplate.width = wTemplate.height = 300;
+                }
+            }
+
+            private function basewidget_widgetConfigLoaded():void
             {
                 var expandLayerItems:Boolean = false;
 
@@ -96,7 +109,6 @@
         ]]>
     </fx:Script>
     <viewer:WidgetTemplate id="wTemplate"
-                           width="300" height="300"
                            closed="AppEvent.dispatch(AppEvent.TOC_HIDDEN)"
                            minimized="AppEvent.dispatch(AppEvent.TOC_HIDDEN)">
         <viewer:layout>

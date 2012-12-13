@@ -21,8 +21,9 @@
                    xmlns:mx="library://ns.adobe.com/flex/mx"
                    xmlns:viewer="com.esri.viewer.*"
                    xmlns:esri="http://www.esri.com/2008/ags"
-                   widgetConfigLoaded="init()">
-
+                   xmlns:components="com.esri.viewer.components.*"
+                   initialize="basewidget_initializeHandler()"
+                   widgetConfigLoaded="basewidget_widgetConfigLoaded()">
     <fx:Script>
         <![CDATA[
             import com.esri.ags.FeatureSet;
@@ -62,7 +63,7 @@
             private var graphicsLayer:GraphicsLayer;
             private var graphicContextMenu:ContextMenu;
             private var gpService:JSONTask;
-            private var selectedDrawingIcon:Image;
+            private var selectedDrawingIcon:FocusableImage;
 
             private var drawSymbol:Symbol;
             [Bindable]
@@ -117,7 +118,21 @@
             private var emptyResultsLabel:String;
             private var saveDataFileLabel:String;
 
-            private function init():void
+            private function basewidget_initializeHandler():void
+            {
+                if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
+                {
+                    this.percentWidth = this.percentHeight = 100;
+                    wTemplate.percentWidth = wTemplate.percentHeight = 100;
+                }
+                else
+                {
+                    wTemplate.width = wTemplate.minWidth = 320;
+                    wTemplate.height = wTemplate.minHeight = 300;
+                }
+            }
+
+            private function basewidget_widgetConfigLoaded():void
             {
                 graphicsLayer = new GraphicsLayer();
                 map.addLayer(graphicsLayer);
@@ -390,7 +405,7 @@
                 addSharedData("Deactivate_DrawTool", null); // to be able to deactivate drawTool on other widgets
 
                 // apply glow
-                selectedDrawingIcon = Image(event.currentTarget);
+                selectedDrawingIcon = FocusableImage(event.currentTarget);
                 clearSelectionFilter();
                 selectedDrawingIcon.filters = [ glowFilter ];
 
@@ -664,12 +679,10 @@
 
             private function gpService_faultHandler(fault:Fault, token:Object = null):void
             {
-                var msg:String = "Unable to connect to GP Service:\n"
-                    + gp.url + "\n\n"
-                    + "Most likely cause:\n"
-                    + ErrorMessageUtil.getKnownErrorCauseMessage(fault.faultCode) + "\n\n"
-                    + "Details:\n"
-                    + ErrorMessageUtil.makeHTMLSafe(fault.toString());
+                var msg:String = getDefaultString("gpServiceConnectionError",
+                                                  gp.url,
+                                                  ErrorMessageUtil.getKnownErrorCauseMessage(fault),
+                                                  ErrorMessageUtil.makeHTMLSafe(fault.toString()));
                 showError(msg);
                 widgetVBox.enabled = false;
             }
@@ -714,10 +727,7 @@
     </fx:Declarations>
 
     <viewer:WidgetTemplate id="wTemplate"
-                           width="320" height="300"
                            closed="wTemplate_closedHandler(event)"
-                           minHeight="300"
-                           minWidth="320"
                            minimized="wTemplate_minimizedHandler(event)"
                            open="wTemplate_openHandler(event)">
         <s:Scroller width="100%" height="100%"
@@ -745,51 +755,51 @@
                                      textDecoration="underline"/>
                         </s:HGroup>
                     </s:VGroup>
-                    <mx:Image name="{DrawTool.EXTENT}"
-                              width="40" height="40"
-                              buttonMode="true"
-                              click="activateDrawTool(event)"
-                              rollOut="icon_rollOutHandler(event)"
-                              rollOver="icon_rollOverHandler(event)"
-                              source="assets/images/i_draw_rect.png"
-                              toolTip="{rectangleLabel}"
-                              useHandCursor="true"/>
-                    <mx:Image name="{DrawTool.CIRCLE}"
-                              width="40" height="40"
-                              buttonMode="true"
-                              click="activateDrawTool(event)"
-                              rollOut="icon_rollOutHandler(event)"
-                              rollOver="icon_rollOverHandler(event)"
-                              source="assets/images/i_draw_circle.png"
-                              toolTip="{circleLabel}"
-                              useHandCursor="true"/>
-                    <mx:Image name="{DrawTool.ELLIPSE}"
-                              width="40" height="40"
-                              buttonMode="true"
-                              click="activateDrawTool(event)"
-                              rollOut="icon_rollOutHandler(event)"
-                              rollOver="icon_rollOverHandler(event)"
-                              source="assets/images/i_draw_ellipse.png"
-                              toolTip="{ellipseLabel}"
-                              useHandCursor="true"/>
-                    <mx:Image name="{DrawTool.POLYGON}"
-                              width="40" height="40"
-                              buttonMode="true"
-                              click="activateDrawTool(event)"
-                              rollOut="icon_rollOutHandler(event)"
-                              rollOver="icon_rollOverHandler(event)"
-                              source="assets/images/i_draw_poly.png"
-                              toolTip="{polygonLabel}"
-                              useHandCursor="true"/>
-                    <mx:Image name="{DrawTool.FREEHAND_POLYGON}"
-                              width="40" height="40"
-                              buttonMode="true"
-                              click="activateDrawTool(event)"
-                              rollOut="icon_rollOutHandler(event)"
-                              rollOver="icon_rollOverHandler(event)"
-                              source="assets/images/i_draw_freepoly.png"
-                              toolTip="{freehandPolygonLabel}"
-                              useHandCursor="true"/>
+                    <components:FocusableImage name="{DrawTool.EXTENT}"
+                                               width="40" height="40"
+                                               buttonMode="true"
+                                               click="activateDrawTool(event)"
+                                               rollOut="icon_rollOutHandler(event)"
+                                               rollOver="icon_rollOverHandler(event)"
+                                               source="assets/images/i_draw_rect.png"
+                                               toolTip="{rectangleLabel}"
+                                               useHandCursor="true"/>
+                    <components:FocusableImage name="{DrawTool.CIRCLE}"
+                                               width="40" height="40"
+                                               buttonMode="true"
+                                               click="activateDrawTool(event)"
+                                               rollOut="icon_rollOutHandler(event)"
+                                               rollOver="icon_rollOverHandler(event)"
+                                               source="assets/images/i_draw_circle.png"
+                                               toolTip="{circleLabel}"
+                                               useHandCursor="true"/>
+                    <components:FocusableImage name="{DrawTool.ELLIPSE}"
+                                               width="40" height="40"
+                                               buttonMode="true"
+                                               click="activateDrawTool(event)"
+                                               rollOut="icon_rollOutHandler(event)"
+                                               rollOver="icon_rollOverHandler(event)"
+                                               source="assets/images/i_draw_ellipse.png"
+                                               toolTip="{ellipseLabel}"
+                                               useHandCursor="true"/>
+                    <components:FocusableImage name="{DrawTool.POLYGON}"
+                                               width="40" height="40"
+                                               buttonMode="true"
+                                               click="activateDrawTool(event)"
+                                               rollOut="icon_rollOutHandler(event)"
+                                               rollOver="icon_rollOverHandler(event)"
+                                               source="assets/images/i_draw_poly.png"
+                                               toolTip="{polygonLabel}"
+                                               useHandCursor="true"/>
+                    <components:FocusableImage name="{DrawTool.FREEHAND_POLYGON}"
+                                               width="40" height="40"
+                                               buttonMode="true"
+                                               click="activateDrawTool(event)"
+                                               rollOut="icon_rollOutHandler(event)"
+                                               rollOver="icon_rollOverHandler(event)"
+                                               source="assets/images/i_draw_freepoly.png"
+                                               toolTip="{freehandPolygonLabel}"
+                                               useHandCursor="true"/>
                 </s:HGroup>
 
                 <s:Label width="100%"

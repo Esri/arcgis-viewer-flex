@@ -21,7 +21,8 @@
                    xmlns:mx="library://ns.adobe.com/flex/mx"
                    xmlns:viewer="com.esri.viewer.*"
                    creationComplete="init()"
-                   implements="com.esri.viewer.IInfowindowTemplate">
+                   implements="com.esri.viewer.IInfowindowTemplate"
+                   preinitialize="basewidget_preinitializeHandler(event)">
 
     <fx:Script>
         <![CDATA[
@@ -45,6 +46,44 @@
 
             private var itemChart:Object = {};
             private var item:Object = {};
+
+            private function basewidget_preinitializeHandler(event:FlexEvent):void
+            {
+                // work-around for 4.6 regression
+                copyStyleFromParent("mx.charts.chartClasses.ChartBase");
+                copyStyleFromParent("mx.charts.chartClasses.CartesianChart");
+                copyStyleFromParent("mx.charts.chartClasses.PolarChart");
+                copyStyleFromParent("mx.charts.BarChart");
+                copyStyleFromParent("mx.charts.ColumnChart");
+                copyStyleFromParent("mx.charts.LineChart");
+                copyStyleFromParent("mx.charts.PieChart");
+                copyStyleFromParent("mx.charts.AxisRenderer");
+                copyStyleFromParent(".blockCategoryAxis");
+                copyStyleFromParent(".blockNumericAxis");
+                copyStyleFromParent(".linedNumericAxis");
+                copyStyleFromParent(".dashedNumericAxis");
+                copyStyleFromParent(".dashedCategoryAxis");
+                copyStyleFromParent(".hangingCategoryAxis");
+                copyStyleFromParent("mx.charts.GridLines");
+                copyStyleFromParent(".horizontalGridLines");
+                copyStyleFromParent("mx.charts.series.BarSeries");
+                copyStyleFromParent("mx.charts.series.ColumnSeries");
+                copyStyleFromParent("mx.charts.series.LineSeries");
+                copyStyleFromParent("mx.charts.series.PieSeries");
+            }
+
+            private function copyStyleFromParent(selector:String):void
+            {
+                var chartBaseStyle:CSSStyleDeclaration = styleManager.getStyleDeclaration(selector);
+                if (!chartBaseStyle && styleManager.parent)
+                {
+                    var parentStyle:CSSStyleDeclaration = styleManager.parent.getStyleDeclaration(selector);
+                    if (parentStyle)
+                    {
+                        styleManager.setStyleDeclaration(selector, parentStyle, false);
+                    }
+                }
+            }
 
             private function init():void
             {

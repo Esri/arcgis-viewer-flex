@@ -18,12 +18,13 @@ package com.esri.viewer.managers
 
 import com.esri.viewer.AppEvent;
 import com.esri.viewer.ConfigData;
+import com.esri.viewer.utils.LocalizationUtil;
 
 import flash.events.EventDispatcher;
 
-import mx.core.FlexGlobals;
 import mx.styles.CSSStyleDeclaration;
 import mx.styles.IStyleManager2;
+import mx.styles.StyleManager;
 
 /**
  * UIManager applies the style colors, fonts etc as specific in the main configuration file.
@@ -125,11 +126,35 @@ public class UIManager extends EventDispatcher
     {
         configData = event.data as ConfigData;
         setViewerStyle();
+
+//        if (configData.styleSWF)
+//        {
+//            var topLevelStyleManager:IStyleManager2 = StyleManager.getStyleManager(null);
+//            var loadStyleDispatcher:IEventDispatcher = topLevelStyleManager.loadStyleDeclarations(configData.styleSWF, false, false, null, SecurityDomain.currentDomain);
+//            loadStyleDispatcher.addEventListener(StyleEvent.COMPLETE, completeHandler);
+//            loadStyleDispatcher.addEventListener(StyleEvent.ERROR, errorHandler);
+//        }
+//        else
+//        {
+//            setViewerStyle();
+//        }
+//
+//        function completeHandler(event:StyleEvent):void
+//        {
+//            loadStyleDispatcher.removeEventListener(StyleEvent.COMPLETE, completeHandler);
+//            loadStyleDispatcher.removeEventListener(StyleEvent.ERROR, errorHandler);
+//            setViewerStyle();
+//        }
+//        function errorHandler(event:StyleEvent):void
+//        {
+//            completeHandler(event);
+//            AppEvent.dispatch(AppEvent.APP_ERROR, event.errorText);
+//        }
     }
 
     private function setViewerStyle():void
     {
-        var topLevelStyleManager:IStyleManager2 = FlexGlobals.topLevelApplication.styleManager;
+        var topLevelStyleManager:IStyleManager2 = StyleManager.getStyleManager(null);
         var numberOfStyleColors:uint = configData.styleColors.length;
 
         var textColor:uint;
@@ -141,16 +166,20 @@ public class UIManager extends EventDispatcher
         var styleAlpha:Number;
 
         var cssStyleDeclarationGlobal:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("global")
-        var defaultFontName:String = cssStyleDeclarationGlobal.getStyle("fontFamily");
+
         var defaultFontSize:int = cssStyleDeclarationGlobal.getStyle("fontSize");
         var defaultTextColor:uint = cssStyleDeclarationGlobal.getStyle("fontColor");
         var defaultLayoutDirection:String = cssStyleDeclarationGlobal.getStyle("layoutDirection");
-        var titleFontName:String = (configData.titleFont.name != "") ? configData.titleFont.name : defaultFontName;
-        var titleFontSize:int = (configData.titleFont.size != 0) ? configData.titleFont.size : 20;
-        var subTitleFontName:String = (configData.subTitleFont.name != "") ? configData.subTitleFont.name : defaultFontName;
-        var subTitleFontSize:int = (configData.subTitleFont.size != 0) ? configData.subTitleFont.size : 12;
-        var fontName:String = (configData.font.name != "") ? configData.font.name : defaultFontName;
+        var localeDefaultFontName:String = LocalizationUtil.getDefaultString("textFont1");
+        var fallbackFontName:String = "_sans";
+
+        var mainFontFamily:String = buildFontFamilyString(configData.font.name, localeDefaultFontName, fallbackFontName);
+        var titleFontFamily:String = configData.titleFont.name ? buildFontFamilyString(configData.titleFont.name, localeDefaultFontName, fallbackFontName) : mainFontFamily;
+        var subTitleFontFamily:String = configData.subTitleFont.name ? buildFontFamilyString(configData.subTitleFont.name, localeDefaultFontName, fallbackFontName) : mainFontFamily;
+
         var fontSize:int = (configData.font.size != 0) ? configData.font.size : defaultFontSize;
+        var titleFontSize:int = (configData.titleFont.size != 0) ? configData.titleFont.size : 20;
+        var subTitleFontSize:int = (configData.subTitleFont.size != 0) ? configData.subTitleFont.size : 12;
         var layoutDirection:String = configData.layoutDirection && (configData.layoutDirection == "ltr" || configData.layoutDirection == "rtl") ? configData.layoutDirection : defaultLayoutDirection;
 
         // for RTL
@@ -183,8 +212,7 @@ public class UIManager extends EventDispatcher
         }
         cssStyleDeclarationGlobal.setStyle("contentBackgroundAlpha", styleAlpha);
         cssStyleDeclarationGlobal.setStyle("fontSize", fontSize);
-        cssStyleDeclarationGlobal.setStyle("fontFamily", fontName);
-        topLevelStyleManager.setStyleDeclaration("global", cssStyleDeclarationGlobal, false);
+        cssStyleDeclarationGlobal.setStyle("fontFamily", mainFontFamily);
 
         var cssStyleDeclarationModule:CSSStyleDeclaration = new CSSStyleDeclaration();
         if (numberOfStyleColors > 4)
@@ -202,7 +230,7 @@ public class UIManager extends EventDispatcher
         }
         cssStyleDeclarationModule.setStyle("contentBackgroundAlpha", styleAlpha);
         cssStyleDeclarationModule.setStyle("fontSize", fontSize);
-        cssStyleDeclarationModule.setStyle("fontFamily", fontName);
+        cssStyleDeclarationModule.setStyle("fontFamily", mainFontFamily);
         topLevelStyleManager.setStyleDeclaration("mx.modules.Module", cssStyleDeclarationModule, false);
 
         //Style Application
@@ -214,7 +242,6 @@ public class UIManager extends EventDispatcher
                 cssStyleDeclarationApplication.setStyle("backgroundColor", applicationBackgroundColor);
             }
             cssStyleDeclarationApplication.setStyle("backgroundAlpha", styleAlpha);
-            topLevelStyleManager.setStyleDeclaration("spark.components.Application", cssStyleDeclarationApplication, false);
         }
 
         var cssStyleDeclarationApplicationWindowed:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("spark.components.WindowedApplication");
@@ -225,18 +252,15 @@ public class UIManager extends EventDispatcher
                 cssStyleDeclarationApplicationWindowed.setStyle("backgroundColor", applicationBackgroundColor);
             }
             cssStyleDeclarationApplicationWindowed.setStyle("backgroundAlpha", styleAlpha);
-            topLevelStyleManager.setStyleDeclaration("spark.components.WindowedApplication", cssStyleDeclarationApplicationWindowed, false);
         }
 
         //Style WidgetTemplate
-        var cssStyleDeclarationWT:CSSStyleDeclaration = new CSSStyleDeclaration("com.esri.viewer.WidgetTemplate");
+        var cssStyleDeclarationWT:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("com.esri.viewer.WidgetTemplate");
         // When pointing to graphical theme replace WidgetTemplateSkin with GraphicalWidgetTemplateSkin
-        cssStyleDeclarationWT.setStyle("backgroundAlpha", styleAlpha);
         if (numberOfStyleColors > 4)
         {
             cssStyleDeclarationWT.setStyle("borderColor", textColor);
         }
-        topLevelStyleManager.setStyleDeclaration("com.esri.viewer.WidgetTemplate", cssStyleDeclarationWT, false);
 
         /*Style For InfoWindow
         When pointing to graphical theme, you will need to explicitly set properties for infoWindow.
@@ -263,12 +287,10 @@ public class UIManager extends EventDispatcher
         }
         cssStyleDeclarationInfoContainer.setStyle("borderThickness", 1);
         cssStyleDeclarationInfoContainer.setStyle("backgroundAlpha", styleAlpha);
-        topLevelStyleManager.setStyleDeclaration("com.esri.ags.components.supportClasses.InfoWindow", cssStyleDeclarationInfoContainer, false);
 
         var cssStyleDeclarationInfoWindowLabel:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("com.esri.ags.components.supportClasses.InfoWindowLabel");
         cssStyleDeclarationInfoWindowLabel.setStyle("fontSize", fontSize);
-        cssStyleDeclarationInfoWindowLabel.setStyle("fontFamily", fontName);
-        topLevelStyleManager.setStyleDeclaration("com.esri.ags.components.supportClasses.InfoWindowLabel", cssStyleDeclarationInfoWindowLabel, false);
+        cssStyleDeclarationInfoWindowLabel.setStyle("fontFamily", mainFontFamily);
 
         var cssStyleDeclarationInfoSymbolWindow:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("com.esri.ags.components.supportClasses.InfoSymbolWindow");
         if (numberOfStyleColors > 4)
@@ -282,8 +304,6 @@ public class UIManager extends EventDispatcher
         }
         cssStyleDeclarationInfoSymbolWindow.setStyle("borderThickness", 1);
         cssStyleDeclarationInfoSymbolWindow.setStyle("backgroundAlpha", styleAlpha);
-        topLevelStyleManager.setStyleDeclaration("com.esri.ags.components.supportClasses.InfoSymbolWindow", cssStyleDeclarationInfoSymbolWindow, false);
-
 
         if (numberOfStyleColors > 4)
         {
@@ -291,7 +311,6 @@ public class UIManager extends EventDispatcher
             cssStyleDeclarationPopUpRendererLink.setStyle("linkActiveColor", titleColor);
             cssStyleDeclarationPopUpRendererLink.setStyle("linkNormalColor", textColor);
             cssStyleDeclarationPopUpRendererLink.setStyle("linkHoverColor", titleColor);
-            topLevelStyleManager.setStyleDeclaration("com.esri.ags.portal.PopUpRenderer", cssStyleDeclarationPopUpRendererLink, false);
         }
 
         var cssStyleDeclarationContentNavigator:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("com.esri.ags.components.ContentNavigator");
@@ -301,7 +320,6 @@ public class UIManager extends EventDispatcher
             cssStyleDeclarationContentNavigator.setStyle("headerColor", textColor);
         }
         cssStyleDeclarationContentNavigator.setStyle("headerBackgroundAlpha", styleAlpha);
-        topLevelStyleManager.setStyleDeclaration("com.esri.ags.components.ContentNavigator", cssStyleDeclarationContentNavigator, false);
 
         //Style Banner title and WidgetTitle
         var cssStyleDeclarationWidgetTitle:CSSStyleDeclaration = new CSSStyleDeclaration(".WidgetTitle");
@@ -310,9 +328,8 @@ public class UIManager extends EventDispatcher
             cssStyleDeclarationWidgetTitle.setStyle("color", titleColor);
         }
         cssStyleDeclarationWidgetTitle.setStyle("fontSize", fontSize);
-        cssStyleDeclarationWidgetTitle.setStyle("fontFamily", fontName);
-
-        topLevelStyleManager.setStyleDeclaration(".WidgetTitle", cssStyleDeclarationWidgetTitle, false);
+        cssStyleDeclarationWidgetTitle.setStyle("fontFamily", mainFontFamily);
+        cssStyleDeclarationWidgetTitle.setStyle("fontWeight", "bold");
 
         var cssStyleDeclarationBannerTitle:CSSStyleDeclaration = new CSSStyleDeclaration(".BannerTitle");
         if (numberOfStyleColors > 4)
@@ -323,8 +340,9 @@ public class UIManager extends EventDispatcher
         {
             cssStyleDeclarationBannerTitle.setStyle("fontSize", titleFontSize);
         }
-        cssStyleDeclarationBannerTitle.setStyle("fontFamily", titleFontName);
-        topLevelStyleManager.setStyleDeclaration(".BannerTitle", cssStyleDeclarationBannerTitle, false);
+        cssStyleDeclarationBannerTitle.setStyle("fontFamily", titleFontFamily);
+        cssStyleDeclarationBannerTitle.setStyle("paddingBottom", 2);
+        cssStyleDeclarationBannerTitle.setStyle("paddingTop", 4);
 
         var cssStyleDeclarationBannerSubtitle:CSSStyleDeclaration = new CSSStyleDeclaration(".BannerSubtitle");
         if (numberOfStyleColors > 4)
@@ -335,8 +353,7 @@ public class UIManager extends EventDispatcher
         {
             cssStyleDeclarationBannerSubtitle.setStyle("fontSize", subTitleFontSize);
         }
-        cssStyleDeclarationBannerSubtitle.setStyle("fontFamily", subTitleFontName);
-        topLevelStyleManager.setStyleDeclaration(".BannerSubtitle", cssStyleDeclarationBannerSubtitle, false);
+        cssStyleDeclarationBannerSubtitle.setStyle("fontFamily", subTitleFontFamily);
 
         // Style s|Panel
         var cssStyleDeclarationSPanel:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("spark.components.Panel");
@@ -345,7 +362,6 @@ public class UIManager extends EventDispatcher
             cssStyleDeclarationSPanel.setStyle("backgroundColor", backgroundColor);
         }
         cssStyleDeclarationSPanel.setStyle("backgroundAlpha", styleAlpha);
-        topLevelStyleManager.setStyleDeclaration("spark.components.Panel", cssStyleDeclarationSPanel, false);
 
         //Style mx|Panel
         var cssStyleDeclarationMxPanel:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("mx.containers.Panel");
@@ -354,7 +370,6 @@ public class UIManager extends EventDispatcher
             cssStyleDeclarationMxPanel.setStyle("backgroundColor", backgroundColor);
         }
         cssStyleDeclarationMxPanel.setStyle("backgroundAlpha", styleAlpha);
-        topLevelStyleManager.setStyleDeclaration("mx.containers.Panel", cssStyleDeclarationMxPanel, false);
 
         //Style TabNavigator
         var cssStyleDeclarationNavigator:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("mx.containers.TabNavigator");
@@ -363,7 +378,6 @@ public class UIManager extends EventDispatcher
             cssStyleDeclarationNavigator.setStyle("backgroundColor", backgroundColor);
         }
         cssStyleDeclarationNavigator.setStyle("backgroundAlpha", styleAlpha);
-        topLevelStyleManager.setStyleDeclaration("mx.containers.TabNavigator", cssStyleDeclarationNavigator, false);
 
         // Style mx|Alert
         var cssStyleDeclaration:CSSStyleDeclaration = new CSSStyleDeclaration();
@@ -382,8 +396,7 @@ public class UIManager extends EventDispatcher
             cssStyleDeclarationTooltip.setStyle("backgroundColor", backgroundColor);
         }
         cssStyleDeclarationTooltip.setStyle("fontSize", fontSize);
-        cssStyleDeclarationTooltip.setStyle("fontFamily", fontName);
-        topLevelStyleManager.setStyleDeclaration("mx.controls.ToolTip", cssStyleDeclarationTooltip, false);
+        cssStyleDeclarationTooltip.setStyle("fontFamily", mainFontFamily);
 
         //Style TitleWindow
         if (numberOfStyleColors > 4)
@@ -436,6 +449,16 @@ public class UIManager extends EventDispatcher
         cssStyleDeclarationModal.setStyle("modalTransparency", 0.5);
         cssStyleDeclarationModal.setStyle("modalTransparencyDuration", 300); //messes up tween!
         topLevelStyleManager.setStyleDeclaration("global", cssStyleDeclarationModal, true);
+    }
+
+    private function buildFontFamilyString(... fontNames):String
+    {
+        return fontNames.filter(isValidValue).join(", ");
+    }
+
+    private function isValidValue(item:String, index:int, array:Array):Boolean
+    {
+        return Boolean(item);
     }
 }
 

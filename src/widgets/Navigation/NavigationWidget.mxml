@@ -89,8 +89,11 @@
         ]]>
     </fx:Script>
     <Navigation:Navigation id="navigation"
+                           focusIn="rollOverFade.play()"
+                           focusOut="rollOutFade.play()"
+                           includeInLayout="false"
                            map="{map}"
-                           rollOut="{rollOutFade.play()}"
-                           rollOver="{rollOverFade.play()}"
+                           rollOut="rollOutFade.play()"
+                           rollOver="rollOverFade.play()"
                            visible="false"/>
 </viewer:BaseWidget>

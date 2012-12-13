@@ -17,33 +17,26 @@ public class ClustererParser
 
         if (clusteringXML)
         {
-            var clusterSymbol:Symbol;
-            if (clusteringXML.clustersymbol[0])
+            clusterer = new WeightedClusterer();
+
+            if (clusteringXML.@mingraphiccount[0])
             {
-                clusterSymbol = parseClusterSymbol(clusteringXML.clustersymbol[0]);
+                var minGraphicCount:int = parseInt(clusteringXML.@mingraphiccount[0]);
+                if (!isNaN(minGraphicCount))
+                {
+                    clusterer.minGraphicCount = minGraphicCount;
+                }
+            }
+            if (clusteringXML.@sizeinpixels[0])
+            {
+                var sizeInPixels:Number = parseFloat(clusteringXML.@sizeinpixels[0]);
+                if (!isNaN(sizeInPixels))
+                {
+                    clusterer.sizeInPixels = sizeInPixels;
+                }
             }
 
-            if (clusterSymbol)
-            {
-                clusterer = new WeightedClusterer();
-                if (clusteringXML.@mingraphiccount[0])
-                {
-                    var minGraphicCount:int = parseInt(clusteringXML.@mingraphiccount[0]);
-                    if (!isNaN(minGraphicCount))
-                    {
-                        clusterer.minGraphicCount = minGraphicCount;
-                    }
-                }
-                if (clusteringXML.@sizeinpixels[0])
-                {
-                    var sizeInPixels:Number = parseFloat(clusteringXML.@sizeinpixels[0]);
-                    if (!isNaN(sizeInPixels))
-                    {
-                        clusterer.sizeInPixels = sizeInPixels;
-                    }
-                }
-                clusterer.symbol = clusterSymbol;
-            }
+            clusterer.symbol = parseClusterSymbol(clusteringXML.clustersymbol[0]);
         }
 
         return clusterer;
@@ -53,13 +46,12 @@ public class ClustererParser
     {
         var clusterSymbol:Symbol;
 
-        var type:String = clusterSymbolXML.@type;
-
-        if (type == "simple")
+        var shouldParseSimpleClusterSymbol:Boolean = clusterSymbolXML && (clusterSymbolXML.@type == "simple");
+        if (shouldParseSimpleClusterSymbol)
         {
             clusterSymbol = parseSimpleClusterSymbol(clusterSymbolXML);
         }
-        else if (type == "flare")
+        else
         {
             clusterSymbol = parseFlareSymbol(clusterSymbolXML);
         }

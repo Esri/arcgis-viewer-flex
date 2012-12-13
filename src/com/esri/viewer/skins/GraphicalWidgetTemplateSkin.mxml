@@ -21,15 +21,8 @@
 -->
 <s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009"
              xmlns:s="library://ns.adobe.com/flex/spark"
-             xmlns:mx="library://ns.adobe.com/flex/mx">
-    <fx:Script>
-        <![CDATA[
-            import mx.controls.TextInput;
-            import mx.core.FlexGlobals;
-
-            import spark.components.List;
-        ]]>
-    </fx:Script>
+             xmlns:mx="library://ns.adobe.com/flex/mx"
+             xmlns:components="com.esri.viewer.components.*">
 
     <fx:Declarations>
         <s:Bounce id="bounce"/>
@@ -123,35 +116,35 @@
                                 paddingLeft="2"
                                 verticalAlign="middle"/>
         </s:layout>
-        <mx:Image id="minimizeButton"
-                  buttonMode="true"
-                  includeInLayout="{hostComponent.enableMinimizeButton}"
-                  source="assets/images/w_min.png"
-                  toolTip="Minimize"
-                  useHandCursor="true"
-                  visible="{hostComponent.enableMinimizeButton}"/>
-        <mx:Image id="closeButton"
-                  buttonMode="true"
-                  includeInLayout="{hostComponent.enableCloseButton}"
-                  source="assets/images/w_close.png"
-                  toolTip="Close"
-                  useHandCursor="true"
-                  visible="{hostComponent.enableCloseButton}"/>
+        <components:FocusableImage id="minimizeButton"
+                                   buttonMode="true"
+                                   includeInLayout="{hostComponent.enableMinimizeButton}"
+                                   source="assets/images/w_min.png"
+                                   toolTip="Minimize"
+                                   useHandCursor="true"
+                                   visible="{hostComponent.enableMinimizeButton}"/>
+        <components:FocusableImage id="closeButton"
+                                   buttonMode="true"
+                                   includeInLayout="{hostComponent.enableCloseButton}"
+                                   source="assets/images/w_close.png"
+                                   toolTip="Close"
+                                   useHandCursor="true"
+                                   visible="{hostComponent.enableCloseButton}"/>
     </s:Group>
 
-    <mx:Image id="icon"
-              x.minimized="50" x.open="-20" y="12" y.minimized="-2" width="40" height="40"
-              buttonMode="false"
-              buttonMode.minimized="true"
-              source="{hostComponent.widgetIcon}"
-              useHandCursor="false"
-              useHandCursor.minimized="true"
-              visible="{hostComponent.enableIcon}"
-              visible.closed="false">
-        <mx:filters>
-            <mx:DropShadowFilter blurX="10" blurY="10"/>
-        </mx:filters>
-    </mx:Image>
+    <components:FocusableImage id="icon"
+                               x.minimized="50" x.open="-20" y="12" y.minimized="-2" width="40" height="40"
+                               buttonMode="false"
+                               buttonMode.minimized="true"
+                               source="{hostComponent.widgetIcon}"
+                               useHandCursor="false"
+                               useHandCursor.minimized="true"
+                               visible="{hostComponent.enableIcon}"
+                               visible.closed="false">
+        <components:filters>
+            <s:DropShadowFilter blurX="10" blurY="10"/>
+        </components:filters>
+    </components:FocusableImage>
 
     <s:Group id="contentGroup"
              left="20" right="20" top="35" bottom="20"

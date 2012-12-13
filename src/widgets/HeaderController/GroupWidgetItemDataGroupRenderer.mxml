@@ -23,16 +23,15 @@
                 buttonMode="true"
                 click="itemrenderer_clickHandler(event)"
                 dataChange="itemrenderer_dataChangeHandler(event)"
+                focusEnabled="true"
+                implements="mx.managers.IFocusManagerComponent"
                 useHandCursor="true">
 
     <fx:Script>
         <![CDATA[
-            import mx.collections.ArrayList;
-            import mx.events.EffectEvent;
             import mx.events.FlexEvent;
 
             import spark.components.Group;
-            import spark.layouts.VerticalLayout;
 
             private const WIDGET_ITEM_CLICK:String = "widgetItemClick";
             private const WIDGET_ITEM_MOUSE_OVER:String = "widgetItemMouseOver";
@@ -62,17 +61,67 @@
             {
                 dispatchEvent(new Event(WIDGET_ITEM_CLICK, true)); // bubbles
             }
+
+            //--------------------------------------------------------------------------
+            //
+            //  Focus Management
+            //
+            //--------------------------------------------------------------------------
+
+            override public function drawFocus(isFocused:Boolean):void
+            {
+                super.drawFocus(isFocused);
+
+                // Popup the tooltip or remove the menu
+                if (isFocused)
+                {
+                    mouseOverHandler(null);
+                }
+                else
+                {
+                    mouseOutHandler(null);
+                }
+            }
+
+            private var keyboardPressed:Boolean = false;
+
+            override protected function keyDownHandler(event:KeyboardEvent):void
+            {
+                if (event.keyCode != Keyboard.SPACE)
+                {
+                    return;
+                }
+
+                keyboardPressed = true;
+                event.updateAfterEvent();
+            }
+
+            override protected function keyUpHandler(event:KeyboardEvent):void
+            {
+                if (event.keyCode != Keyboard.SPACE)
+                {
+                    return;
+                }
+
+                if (enabled && keyboardPressed)
+                {
+                    // Mimic mouse click on the button.
+                    keyboardPressed = false;
+                    dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+                }
+                event.updateAfterEvent();
+            }
         ]]>
     </fx:Script>
 
-    <s:VGroup width="25" height="30"
+    <s:VGroup width="30" height="30"
               gap="2"
               horizontalAlign="center"
               rollOut="mouseOutHandler(event)"
               rollOver="mouseOverHandler(event)"
               verticalAlign="middle">
         <s:Image id="icon"
-                 width="25" height="100%"
+                 width="25" height="25"
                  buttonMode="true"
                  smooth="true"
                  useHandCursor="true"/>

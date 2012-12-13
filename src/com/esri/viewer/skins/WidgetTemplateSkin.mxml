@@ -22,6 +22,7 @@
 <s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009"
              xmlns:s="library://ns.adobe.com/flex/spark"
              xmlns:mx="library://ns.adobe.com/flex/mx"
+             xmlns:components="com.esri.viewer.components.*"
              creationComplete="init()"
              preinitialize="preinitializeHandler(event)">
 
@@ -34,6 +35,8 @@
     </fx:Metadata>
     <fx:Script>
         <![CDATA[
+            import com.esri.viewer.utils.LocalizationUtil;
+
             import flashx.textLayout.formats.TextAlign;
 
             import mx.events.EffectEvent;
@@ -79,6 +82,24 @@
                     setStyle("textAlign", TextAlign.START);
                 }
             }
+
+            private function minimizingEnded(event:EffectEvent):void
+            {
+                icon.tabFocusEnabled = true;
+                if (focusManager.showFocusIndicator)
+                {
+                    icon.setFocus();
+                }
+            }
+
+            private function openEnded(event:EffectEvent):void
+            {
+                icon.tabFocusEnabled = false;
+                if (focusManager.showFocusIndicator)
+                {
+                    focusManager.getNextFocusManagerComponent().setFocus();
+                }
+            }
         ]]>
     </fx:Script>
     <s:states>
@@ -91,7 +112,7 @@
 
     <s:transitions>
         <s:Transition fromState="open" toState="minimized">
-            <s:Sequence>
+            <s:Sequence effectEnd="minimizingEnded(event)">
                 <s:Fade duration="100" target="{widgetLabel}"/>
                 <s:Fade duration="100" target="{headerToolGroup}"/>
                 <s:Fade duration="100" target="{contentGroup}"/>
@@ -105,7 +126,7 @@
             </s:Sequence>
         </s:Transition>
         <s:Transition fromState="minimized" toState="open">
-            <s:Sequence>
+            <s:Sequence effectEnd="openEnded(event)">
                 <s:Fade duration="100" target="{widgetFrame}"/>
                 <s:Move target="{icon}"/>
                 <!-- Use mx:Resize instead of s:Resize for minimize to work with Flex 4.5 sdk -->
@@ -166,8 +187,8 @@
                                     color="{getStyle('borderColor')}"/>
             </s:stroke>
         </s:Rect>
-        <s:Rect width="99%" height="{header.height}"
-                left="1" top="1"
+        <s:Rect width="100%" height="{header.height}"
+                left="1" right="1" top="1"
                 topLeftRadiusX="5"
                 topRightRadiusX="5">
             <s:fill>
@@ -203,6 +224,7 @@
              height="30"
              right="70" top="0"
              alpha.closed="0"
+             hasFocusableChildren="true"
              includeInLayout.minimized="false"
              visible.minimized="false"
              visible.open="true">
@@ -222,41 +244,45 @@
                                 paddingLeft="2"
                                 verticalAlign="middle"/>
         </s:layout>
-        <mx:Image id="minimizeButton"
-                  buttonMode="true"
-                  includeInLayout="{hostComponent.enableMinimizeButton}"
-                  source="assets/images/w_min.png"
-                  toolTip="{resourceManager.getString('ViewerStrings', 'minimize')}"
-                  useHandCursor="true"
-                  visible="{hostComponent.enableMinimizeButton}"/>
-        <mx:Image id="closeButton"
-                  buttonMode="true"
-                  includeInLayout="{hostComponent.enableCloseButton}"
-                  source="assets/images/w_close.png"
-                  toolTip="{resourceManager.getString('ViewerStrings', 'close')}"
-                  useHandCursor="true"
-                  visible="{hostComponent.enableCloseButton}"/>
+        <components:FocusableImage id="minimizeButton"
+                                   buttonMode="true"
+                                   focusEnabled="true"
+                                   includeInLayout="{hostComponent.enableMinimizeButton}"
+                                   source="assets/images/w_min.png"
+                                   toolTip="{LocalizationUtil.getDefaultString('minimize')}"
+                                   useHandCursor="true"
+                                   visible="{hostComponent.enableMinimizeButton}"/>
+        <components:FocusableImage id="closeButton"
+                                   buttonMode="true"
+                                   focusEnabled="true"
+                                   includeInLayout="{hostComponent.enableCloseButton}"
+                                   source="assets/images/w_close.png"
+                                   toolTip="{LocalizationUtil.getDefaultString('close')}"
+                                   useHandCursor="true"
+                                   visible="{hostComponent.enableCloseButton}"/>
     </s:Group>
 
-    <mx:Image id="icon"
-              x.minimized="10" x.open="-20" y="12" y.minimized="-2" width="40" height="40"
-              buttonMode="false"
-              buttonMode.minimized="true"
-              source="{hostComponent.widgetIcon}"
-              useHandCursor="false"
-              useHandCursor.minimized="true"
-              visible="{hostComponent.enableIcon}"
-              visible.closed="false">
-        <mx:filters>
-            <mx:DropShadowFilter blurX="10" blurY="10"/>
-        </mx:filters>
-    </mx:Image>
+    <components:FocusableImage id="icon"
+                               x.minimized="10" x.open="-20" y="12" y.minimized="-2" width="40" height="40"
+                               buttonMode="false"
+                               buttonMode.minimized="true"
+                               source="{hostComponent.widgetIcon}"
+                               tabFocusEnabled="false"
+                               useHandCursor="false"
+                               useHandCursor.minimized="true"
+                               visible="{hostComponent.enableIcon}"
+                               visible.closed="false">
+        <components:filters>
+            <s:DropShadowFilter blurX="10" blurY="10"/>
+        </components:filters>
+    </components:FocusableImage>
 
     <s:Group id="contentGroup"
              left="20" right="20" top="35" bottom="20"
              alpha.closed="0"
              alpha.minimized="0"
              clipAndEnableScrolling="true"
+             visible.minimized="false"
              visible.normal="true"
              visible.open="true">
         <s:layout>

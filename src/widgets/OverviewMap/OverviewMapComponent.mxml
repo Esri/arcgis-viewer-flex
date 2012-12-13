@@ -21,6 +21,7 @@
                       xmlns:mx="library://ns.adobe.com/flex/mx"
                       xmlns:esri="http://www.esri.com/2008/ags"
                       creationComplete="init()">
+
     <!-- this component is used by the OverviewMapWidget -->
     <fx:Script>
         <![CDATA[
@@ -30,6 +31,7 @@
             import com.esri.ags.events.MapEvent;
             import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.MapPoint;
+            import com.esri.ags.geometry.Polygon;
             import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
             import com.esri.ags.layers.ArcGISImageServiceLayer;
             import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
@@ -43,7 +45,6 @@
             import com.esri.ags.virtualearth.VETiledLayer;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.ConfigData;
-            import com.esri.viewer.ViewerContainer;
 
             import mx.collections.ArrayCollection;
             import mx.core.FlexGlobals;
@@ -65,8 +66,10 @@
             private var baseMapSwitched:Boolean;
             private var currentBaseMapId:String;
             private var hasOverviewGraphicBeenMoved:Boolean = false;
-            private var xOffset:Number;
-            private var yOffset:Number;
+            private var lastMouseMapX:Number;
+            private var lastMouseMapY:Number;
+            private var basemapLayerObjectToLayer:Dictionary;
+            private var isCollapsible:Boolean = true;
 
             [Bindable]
             private var openToolTip:String;
@@ -75,6 +78,10 @@
 
             private function init():void
             {
+                // wait for the current state to be updated based on config
+                viewBox.visible = false;
+                borderRect1.visible = false;
+
                 overviewGraphic.buttonMode = true;
                 toggleIcon.addEventListener(MouseEvent.CLICK, toggleIcon_clickHandler);
                 viewBox.setStyle("backgroundColor", FlexGlobals.topLevelApplication.getStyle("backgroundColor"));
@@ -84,8 +91,6 @@
             {
                 currentState = (currentState == "collapsed") ? "expanded" : "collapsed";
             }
-
-            private var _configXML:XML;
 
             public function set expansionDirection(direction:String):void
             {
@@ -114,6 +119,8 @@
                     }
                 }
             }
+
+            private var _configXML:XML;
 
             public function get configXML():XML
             {
@@ -170,30 +177,33 @@
                     else
                     {
                         useBaseMapLayer = true;
+                        basemapLayerObjectToLayer = new Dictionary();
+
                         // get the base map layers
-                        for (var i:uint = 0; i < configData.basemaps.length; i++)
+                        for each (var basemapLayerObject:Object in configData.basemaps)
                         {
-                            type = configData.basemaps[i].type;
-                            useProxy = configData.basemaps[i].useProxy;
+                            type = basemapLayerObject.type;
+                            useProxy = basemapLayerObject.useProxy;
                             proxyUrl = configData.proxyUrl;
 
-                            const alpha:Number = Number(configData.basemaps[i].alpha);
-                            const autoRefresh:Number = Number(configData.basemaps[i].autoRefresh);
-                            const label:String = configData.basemaps[i].label;
-                            const token:String = configData.basemaps[i].token;
-                            const urlBaseMap:String = configData.basemaps[i].url;
-                            const bingMapKey:String = configData.basemaps[i].key;
-                            const style:String = configData.basemaps[i].style;
-                            const visible:Boolean = configData.basemaps[i].visible;
-                            const visibleLayers:String = configData.basemaps[i].visibleLayers;
-                            const culture:String = configData.basemaps[i].culture;
-                            const useamf:Boolean = configData.basemaps[i].useamf;
-                            const mode:String = configData.basemaps[i].mode;
-                            const noData:Number = Number(configData.basemaps[i].noData);
-                            const serviceHost:String = configData.basemaps[i].serviceHost;
-                            const serviceName:String = configData.basemaps[i].serviceName;
-                            const definitionExpression:String = configData.basemaps[i].definitionExpression;
+                            const alpha:Number = Number(basemapLayerObject.alpha);
+                            const autoRefresh:Number = Number(basemapLayerObject.autoRefresh);
+                            const label:String = basemapLayerObject.label;
+                            const token:String = basemapLayerObject.token;
+                            const urlBaseMap:String = basemapLayerObject.url;
+                            const bingMapKey:String = basemapLayerObject.key;
+                            const style:String = basemapLayerObject.style;
+                            const visible:Boolean = basemapLayerObject.visible;
+                            const visibleLayers:String = basemapLayerObject.visibleLayers;
+                            const culture:String = basemapLayerObject.culture;
+                            const useamf:Boolean = basemapLayerObject.useamf;
+                            const mode:String = basemapLayerObject.mode;
+                            const noData:Number = Number(basemapLayerObject.noData);
+                            const serviceHost:String = basemapLayerObject.serviceHost;
+                            const serviceName:String = basemapLayerObject.serviceName;
+                            const definitionExpression:String = basemapLayerObject.definitionExpression;
 
+                            var layerToAdd:Layer = null;
                             switch (type.toLowerCase())
                             {
                                 case "tiled":
@@ -207,7 +217,8 @@
                                     {
                                         tiledLayer.proxyURL = proxyUrl;
                                     }
-                                    overviewMap.addLayer(tiledLayer);
+
+                                    layerToAdd = tiledLayer;
                                     break;
                                 }
                                 case "dynamic":
@@ -230,7 +241,7 @@
                                     {
                                         dynLayer.proxyURL = proxyUrl;
                                     }
-                                    overviewMap.addLayer(dynLayer);
+                                    layerToAdd = dynlayer;
                                     break;
                                 }
                                 case "feature":
@@ -254,7 +265,7 @@
                                     {
                                         featureLayer.definitionExpression = definitionExpression;
                                     }
-                                    overviewMap.addLayer(featureLayer);
+                                    layerToAdd = featureLayer;
                                     break;
                                 }
                                 case "bing":
@@ -272,7 +283,7 @@
                                     {
                                         veTiledLayer.culture = culture;
                                     }
-                                    overviewMap.addLayer(veTiledLayer);
+                                    layerToAdd = veTiledLayer;
                                     break;
                                 }
                                 case "image":
@@ -287,7 +298,7 @@
                                     {
                                         imgLayer.proxyURL = proxyUrl;
                                     }
-                                    overviewMap.addLayer(imgLayer);
+                                    layerToAdd = imgLayer;
                                     break;
                                 }
                                 case "arcims":
@@ -311,7 +322,7 @@
                                     {
                                         arcimsLayer.proxyURL = proxyUrl;
                                     }
-                                    overviewMap.addLayer(arcimsLayer);
+                                    layerToAdd = arcimsLayer;
                                     break;
                                 }
                                 case "osm":
@@ -321,14 +332,32 @@
                                     osmLayer.id = label;
                                     osmLayer.name = label;
                                     osmLayer.visible = visible;
-                                    overviewMap.addLayer(osmLayer);
+                                    layerToAdd = osmLayer;
                                     break;
                                 }
+                            }
+
+                            if (layerToAdd)
+                            {
+                                overviewMap.addLayer(layerToAdd);
+                                basemapLayerObjectToLayer[basemapLayerObject] = layerToAdd;
                             }
                         }
                         AppEvent.addListener(AppEvent.BASEMAP_SWITCH, viewContainer_basemapSwitchHandler);
                     }
-                    currentState = configXML.initialstate == "open" ? "expanded" : "collapsed";
+                    // collapsible
+                    if (configXML.collapsible.length() > 0)
+                    {
+                        isCollapsible = configXML.collapsible == "true";
+                    }
+                    if (isCollapsible)
+                    {
+                        currentState = configXML.initialstate == "open" ? "expanded" : "collapsed";
+                    }
+                    else
+                    {
+                        currentState = "noncollapsible";
+                    }
                     if (currentState == "collapsed") // turn layer(s) off if component is collapsed
                     {
                         for each (var layer:Layer in overviewMap.layers)
@@ -336,33 +365,32 @@
                             layer.visible = false;
                         }
                     }
+                    viewBox.visible = true;
+                    borderRect1.visible = true;
                 }
             }
 
             private function updateOverviewExtentFromMap():void
             {
                 overviewMap.extent = map.extent.expand(3);
-                overviewGraphic.geometry = map.extent;
+                overviewGraphic.geometry = map.visibleArea;
             }
 
             private function updateMapExtentFromOverview():void
             {
-                map.extent = overviewGraphic.geometry as Extent;
+                map.center = overviewGraphic.geometry.extent.center;
             }
 
             private function map_extentChangeHandler(event:ExtentEvent):void
             {
                 updateOverviewExtentFromMap();
+                updateOverviewGraphicVisibility();
+            }
 
+            private function updateOverviewGraphicVisibility():void
+            {
                 //hide overview box if larger than overview map
-                if (!overviewMap.extent.contains(overviewGraphic.geometry))
-                {
-                    overviewGraphic.visible = false;
-                }
-                else
-                {
-                    overviewGraphic.visible = true;
-                }
+                overviewGraphic.visible = overviewMap.extent.contains(overviewGraphic.geometry);
             }
 
             private function overviewMap_loadHandler(event:MapEvent):void
@@ -381,6 +409,7 @@
 
                 map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
                 updateOverviewExtentFromMap();
+                updateOverviewGraphicVisibility();
             }
 
             private function overviewMap_mouseRollOutHandler(event:MouseEvent):void
@@ -404,20 +433,32 @@
 
                 var overviewCenterMapPoint:MapPoint = overviewGraphic.geometry.extent.center;
                 var mouseMapPoint:MapPoint = overviewMap.toMapFromStage(event.stageX, event.stageY);
-                xOffset = mouseMapPoint.x - overviewCenterMapPoint.x;
-                yOffset = mouseMapPoint.y - overviewCenterMapPoint.y;
+                lastMouseMapX = mouseMapPoint.x;
+                lastMouseMapY = mouseMapPoint.y;
             }
 
             private function overviewMap_mouseMoveHandler(event:MouseEvent):void
             {
                 hasOverviewGraphicBeenMoved = true;
 
-                var overviewExtent:Extent = overviewGraphic.geometry as Extent;
-                var mouseMapPoint:MapPoint = overviewMap.toMapFromStage(event.stageX, event.stageY);
-                mouseMapPoint.x -= xOffset;
-                mouseMapPoint.y -= yOffset;
+                var overviewPolygon:Polygon = overviewGraphic.geometry as Polygon;
+                var overviewCenterMapPoint:MapPoint = overviewPolygon.extent.center;
 
-                overviewGraphic.geometry = overviewExtent.centerAt(mouseMapPoint);
+                var mouseMapPoint:MapPoint = overviewMap.toMapFromStage(event.stageX, event.stageY);
+                var deltaMapX:Number = mouseMapPoint.x - lastMouseMapX;
+                var deltaMapY:Number = mouseMapPoint.y - lastMouseMapY;
+                lastMouseMapX = mouseMapPoint.x;
+                lastMouseMapY = mouseMapPoint.y;
+
+                var ring:Array = overviewPolygon.removeRing(0)[0];
+                for (var iMapPoint:int = 4; iMapPoint >= 0; iMapPoint--)
+                {
+                    ring[iMapPoint].x += deltaMapX;
+                    ring[iMapPoint].y += deltaMapY;
+                }
+                overviewPolygon.addRing(ring);
+
+                overviewGraphic.refresh();
             }
 
             private function overviewMap_mouseUpHandler(event:MouseEvent):void
@@ -437,7 +478,7 @@
             {
                 baseMapSwitched = true;
                 currentBaseMapId = event.data as String;
-                if (currentState == "expanded")
+                if (currentState == "expanded" || currentState == "noncollapsible")
                 {
                     showCurrentBaseMap(currentBaseMapId);
                 }
@@ -486,7 +527,7 @@
 
             private function sequence_effectStartHandler(event:EffectEvent):void
             {
-                if (currentState == "expanded")
+                if (currentState == "expanded" || currentState == "noncollapsible")
                 {
                     if (useBaseMapLayer)
                     {
@@ -497,25 +538,18 @@
                         else
                         {
                             // on start up and if basemap is not switched
-                            for (var i:int = 0; i < configData.basemaps.length; i++)
+                            for (var basemapLayerObject:Object in basemapLayerObjectToLayer)
                             {
-                                var basemapLabel:String = configData.basemaps[i].label;
-                                var isVisible:Boolean = configData.basemaps[i].visible;
-                                for each (var layer:Layer in overviewMap.layers)
-                                {
-                                    if (layer.id == basemapLabel)
-                                    {
-                                        layer.visible = isVisible;
-                                    }
-                                }
+                                var layer:Layer = basemapLayerObjectToLayer[basemapLayerObject];
+                                layer.visible = basemapLayerObject.visible;
                             }
                         }
                     }
                     else
                     {
-                        for each (var layer1:Layer in overviewMap.layers)
+                        for each (var overviewMapLayer:Layer in overviewMap.layers)
                         {
-                            layer1.visible = true;
+                            overviewMapLayer.visible = true;
                         }
                     }
                 }
@@ -540,10 +574,20 @@
     <s:states>
         <s:State name="collapsed"/>
         <s:State name="expanded"/>
+        <s:State name="noncollapsible"/>
     </s:states>
 
     <s:transitions>
-        <s:Transition fromState="*" toState="*">
+        <s:Transition fromState="collapsed" toState="expanded">
+            <s:Sequence effectEnd="sequence_effectEndHandler(event)" effectStart="sequence_effectStartHandler(event)">
+                <s:Resize duration="800" target="{viewBox}"/>
+                <s:Rotate angleBy="180"
+                          autoCenterTransform="true"
+                          duration="300"
+                          target="{toggleIcon}"/>
+            </s:Sequence>
+        </s:Transition>
+        <s:Transition fromState="expanded" toState="collapsed">
             <s:Sequence effectEnd="sequence_effectEndHandler(event)" effectStart="sequence_effectStartHandler(event)">
                 <s:Resize duration="800" target="{viewBox}"/>
                 <s:Rotate angleBy="180"
@@ -555,10 +599,11 @@
     </s:transitions>
 
     <s:BorderContainer id="viewBox"
-                       width.collapsed="{toggleIcon.width}" width.expanded="250" height.collapsed="{toggleIcon.height}" height.expanded="250"
+                       width="250" width.collapsed="{toggleIcon.width}" height="250" height.collapsed="{toggleIcon.height}"
                        backgroundAlpha="1.0">
         <esri:Map id="overviewMap"
                   width="250" height="250"
+                  attributionVisible="false"
                   clickRecenterEnabled="false"
                   doubleClickZoomEnabled="false"
                   keyboardNavigationEnabled="false"
@@ -574,7 +619,9 @@
                   zoomSliderVisible="false"/>
         <s:BorderContainer id="mapMask"
                            width="{viewBox.width}" height="{viewBox.height}"/>
-        <s:Group width="{viewBox.width}" height="{viewBox.height}">
+        <s:Group width="{viewBox.width}" height="{viewBox.height}"
+                 includeInLayout.noncollapsible="false"
+                 visible.noncollapsible="false">
             <mx:Image id="toggleIcon"
                       width="23" height="23"
                       buttonMode="true"
@@ -587,16 +634,12 @@
             <s:BorderContainer id="iconMask"
                                width="{toggleIcon.width}" height="{toggleIcon.height}"/>
         </s:Group>
-
     </s:BorderContainer>
-    <s:Rect left="-1" right="-1" top="-1" bottom="-1">
+    <s:Rect id="borderRect1"
+            left="-1" right="-1" top="-1" bottom="-1">
         <s:stroke>
             <s:SolidColorStroke color="{getStyle('contentBackgroundColor')}" weight="1"/>
         </s:stroke>
     </s:Rect>
-    <s:Rect left="-5" right="-5" top="-5" bottom="-5">
-        <s:stroke>
-            <s:SolidColorStroke color="{getStyle('color')}" weight="2"/>
-        </s:stroke>
-    </s:Rect>
+
 </s:SkinnableContainer>

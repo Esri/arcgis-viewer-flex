@@ -22,29 +22,34 @@
                    xmlns:viewer="com.esri.viewer.*"
                    xmlns:GeoRSS="widgets.GeoRSS.*"
                    x="600" y="300"
-                   widgetConfigLoaded="init()">
+                   initialize="basewidget_initializeHandler()"
+                   widgetConfigLoaded="basewidget_widgetConfigLoaded()">
 
     <fx:Script>
         <![CDATA[
             import com.esri.ags.Graphic;
             import com.esri.ags.Map;
+            import com.esri.ags.clusterers.IClusterer;
             import com.esri.ags.geometry.Geometry;
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.layers.GraphicsLayer;
+            import com.esri.ags.portal.PopUpRenderer;
+            import com.esri.ags.portal.supportClasses.PopUpInfo;
+            import com.esri.ags.portal.supportClasses.PopUpMediaInfo;
             import com.esri.ags.symbols.PictureMarkerSymbol;
             import com.esri.ags.symbols.SimpleFillSymbol;
             import com.esri.ags.symbols.SimpleLineSymbol;
             import com.esri.ags.symbols.Symbol;
-            import com.esri.ags.utils.StringUtil;
             import com.esri.ags.utils.WebMercatorUtil;
-            import com.esri.ags.portal.PopUpRenderer;
-            import com.esri.ags.portal.supportClasses.PopUpInfo;
-            import com.esri.ags.portal.supportClasses.PopUpMediaInfo;
+            import com.esri.viewer.utils.ClustererParser;
+            import com.esri.viewer.utils.ErrorMessageUtil;
             import com.esri.viewer.utils.GeoRSSUtil;
             import com.esri.viewer.utils.Namespaces;
 
             import mx.collections.ArrayCollection;
             import mx.events.FlexEvent;
+            import mx.formatters.DateFormatter;
+            import mx.rpc.events.FaultEvent;
             import mx.rpc.events.ResultEvent;
 
             import spark.components.supportClasses.ItemRenderer;
@@ -53,6 +58,7 @@
             import widgets.supportClasses.ResultItem;
 
             private static const ATOM:Namespace = Namespaces.ATOM_NS;
+            private static const DC:Namespace = Namespaces.DC_NS;
 
             private static const RE:RegExp = /M[ ](?P<mag>[^,]+),\.*/;
 
@@ -60,7 +66,6 @@
             private var loadingLabel:String;
 
             private var querySource:String;
-            private var queryExpr:String;
             private var queryFields:XMLList;
             private var queryTitleField:String;
             private var queryLinkField:String;
@@ -90,7 +95,23 @@
 
             private var popUpRenderer:PopUpRenderer = new PopUpRenderer();
 
-            private function init():void
+            private function basewidget_initializeHandler():void
+            {
+                if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
+                {
+                    this.percentWidth = this.percentHeight = 100;
+                    wTemplate.percentWidth = wTemplate.percentHeight = 100;
+                }
+                else
+                {
+                    wTemplate.width = 330;
+                    wTemplate.height = 300;
+                    wTemplate.minWidth = 300
+                    wTemplate.minHeight = 100;
+                }
+            }
+
+            private function basewidget_widgetConfigLoaded():void
             {
                 if (configXML)
                 {
@@ -98,7 +119,6 @@
                     loadingLabel = configXML.labels.loadinglabel || getDefaultString("loadingLabel");
 
                     querySource = configXML.source;
-                    queryExpr = configXML.query;
                     queryFields = configXML.fields.field;
                     queryTitleField = configXML.titlefield;
                     queryLinkField = configXML.linkfield;
@@ -109,8 +129,10 @@
                     }
                     //marker symbol
                     const resultMarkerSymbolURL:String = configXML.symbols.picturemarkersymbol.@url || widgetIcon;
-                    const resultMarkerSymbolHeight:Number = (configXML.symbols.picturemarkersymbol.@height != null) ? configXML.symbols.picturemarkersymbol.@height : 30;
-                    const resultMarkerSymbolWidth:Number = (configXML.symbols.picturemarkersymbol.@width != null) ? configXML.symbols.picturemarkersymbol.@width : 30;
+                    const parsedResultMarkerSymbolHeight:Number = parseFloat(configXML.symbols.picturemarkersymbol.@height[0]);
+                    const resultMarkerSymbolHeight:Number = isNaN(parsedResultMarkerSymbolHeight) ? 0 : parsedResultMarkerSymbolHeight;
+                    const parsedResultMarkerSymbolWidth:Number = parseFloat(configXML.symbols.picturemarkersymbol.@width[0]);
+                    const resultMarkerSymbolWidth:Number = isNaN(parsedResultMarkerSymbolWidth) ? 0 : parsedResultMarkerSymbolWidth;
                     const resultMarkerSymbolXOffset:Number = (configXML.symbols.picturemarkersymbol.@xoffset != null) ? configXML.symbols.picturemarkersymbol.@xoffset : 0;
                     const resultMarkerSymbolYOffset:Number = (configXML.symbols.picturemarkersymbol.@yoffset != null) ? configXML.symbols.picturemarkersymbol.@yoffset : 0;
                     resultMarkerSymbol = new PictureMarkerSymbol(resultMarkerSymbolURL, resultMarkerSymbolWidth, resultMarkerSymbolHeight, resultMarkerSymbolXOffset, resultMarkerSymbolYOffset);
@@ -133,6 +155,14 @@
                     graphicsLayer.name = configXML.layername || widgetTitle;
                     graphicsLayer.symbol = resultMarkerSymbol;
                     graphicsLayer.addEventListener(FlexEvent.HIDE, graphicsLayer_hideHandler);
+
+                    var clustererParser:ClustererParser = new ClustererParser();
+                    var clusterer:IClusterer = clustererParser.parseClusterer(configXML.clustering[0]);
+                    if (clusterer)
+                    {
+                        graphicsLayer.clusterer = clusterer;
+                    }
+
                     map.addLayer(graphicsLayer);
 
                     //useproxy
@@ -196,14 +226,9 @@
                 }
             }
 
-            private function faultHandler(event:mx.rpc.events.FaultEvent):void
+            private function faultHandler(event:FaultEvent):void
             {
-                var sInfo:String = getDefaultString("errorLabel") + ":";
-                sInfo += "Event Target: " + event.target + "\n\n";
-                sInfo += "Event Type: " + event.type + "\n\n";
-                sInfo += StringUtil.substitute(getDefaultString('faultCode'), event.fault.faultCode) + "\n\n";
-                sInfo += StringUtil.substitute(getDefaultString('faultInfo'), event.fault.faultString);
-                showError(sInfo);
+                showError(ErrorMessageUtil.buildFaultMessage(event.fault));
             }
 
             private function loadRSSData(event:ResultEvent):void
@@ -225,12 +250,12 @@
                         }
                         else
                         {
-                            showMessage("Unable to determine RSS feed type.", false);
+                            showMessage(getDefaultString("unknownRSSFeedTypeError"), false);
                         }
                     }
                     else
                     {
-                        showMessage("HTTP Response is not XML.", false);
+                        showMessage(getDefaultString("httpResponseNotXMLError"), false);
                     }
                     geoRSSFeedAC = createGeoRSSFeed(ac);
 
@@ -239,7 +264,7 @@
                 }
                 catch (error:Error)
                 {
-                    showMessage("A problem occurred while parsing the RSS feed. " + error.message, false);
+                    showMessage(getDefaultString("rssFeedParsingError", error.message), false);
                 }
             }
 
@@ -249,61 +274,62 @@
                 graphicsLayer.clear();
                 var result:ArrayCollection = new ArrayCollection();
 
+                var isAnAtomFeed:Boolean = rsstype == "ATOM";
                 for (var i:Number = 0; i < ac.length; i++)
                 {
                     var recxml:XML = XML(ac.getItemAt(i));
-
-                    var geometry:Geometry = GeoRSSUtil.toGeometry(recxml);
 
                     var icon:String = widgetIcon;
                     var title:String = "";
                     if (queryTitleField)
                     {
-                        title = recxml[queryTitleField];
+                        title = isAnAtomFeed ? recxml.ATOM::[ queryTitleField ] : recxml[queryTitleField];
                     }
                     if (!title)
                     {
                         title = widgetTitle;
                     }
                     var content:String = "";
-                    var j:Number = 0;
-                    for each (var fieldXML:XML in queryFields)
+                    if (isAnAtomFeed)
                     {
-                        var value:String = recxml[fieldXML.@name[0]];
-                        if (value)
+                        var date:Date = DateFormatter.parseDateString(recxml.DC::date);
+                        content += date.toString();
+                    }
+                    else
+                    {
+                        var j:Number = 0;
+                        for each (var fieldXML:XML in queryFields)
                         {
-                            if (fieldXML.@alias[0])
+                            var value:String = recxml[fieldXML.@name[0]];
+                            if (value)
                             {
-                                content += fieldXML.@alias[0];
+                                if (fieldXML.@alias[0])
+                                {
+                                    content += fieldXML.@alias[0];
+                                }
+                                else
+                                {
+                                    content += fieldXML.@name[0];
+                                }
+                                content += ": " + value + "\n";
                             }
-                            else
-                            {
-                                content += fieldXML.@name[0];
-                            }
-                            content += ": " + value + "\n";
                         }
                     }
                     var link:String;
                     if (queryLinkField)
                     {
-                        link = recxml[queryLinkField];
+                        link = isAnAtomFeed ? recxml.ATOM::[ queryLinkField ].@href[0] : recxml[queryLinkField];
                     }
 
-                    if (map.spatialReference.wkid == 102113 || map.spatialReference.wkid == 102100 || map.spatialReference.wkid == 3857)
+                    var graphic:Graphic = new Graphic();
+                    graphic.checkForMouseListeners = false;
+                    // geometry
+                    var geometry:Geometry = GeoRSSUtil.toGeometry(recxml);
+                    if (map.spatialReference.isWebMercator())
                     {
                         geometry = WebMercatorUtil.geographicToWebMercator(geometry);
                     }
-
-                    var graphic:Graphic = new Graphic(geometry);
-                    graphic.checkForMouseListeners = false;
-
-                    var resultAttributes:ResultAttributes = new ResultAttributes();
-                    resultAttributes.title = title;
-                    resultAttributes.content = content;
-                    resultAttributes.link = link ? link : null;
-
-                    var geoRSSFeed:ResultItem = new ResultItem(graphic, resultAttributes);
-
+                    graphic.geometry = geometry;
                     if (geometry)
                     {
                         switch (geometry.type)
@@ -325,9 +351,15 @@
                             }
                         }
                     }
+                    // attributes
+                    var resultAttributes:ResultAttributes = new ResultAttributes();
+                    resultAttributes.title = title;
+                    resultAttributes.content = content;
+                    resultAttributes.link = link ? link : null;
                     graphic.attributes = resultAttributes;
-                    result.addItem(geoRSSFeed);
 
+                    var geoRSSFeed:ResultItem = new ResultItem(graphic, resultAttributes);
+                    result.addItem(geoRSSFeed);
                     if (geoRSSFeed.center && !isNaN(geoRSSFeed.center.x) && !isNaN(geoRSSFeed.center.y)) // make sure it is a valid point
                     {
                         graphicsLayer.add(graphic);
@@ -488,10 +520,7 @@
     </fx:Declarations>
 
     <viewer:WidgetTemplate id="wTemplate"
-                           width="330" height="300"
                            closed="widgetClosedHandler(event)"
-                           minHeight="100"
-                           minWidth="300"
                            open="widgetOpenedHandler(event)">
         <s:NavigatorContent width="100%" height="100%">
             <s:layout>

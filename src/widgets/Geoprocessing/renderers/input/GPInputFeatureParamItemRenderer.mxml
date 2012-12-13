@@ -19,6 +19,7 @@
 <s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
                 xmlns:s="library://ns.adobe.com/flex/spark"
                 xmlns:mx="library://ns.adobe.com/flex/mx"
+                width="100%"
                 autoDrawBackground="false">
     <fx:Script>
         <![CDATA[
@@ -27,6 +28,7 @@
             import com.esri.ags.events.GraphicsLayerEvent;
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.tools.DrawTool;
+            import com.esri.viewer.utils.LocalizationUtil;
 
             import mx.collections.ArrayCollection;
             import mx.collections.ArrayList;
@@ -38,8 +40,6 @@
             import widgets.Geoprocessing.supportClasses.FeatureInputParamEvent;
             import widgets.Geoprocessing.supportClasses.InputParamDataGroup;
             import widgets.Geoprocessing.supportClasses.VisibleGraphicsLayersWatcher;
-
-            private const VIEWER_STRINGS:String = "ViewerStrings";
 
             [Bindable]
             private var visibleValidGraphicsLayers:ArrayList;
@@ -81,6 +81,11 @@
 
                     switch (featureParam.mode)
                     {
+                        case FeatureLayerParameter.MAP_EXTENT_SOURCE:
+                        {
+                            currentState = "fromMapExtent";
+                            break;
+                        }
                         case FeatureLayerParameter.LAYERS_SOURCE:
                         {
                             initializeAndSetLayerSelectionMode();
@@ -340,13 +345,9 @@
                 var featureInputParamEvent:FeatureInputParamEvent = new FeatureInputParamEvent(FeatureInputParamEvent.DRAW, data as IGPFeatureParameter, drawType);
                 inputParamDataGroup.dispatchFeatureInputParamEvent(featureInputParamEvent);
             }
-
-            public function getDefaultString(resourceName:String):String
-            {
-                return resourceManager.getString(VIEWER_STRINGS, resourceName);
-            }
         ]]>
     </fx:Script>
+
     <fx:Declarations>
         <mx:GlowFilter id="glowFilter"
                        alpha="1"
@@ -354,6 +355,7 @@
                        inner="true"
                        strength="2"/>
     </fx:Declarations>
+
     <s:states>
         <s:State name="selectSingleLayer"/>
         <s:State name="selectLayers"/>
@@ -361,17 +363,24 @@
         <s:State name="drawPolyline"/>
         <s:State name="drawPolygon"/>
         <s:State name="drawAll"/>
+        <s:State name="fromMapExtent"/>
     </s:states>
+
     <mx:FormItem width="100%"
                  label="{data.label}"
                  required="{data.required}">
+        <s:Label includeIn="fromMapExtent" text="{LocalizationUtil.getDefaultString('currentExtentWillBeUsedAsInput')}"/>
+
         <s:Label includeIn="selectSingleLayer" text="{singleGraphicsLayerSelectionName}"/>
+
         <mx:ComboBox id="visibleGraphicsLayersSelection"
+                     width="100%"
                      change="updateSelectedGraphicsLayer()"
                      creationComplete="updateSelectedGraphicsLayer()"
                      dataProvider="{visibleValidGraphicsLayers}"
                      includeIn="selectLayers"
                      labelField="name"/>
+
         <s:HGroup id="drawImageGroup"
                   width="100%"
                   gap="0">
@@ -383,8 +392,9 @@
                       rollOut="drawIcon_rollOutHandler(event)"
                       rollOver="drawIcon_rollOverHandler(event)"
                       source="assets/images/i_draw_point.png"
-                      toolTip="{getDefaultString('drawPointLabel')}"
+                      toolTip="{LocalizationUtil.getDefaultString('drawPointLabel')}"
                       useHandCursor="true"/>
+
             <mx:Image name="{DrawTool.POLYLINE}"
                       width="40" height="40"
                       buttonMode="true"
@@ -393,8 +403,9 @@
                       rollOut="drawIcon_rollOutHandler(event)"
                       rollOver="drawIcon_rollOverHandler(event)"
                       source="assets/images/i_draw_line.png"
-                      toolTip="{getDefaultString('drawLineLabel')}"
+                      toolTip="{LocalizationUtil.getDefaultString('drawLineLabel')}"
                       useHandCursor="true"/>
+
             <mx:Image name="{DrawTool.FREEHAND_POLYLINE}"
                       width="40" height="40"
                       buttonMode="true"
@@ -403,8 +414,9 @@
                       rollOut="drawIcon_rollOutHandler(event)"
                       rollOver="drawIcon_rollOverHandler(event)"
                       source="assets/images/i_draw_freeline.png"
-                      toolTip="{getDefaultString('drawFreehandLineLabel')}"
+                      toolTip="{LocalizationUtil.getDefaultString('drawFreehandLineLabel')}"
                       useHandCursor="true"/>
+
             <mx:Image name="{DrawTool.EXTENT}"
                       width="40" height="40"
                       buttonMode="true"
@@ -413,8 +425,9 @@
                       rollOut="drawIcon_rollOutHandler(event)"
                       rollOver="drawIcon_rollOverHandler(event)"
                       source="assets/images/i_draw_rect.png"
-                      toolTip="{getDefaultString('drawRectangleLabel')}"
+                      toolTip="{LocalizationUtil.getDefaultString('drawRectangleLabel')}"
                       useHandCursor="true"/>
+
             <mx:Image name="{DrawTool.CIRCLE}"
                       width="40" height="40"
                       buttonMode="true"
@@ -423,8 +436,9 @@
                       rollOut="drawIcon_rollOutHandler(event)"
                       rollOver="drawIcon_rollOverHandler(event)"
                       source="assets/images/i_draw_circle.png"
-                      toolTip="{getDefaultString('drawCircleLabel')}"
+                      toolTip="{LocalizationUtil.getDefaultString('drawCircleLabel')}"
                       useHandCursor="true"/>
+
             <mx:Image name="{DrawTool.ELLIPSE}"
                       width="40" height="40"
                       buttonMode="true"
@@ -433,8 +447,9 @@
                       rollOut="drawIcon_rollOutHandler(event)"
                       rollOver="drawIcon_rollOverHandler(event)"
                       source="assets/images/i_draw_ellipse.png"
-                      toolTip="{getDefaultString('drawEllipseLabel')}"
+                      toolTip="{LocalizationUtil.getDefaultString('drawEllipseLabel')}"
                       useHandCursor="true"/>
+
             <mx:Image name="{DrawTool.POLYGON}"
                       width="40" height="40"
                       buttonMode="true"
@@ -443,8 +458,9 @@
                       rollOut="drawIcon_rollOutHandler(event)"
                       rollOver="drawIcon_rollOverHandler(event)"
                       source="assets/images/i_draw_poly.png"
-                      toolTip="{getDefaultString('drawPolygonLabel')}"
+                      toolTip="{LocalizationUtil.getDefaultString('drawPolygonLabel')}"
                       useHandCursor="true"/>
+
             <mx:Image name="{DrawTool.FREEHAND_POLYGON}"
                       width="40" height="40"
                       buttonMode="true"
@@ -453,16 +469,17 @@
                       rollOut="drawIcon_rollOutHandler(event)"
                       rollOver="drawIcon_rollOverHandler(event)"
                       source="assets/images/i_draw_freepoly.png"
-                      toolTip="{getDefaultString('drawFreehandPolygonLabel')}"
+                      toolTip="{LocalizationUtil.getDefaultString('drawFreehandPolygonLabel')}"
                       useHandCursor="true"/>
         </s:HGroup>
+
         <s:Label buttonMode="true"
                  click="inputParamDataGroup.dispatchFeatureInputParamEvent(new FeatureInputParamEvent(FeatureInputParamEvent.CLEAR, data as IGPFeatureParameter))"
-                 excludeFrom="selectLayers, selectSingleLayer"
+                 excludeFrom="selectLayers, selectSingleLayer, fromMapExtent"
                  fontWeight="bold"
-                 text="{getDefaultString('clearLabel')}"
+                 text="{LocalizationUtil.getDefaultString('clearLabel')}"
                  textDecoration="underline"
-                 toolTip="{getDefaultString('drawClearLabel')}"
+                 toolTip="{LocalizationUtil.getDefaultString('drawClearLabel')}"
                  visible="{graphicsProvider.length &gt; 0}"/>
     </mx:FormItem>
 </s:ItemRenderer>

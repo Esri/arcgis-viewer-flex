@@ -22,7 +22,6 @@
                    xmlns:viewer="com.esri.viewer.*"
                    layout="horizontal"
                    widgetConfigLoaded="basewidget_widgetConfigLoadedHandler(event)">
-
     <fx:Script>
         <![CDATA[
             import com.esri.ags.events.MapEvent;

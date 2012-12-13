@@ -16,263 +16,299 @@
 package widgets.Geoprocessing.parameters
 {
 
-import com.esri.ags.renderers.ClassBreaksRenderer;
 import com.esri.ags.renderers.IRenderer;
-import com.esri.ags.renderers.SimpleRenderer;
-import com.esri.ags.renderers.UniqueValueRenderer;
-import com.esri.ags.renderers.supportClasses.ClassBreakInfo;
-import com.esri.ags.renderers.supportClasses.UniqueValueInfo;
-import com.esri.ags.symbols.PictureMarkerSymbol;
-import com.esri.ags.symbols.SimpleFillSymbol;
-import com.esri.ags.symbols.SimpleLineSymbol;
-import com.esri.ags.symbols.SimpleMarkerSymbol;
-import com.esri.ags.symbols.Symbol;
+import com.esri.viewer.utils.RendererParser;
 
 public class BaseParamParser
 {
+    private const SIMPLE_RENDERER_TYPE:String = "simple";
+    private const CLASS_BREAKS_RENDERER_TYPE:String = "classbreaks";
+    private const UNIQUE_VALUE_RENDERER_TYPE:String = "uniquevalue";
+
+    private const SIMPLE_MARKER_SYMBOL_TYPE:String = "simplemarker";
+    private const PICTURE_MARKER_SYMBOL_TYPE:String = "picturemarker";
+    private const SIMPLE_FILL_SYMBOL_TYPE:String = "simplefill";
+    private const SIMPLE_LINE_SYMBOL_TYPE:String = "simpleline";
+
+    private const SIMPLE_RENDERER_TAG_NAME:String = "simplerenderer";
+    private const CLASS_BREAKS_RENDERER_TAG_NAME:String = "classbreaksrenderer";
+    private const UNIQUE_VALUE_RENDERER_TAG_NAME:String = "uniquevaluerenderer";
+
+    private const SIMPLE_LINE_SYMBOL_TAG_NAME:String = "simplelinesymbol";
+    private const SIMPLE_FILL_SYMBOL_TAG_NAME:String = "simplefillsymbol";
+    private const PICTURE_MARKER_SYMBOL_TAG_NAME:String = "picturemarkersymbol";
+    private const SIMPLE_MARKER_SYMBOL_TAG_NAME:String = "simplemarkersymbol";
+
+    protected var rendererParser:RendererParser;
+
+    public function BaseParamParser()
+    {
+        rendererParser = new RendererParser();
+    }
+
     public function parseParameters(paramsXML:XMLList):Array
     {
         throw new Error("Abstract class - must be implemented by subclasses.");
     }
 
-    protected function parseRenderer(rendererXML:XML, geometryType:String):IRenderer
+    protected function parseRenderer(paramXML:XML, geometryType:String):IRenderer
     {
-        var renderer:IRenderer
+        const hasGPRendererXML:Boolean = paramXML.renderer[0];
 
-        if (rendererXML)
+        if (hasGPRendererXML)
         {
-            var rendererSymbol:Symbol;
-            var rendererInfos:Array;
-
-            if (rendererXML.defaultsymbol[0])
-            {
-                rendererSymbol = parseSymbol(rendererXML.defaultsymbol[0], geometryType);
-            }
-
-            if (!rendererSymbol)
-            {
-                rendererSymbol = createDefaultSymbolFromGeometry(geometryType);
-            }
-
-            if (rendererXML.@type == FeatureLayerParameter.SIMPLE_RENDERER)
-            {
-                renderer = new SimpleRenderer(rendererSymbol);
-            }
-            else if (rendererXML.@type == FeatureLayerParameter.CLASS_BREAKS_RENDERER)
-            {
-                rendererInfos = parseClassBreakInfos(rendererXML.infos.symbol, geometryType);
-                renderer = new ClassBreaksRenderer(rendererXML.@attribute, rendererSymbol, rendererInfos);
-            }
-            else if (rendererXML.@type == FeatureLayerParameter.UNIQUE_VALUE_RENDERER)
-            {
-                rendererInfos = parseUniqueValueInfos(rendererXML.infos.symbol, geometryType);
-                renderer = new UniqueValueRenderer(rendererXML.@attribute, rendererSymbol, rendererInfos);
-            }
-            else
-            {
-                renderer = new SimpleRenderer(rendererSymbol);
-            }
+            updateGPRendererXML(paramXML.renderer[0], geometryType);
+        }
+        else
+        {
+            ensureUpdatedRendererAndSymbolXMLExist(paramXML, geometryType);
         }
 
-        if (!renderer)
-        {
-            renderer = new SimpleRenderer(createDefaultSymbolFromGeometry(geometryType));
-        }
-
-        return renderer;
+        return rendererParser.parseRenderer(paramXML);
     }
 
-    private function parseSymbol(symbolXML:XML, geometryType:String):Symbol
+    /* helper function that converts to new renderer parser XML */
+    private function updateGPRendererXML(rendererXML:XML, geometryType:String):void
     {
-        var symbol:Symbol;
-        var symbolType:String = symbolXML.@type;
-
-        switch (geometryType)
-        {
-            case FeatureLayerParameter.POINT:
-            {
-                if (symbolType == FeatureLayerParameter.SIMPLE_MARKER || symbolType == FeatureLayerParameter.PICTURE_MARKER)
-                {
-                    symbol = symbolType == FeatureLayerParameter.SIMPLE_MARKER ? parseSimpleMarkerSymbol(symbolXML) : parsePictureMarkerSymbol(symbolXML);
-                }
-                else
-                {
-                    symbol = createDefaultSymbolFromGeometry(geometryType);
-                }
-                break;
-            }
-            case FeatureLayerParameter.POLYLINE:
-            {
-                symbol = symbolType == FeatureLayerParameter.SIMPLE_LINE ? parseSimpleLineSymbol(symbolXML) : createDefaultSymbolFromGeometry(geometryType);
-                break;
-            }
-            case FeatureLayerParameter.POLYGON:
-            {
-                symbol = symbolType == FeatureLayerParameter.SIMPLE_FILL ? parseSimpleFillSymbol(symbolXML) : createDefaultSymbolFromGeometry(geometryType);
-                break;
-            }
-        }
-
-        return symbol;
+        ensureRendererTypeExists(rendererXML);
+        ensureSymbolTypesExist(rendererXML, geometryType);
+        updateRendererTagName(rendererXML);
+        updateRendererAndInfosXML(rendererXML);
+        updateSymbolTags(rendererXML);
     }
 
-    private function parseSimpleMarkerSymbol(symbolXML:XML):SimpleMarkerSymbol
+    private function ensureRendererTypeExists(rendererXML:XML):void
     {
-        var simpleMarkerSymbol:SimpleMarkerSymbol = createDefaultPointSymbol();
-
-        if (symbolXML.@alpha[0])
+        if (!rendererXML.@type)
         {
-            simpleMarkerSymbol.alpha = symbolXML.@alpha;
+            rendererXML.@type = SIMPLE_RENDERER_TYPE;
         }
-        if (symbolXML.@color[0])
-        {
-            simpleMarkerSymbol.color = symbolXML.@color;
-        }
-        if (symbolXML.@size[0])
-        {
-            simpleMarkerSymbol.size = symbolXML.@size;
-        }
-
-        var outlineSymbol:SimpleLineSymbol = createDefaultOutlineSymbol();
-        if (symbolXML.outline.@color[0])
-        {
-            outlineSymbol.color = symbolXML.outline.@color;
-        }
-        if (symbolXML.outline.@width[0])
-        {
-            outlineSymbol.width = symbolXML.outline.@width;
-        }
-
-        simpleMarkerSymbol.outline = outlineSymbol;
-
-        return simpleMarkerSymbol;
     }
 
-    private function parseSimpleFillSymbol(symbolXML:XML):SimpleFillSymbol
+    private function ensureSymbolTypesExist(rendererXML:XML, geometryType:String):void
     {
-        var simpleFillSymbol:SimpleFillSymbol = createDefaultPolygonSymbol();
+        var symbolTypeFallback:String = defaultSymbolTypeFromGeometryType(geometryType);
 
-        if (symbolXML.@alpha[0])
+        var defaultSymbolXMLList:XMLList = rendererXML.defaultsymbol;
+        if (defaultSymbolXMLList.length() > 0)
         {
-            simpleFillSymbol.alpha = symbolXML.@alpha;
+            setMissingSymbolTypes(defaultSymbolXMLList, symbolTypeFallback);
         }
-        if (symbolXML.@color[0])
+        else
         {
-            simpleFillSymbol.color = symbolXML.@color;
-        }
-
-        var outlineSymbol:SimpleLineSymbol = createDefaultOutlineSymbol();
-        if (symbolXML.outline.@color[0])
-        {
-            outlineSymbol.color = symbolXML.outline.@color;
-        }
-        if (symbolXML.outline.@width[0])
-        {
-            outlineSymbol.width = symbolXML.outline.@width;
+            rendererXML.appendChild(updatedDefaultSymbolXMLFromGeometryType(geometryType));
         }
 
-        simpleFillSymbol.outline = outlineSymbol;
-
-        return simpleFillSymbol;
+        setMissingSymbolTypes(rendererXML..symbol, symbolTypeFallback);
     }
 
-    private function parseSimpleLineSymbol(symbolXML:XML):SimpleLineSymbol
+    private function defaultSymbolTypeFromGeometryType(geometryType:String):String
     {
-        var simpleLineSymbol:SimpleLineSymbol = createDefaultPolylineSymbol();
-
-        if (symbolXML.@alpha[0])
-        {
-            simpleLineSymbol.alpha = symbolXML.@alpha;
-        }
-        if (symbolXML.outline.@color[0])
-        {
-            simpleLineSymbol.color = symbolXML.outline.@color;
-        }
-        if (symbolXML.outline.@width[0])
-        {
-            simpleLineSymbol.width = symbolXML.outline.@width;
-        }
-
-        return simpleLineSymbol;
-    }
-
-    private function parsePictureMarkerSymbol(symbolXML:XML):PictureMarkerSymbol
-    {
-        var url:String = symbolXML.@url;
-        var height:Number = symbolXML.@height || 0;
-        var width:Number = symbolXML.@width || 0;
-        var xOffset:Number = symbolXML.@xoffset || 0;
-        var yOffset:Number = symbolXML.@yoffset || 0;
-        var angle:Number = symbolXML.@angle || 0;
-
-        return new PictureMarkerSymbol(url, width, height, xOffset, yOffset, angle);
-    }
-
-    private function createDefaultSymbolFromGeometry(geometryType:String):Symbol
-    {
-        var defaultSymbol:Symbol;
+        var defaultSymbol:String;
 
         if (geometryType == FeatureLayerParameter.POINT)
         {
-            defaultSymbol = createDefaultPointSymbol();
+            defaultSymbol = SIMPLE_MARKER_SYMBOL_TYPE;
         }
         else if (geometryType == FeatureLayerParameter.POLYGON)
         {
-            defaultSymbol = createDefaultPolygonSymbol();
+            defaultSymbol = SIMPLE_FILL_SYMBOL_TYPE;
         }
         else if (geometryType == FeatureLayerParameter.POLYLINE)
         {
-            defaultSymbol = createDefaultPolylineSymbol();
+            defaultSymbol = SIMPLE_LINE_SYMBOL_TYPE;
         }
 
         return defaultSymbol;
     }
 
-    protected function createDefaultPointSymbol():SimpleMarkerSymbol
+    private function setMissingSymbolTypes(symbolXMLList:XMLList, symbolTypeFallback:String):void
     {
-        return new SimpleMarkerSymbol();
-    }
-
-    protected function createDefaultPolygonSymbol():SimpleFillSymbol
-    {
-        return new SimpleFillSymbol();
-    }
-
-    protected function createDefaultPolylineSymbol():SimpleLineSymbol
-    {
-        return new SimpleLineSymbol();
-    }
-
-    protected function createDefaultOutlineSymbol():SimpleLineSymbol
-    {
-        return new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, 0, 1, 1);
-    }
-
-    private function parseClassBreakInfos(classBreaksInfosXMLList:XMLList, geometryType:String):Array
-    {
-        var classBreakInfos:Array = [];
-
-        for each (var classBreaksInfoXML:XML in classBreaksInfosXMLList)
+        for each (var symbol:XML in symbolXMLList)
         {
-            classBreakInfos.push(
-                new ClassBreakInfo(parseSymbol(classBreaksInfoXML[0], geometryType), classBreaksInfoXML.@min, classBreaksInfoXML.@max));
+            if (!symbol.@type[0])
+            {
+                symbol.@type = symbolTypeFallback;
+            }
+        }
+    }
+
+    private function updateRendererTagName(rendererXML:XML):void
+    {
+        rendererXML.setName(toRendererTagName(rendererXML.@type));
+        delete rendererXML.@type;
+    }
+
+    private function toRendererTagName(rendererType:String):String
+    {
+        var rendererTagName:String;
+
+        if (rendererType == CLASS_BREAKS_RENDERER_TYPE)
+        {
+            rendererTagName = CLASS_BREAKS_RENDERER_TAG_NAME;
+        }
+        else if (rendererType == UNIQUE_VALUE_RENDERER_TYPE)
+        {
+            rendererTagName = UNIQUE_VALUE_RENDERER_TAG_NAME;
+        }
+        else //default is simple renderer
+        {
+            rendererTagName = SIMPLE_RENDERER_TAG_NAME;
         }
 
-        return classBreakInfos;
+        return rendererTagName;
     }
 
-    private function parseUniqueValueInfos(uniqueValueInfosXMLList:XMLList, geometryType:String):Array
+    private function updateRendererAndInfosXML(rendererXML:XML):void
     {
-        var uniqueValueInfos:Array = [];
-
-        for each (var uniqueValueInfoXML:XML in uniqueValueInfosXMLList)
+        if (rendererXML.name() == SIMPLE_RENDERER_TAG_NAME)
         {
-            uniqueValueInfos.push(
-                new UniqueValueInfo(parseSymbol(uniqueValueInfoXML[0], geometryType), uniqueValueInfoXML.@value));
+            return;
         }
 
-        return uniqueValueInfos;
+        if (rendererXML.@attribute[0])
+        {
+            rendererXML.@field = rendererXML.@attribute;
+            delete rendererXML.@attribute;
+        }
+
+        if (rendererXML.name() == CLASS_BREAKS_RENDERER_TAG_NAME)
+        {
+            updateClassBreakInfos(rendererXML);
+        }
+        else if (rendererXML.name() == UNIQUE_VALUE_RENDERER_TAG_NAME)
+        {
+            updateUniqueValueInfos(rendererXML);
+        }
+    }
+
+    private function updateClassBreakInfos(rendererXML:XML):void
+    {
+        var symbolXMLList:XMLList = rendererXML.infos.symbol;
+        for each (var symbolXML:XML in symbolXMLList)
+        {
+            var classBreakInfoXML:XML = <classbreakinfo/>;
+            classBreakInfoXML.@min = symbolXML.@min;
+            classBreakInfoXML.@max = symbolXML.@max;
+            classBreakInfoXML.appendChild(symbolXML);
+            rendererXML.appendChild(classBreakInfoXML);
+        }
+        delete rendererXML.infos;
+    }
+
+    private function updateUniqueValueInfos(rendererXML:XML):void
+    {
+        var symbolXMLList:XMLList = rendererXML.infos.symbol;
+        for each (var symbolXML:XML in symbolXMLList)
+        {
+            var uniqueValueInfoXML:XML = <uniquevalueinfo/>;
+            uniqueValueInfoXML.@value = symbolXML.@value;
+            uniqueValueInfoXML.appendChild(symbolXML);
+            rendererXML.appendChild(uniqueValueInfoXML);
+        }
+        delete rendererXML.infos;
+    }
+
+    private function updateSymbolTags(rendererXML:XML):void
+    {
+        var symbolNodes:XMLList = rendererXML..defaultsymbol + rendererXML..symbol;
+
+        for each (var symbolNode:XML in symbolNodes)
+        {
+            symbolNode.setName(toSymbolTagName(symbolNode.@type));
+            delete symbolNode.@type;
+
+            if (symbolNode.name() == SIMPLE_LINE_SYMBOL_TAG_NAME)
+            {
+                if (symbolNode.outline[0])
+                {
+                    if (symbolNode.outline.@color[0])
+                    {
+                        symbolNode.@color = symbolNode.outline.@color;
+                    }
+
+                    if (symbolNode.outline.@width[0])
+                    {
+                        symbolNode.@width = symbolNode.outline.@width[0];
+                    }
+
+                    delete symbolNode.outline;
+                }
+            }
+        }
+    }
+
+    private function toSymbolTagName(symbolType:String):String
+    {
+        var symbolTagName:String;
+
+        if (symbolType == SIMPLE_LINE_SYMBOL_TYPE)
+        {
+            symbolTagName = SIMPLE_LINE_SYMBOL_TAG_NAME;
+        }
+        else if (symbolType == SIMPLE_FILL_SYMBOL_TYPE)
+        {
+            symbolTagName = SIMPLE_FILL_SYMBOL_TAG_NAME;
+        }
+        else if (symbolType == PICTURE_MARKER_SYMBOL_TYPE)
+        {
+            symbolTagName = PICTURE_MARKER_SYMBOL_TAG_NAME;
+        }
+        else //default is simple marker
+        {
+            symbolTagName = SIMPLE_MARKER_SYMBOL_TAG_NAME;
+        }
+
+        return symbolTagName;
+    }
+
+    private function ensureUpdatedRendererAndSymbolXMLExist(paramXML:XML, geometryType:String):void
+    {
+        const updatedRendererXML:XML = (paramXML.simplerenderer[0] || paramXML.classbreaksrenderer[0] || paramXML.uniquevaluerenderer[0]);
+        if (updatedRendererXML)
+        {
+            const hasSymbolDefined:Boolean = updatedRendererXML.simplemarkersymbol[0] || updatedRendererXML.picturemarkersymbol[0] || updatedRendererXML.simplelinesymbol[0] || updatedRendererXML.simplefillsymbol[0];
+            if (!hasSymbolDefined)
+            {
+                appendUpdatedDefaultSymbolXMLFromGeometry(updatedRendererXML, geometryType);
+            }
+        }
+        else
+        {
+            appendUpdatedDefaultRendererXML(paramXML, geometryType);
+        }
+    }
+
+    private function appendUpdatedDefaultSymbolXMLFromGeometry(rendererXML:XML, geometryType:String):void
+    {
+        rendererXML.appendChild(updatedDefaultSymbolXMLFromGeometryType(geometryType));
+    }
+
+    private function updatedDefaultSymbolXMLFromGeometryType(geometryType:String):XML
+    {
+        var defaultSymbolXML:XML = <symbol/>;
+
+        if (geometryType == FeatureLayerParameter.POINT)
+        {
+            defaultSymbolXML.setName(SIMPLE_MARKER_SYMBOL_TAG_NAME);
+        }
+        else if (geometryType == FeatureLayerParameter.POLYGON)
+        {
+            defaultSymbolXML.setName(SIMPLE_FILL_SYMBOL_TAG_NAME);
+        }
+        else if (geometryType == FeatureLayerParameter.POLYLINE)
+        {
+            defaultSymbolXML.setName(SIMPLE_LINE_SYMBOL_TAG_NAME);
+        }
+
+        return defaultSymbolXML;
+    }
+
+    private function appendUpdatedDefaultRendererXML(paramXML:XML, geometryType:String):void
+    {
+        var simpleRendererXML:XML = <simplerenderer/>;
+        appendUpdatedDefaultSymbolXMLFromGeometry(simpleRendererXML, geometryType);
+        paramXML.appendChild(simpleRendererXML);
     }
 }
-
 }

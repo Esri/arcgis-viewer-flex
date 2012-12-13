@@ -22,17 +22,21 @@
                    xmlns:esri="http://www.esri.com/2008/ags"
                    xmlns:viewer="com.esri.viewer.*"
                    xmlns:supportClasses="widgets.Geoprocessing.supportClasses.*"
-                   widgetConfigLoaded="baseWidget_widgetConfigLoaded(event)">
+                   initialize="basewidget_initializeHandler()"
+                   widgetConfigLoaded="basewidget_widgetConfigLoaded()">
     <fx:Script>
         <![CDATA[
             import com.esri.ags.FeatureSet;
             import com.esri.ags.Graphic;
+            import com.esri.ags.components.ContentNavigator;
             import com.esri.ags.events.DrawEvent;
+            import com.esri.ags.events.ExtentEvent;
             import com.esri.ags.events.GeoprocessorEvent;
             import com.esri.ags.events.GraphicEvent;
             import com.esri.ags.events.GraphicsLayerEvent;
             import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.Geometry;
+            import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.layers.GPResultImageLayer;
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.layers.supportClasses.ImageParameters;
@@ -47,11 +51,12 @@
             import com.esri.ags.tasks.supportClasses.JobInfo;
             import com.esri.ags.tasks.supportClasses.ParameterValue;
             import com.esri.ags.tasks.supportClasses.ProjectParameters;
-            import com.esri.viewer.AppEvent;
+            import com.esri.viewer.utils.ErrorMessageUtil;
 
             import flashx.textLayout.conversion.TextConverter;
 
             import mx.collections.ArrayList;
+            import mx.collections.IList;
             import mx.controls.Alert;
             import mx.events.CloseEvent;
             import mx.rpc.AsyncResponder;
@@ -98,7 +103,22 @@
             [Bindable]
             private var helpLabel:String;
 
-            private function baseWidget_widgetConfigLoaded(event:Event):void
+            private function basewidget_initializeHandler():void
+            {
+                if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
+                {
+                    this.percentWidth = this.percentHeight = 100;
+                    wTemplate.percentWidth = wTemplate.percentHeight = 100;
+                }
+                else
+                {
+                    wTemplate.width = 368;
+                    wTemplate.height = 250;
+                    wTemplate.minWidth = wTemplate.minHeight = 200;
+                }
+            }
+
+            private function basewidget_widgetConfigLoaded():void
             {
                 if (configXML)
                 {
@@ -158,6 +178,12 @@
                         inputParamsDataGroup.addEventListener(FeatureInputParamEvent.DRAW, inputParamsDataGroup_drawFeatureHandler, false, 0, true);
                         inputParamsDataGroup.addEventListener(FeatureInputParamEvent.CLEAR, inputParamsDataGroup_clearFeatureHandler, false, 0, true);
 
+                        if (gpParamHandler.hasMapExtentInputParams())
+                        {
+                            map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
+                            gpParamHandler.updateMapExtentInputParams(map.extent)
+                        }
+
                         needsToShowOutputView = gpParamHandler.hasVisibleOutput();
                         if (needsToShowOutputView)
                         {
@@ -167,7 +193,7 @@
                     }
                     catch (error:Error)
                     {
-                        dispatchErrorMessage("A problem ocurred while initializing: " + error.message);
+                        showError(getDefaultString("initializationError", ErrorMessageUtil.makeHTMLSafe(error.message)));
                     }
                 }
             }
@@ -189,7 +215,7 @@
 
             private function gpTaskInspector_faultHandler(fault:Fault, token:Object = null):void
             {
-                dispatchErrorMessage("Could not determine Geoprocessor execution type:" + fault.toString());
+                showError(getDefaultString("unableToDetermineGPExecutionType", ErrorMessageUtil.makeHTMLSafe(fault.toString())));
             }
 
             private function fetchGPServerDescription():void
@@ -283,13 +309,18 @@
                 event.featureParam.layer.clear();
             }
 
+            protected function map_extentChangeHandler(event:ExtentEvent):void
+            {
+                gpParamHandler.updateMapExtentInputParams(event.extent)
+            }
+
             private function map_drawEndHandler(event:DrawEvent):void
             {
                 deactivateDrawTool();
-
                 var drawnGraphic:Graphic = event.graphic;
+
                 drawnGraphic.contextMenu = graphicContextMenu;
-                graphicEditor.makeGraphicEditable(event.graphic);
+                graphicEditor.makeGraphicEditable(drawnGraphic);
 
                 //only point, polyline and polygon supported by gp tasks
                 if (drawnGraphic.geometry.type == Geometry.EXTENT)
@@ -397,7 +428,7 @@
 
                 function projectionFaultHandler(fault:Fault, token:Object = null):void
                 {
-                    dispatchErrorMessage("Error projecting geometry: " + fault.message);
+                    showError(getDefaultString("projectionError", ErrorMessageUtil.makeHTMLSafe(fault.message)));
                 }
             }
 
@@ -431,6 +462,11 @@
                     }
 
                     gp.submitJob(requestObject);
+                }
+                else
+                {
+                    busyAnimation.visible = false;
+                    showError(getDefaultString("cannotRunTaskExecutionTypeUnknownError"));
                 }
             }
 
@@ -514,7 +550,7 @@
             private function gp_faultHandler(event:FaultEvent):void
             {
                 busyAnimation.visible = false;
-                showError(event.fault.toString());
+                showError(ErrorMessageUtil.makeHTMLSafe(event.fault.toString()));
             }
 
             private function gp_resultDataCompleteHandler(event:GeoprocessorEvent):void
@@ -650,6 +686,7 @@
                     totalProcessedOutputFeatures++;
                     if (totalProcessedOutputFeatures == gpParamHandler.totalOutputFeatures)
                     {
+                        showFirstAvailablePopUp();
                         zoomToOutputFeatures();
                         showOutputFeaturesClearButton();
                     }
@@ -668,6 +705,36 @@
                     clearOutputFeaturesButton.visible = false;
                     clearOutputFeaturesButton.includeInLayout = false;
                 }
+            }
+
+            private function showFirstAvailablePopUp():void
+            {
+                var featureParamPopUpToDisplay:IGPFeatureParameter;
+                var outputFeatureParams:Array = gpParamHandler.getOutputFeatureParams();
+                for each (var featureParam:IGPFeatureParameter in outputFeatureParams)
+                {
+                    if (featureParam.popUpInfo)
+                    {
+                        featureParamPopUpToDisplay = featureParam;
+                        break;
+                    }
+                }
+
+                if (!featureParamPopUpToDisplay)
+                {
+                    return;
+                }
+
+                var contentNavigator:ContentNavigator = map.infoWindow.content as ContentNavigator;
+                if (!contentNavigator)
+                {
+                    contentNavigator = new ContentNavigator();
+                    map.infoWindow.content = contentNavigator;
+                }
+
+                var graphic:Graphic = (featureParam.layer.graphicProvider as IList).getItemAt(0) as Graphic;
+                contentNavigator.dataProvider = new ArrayList([ graphic ]);
+                map.infoWindow.show(graphic.geometry is MapPoint ? graphic.geometry as MapPoint : graphic.geometry.extent.center);
             }
 
             private function showOutputFeaturesClearButton():void
@@ -762,15 +829,10 @@
                 var errorMessage:String = getDefaultString("problemLabel") + "\n" + jobInfo.jobStatus;
                 if (jobInfo.messages)
                 {
-                    errorMessage += "\n" + jobInfo.messages[jobInfo.messages.length - 1].description;
+                    errorMessage += "\n" + ErrorMessageUtil.makeHTMLSafe(jobInfo.messages[jobInfo.messages.length - 1].description);
                 }
 
-                dispatchErrorMessage(errorMessage);
-            }
-
-            private function dispatchErrorMessage(message:String):void
-            {
-                AppEvent.dispatch(AppEvent.APP_ERROR, message);
+                showError(errorMessage);
             }
 
             private function clearOutput():void
@@ -809,16 +871,17 @@
 
             private function hideInfoWindow():void
             {
-                if (map.infoWindow.contentOwner)
+                var contentNavigator:ContentNavigator = map.infoWindow.content as ContentNavigator;
+                if (contentNavigator
+                    && contentNavigator.dataProvider
+                    && contentNavigator.dataProvider.length > 0)
                 {
-                    var contentGraphic:Graphic = map.infoWindow.contentOwner as Graphic;
-                    if (contentGraphic)
+                    //should only have one if opened by GP widget
+                    var contentGraphic:Graphic = contentNavigator.dataProvider.getItemAt(0) as Graphic;
+                    if (contentGraphic
+                        && gpParamHandler.graphicsLayerBelongsToFeatureParam(contentGraphic.graphicsLayer))
                     {
-                        var contentGraphicsLayer:GraphicsLayer = contentGraphic.graphicsLayer;
-                        if (gpParamHandler.graphicsLayerBelongsToFeatureParam(contentGraphicsLayer))
-                        {
-                            map.infoWindow.hide();
-                        }
+                        map.infoWindow.hide();
                     }
                 }
             }
@@ -844,8 +907,11 @@
                 }
             }
 
-            private function clearAllOutputGraphics():void
+            private function clearAllGraphics():void
             {
+                hideInfoWindow();
+                gpParamHandler.clearInputFeatures();
+
                 if (hasResultMapServer)
                 {
                     clearResultMapLayers();
@@ -954,10 +1020,7 @@
         <s:State name="output"/>
     </viewer:states>
     <viewer:WidgetTemplate id="wTemplate"
-                           width="368" height="250"
                            closed="wTemplate_closedHandler(event)"
-                           minHeight="200"
-                           minWidth="200"
                            minimized="wTemplate_minimizedHandler(event)"
                            open="wTemplate_openHandler(event)">
         <viewer:layout>
@@ -993,13 +1056,12 @@
                       source="assets/images/loader.swf"
                       visible="false"/>
             <s:Button id="clearOutputFeaturesButton"
-                      click="clearAllOutputGraphics()"
-                      includeIn="output"
+                      click="clearAllGraphics()"
                       includeInLayout="false"
                       label="{clearFeatureLabel}"
                       visible="false"/>
             <s:Button click="runGPIfRequiredParamsComplete()"
-                      excludeFrom="output"
+                      includeIn="input"
                       label="{submitLabel}"/>
         </s:HGroup>
     </viewer:WidgetTemplate>

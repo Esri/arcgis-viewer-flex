@@ -36,6 +36,7 @@
             import com.esri.viewer.managers.SecurityManager;
             import com.esri.viewer.managers.UIManager;
             import com.esri.viewer.managers.WidgetManager;
+            import com.esri.viewer.utils.LocalizationUtil;
 
             import mx.core.FlexGlobals;
             import mx.core.IVisualElement;
@@ -162,7 +163,7 @@
                 }
                 catch (error:Error)
                 {
-                    AppEvent.showError("Some error occurred. ExternalInterface doesn't work in Standalone player.", VIEWER_CONTAINER);
+                    AppEvent.showError(LocalizationUtil.getDefaultString("standalonePlayerExternalInterfaceErrorText"), VIEWER_CONTAINER);
                 }
             }
 
@@ -256,8 +257,9 @@
 
                 if (isAddChild)
                 {
-                    addElement(mapManager);
+                    widgetManager.mapManager = this.mapManager;
                     addElement(widgetManager);
+
                     isAddChild = false;
                 }
             }

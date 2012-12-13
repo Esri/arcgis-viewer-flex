@@ -19,17 +19,21 @@
 <s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
                 xmlns:s="library://ns.adobe.com/flex/spark"
                 xmlns:mx="library://ns.adobe.com/flex/mx"
+                width="100%"
                 autoDrawBackground="false">
-    <s:layout>
-        <s:HorizontalLayout verticalAlign="middle"/>
-    </s:layout>
     <fx:Script>
         <![CDATA[
             import widgets.Geoprocessing.supportClasses.UnitMappingUtil;
         ]]>
     </fx:Script>
+
+    <s:layout>
+        <s:HorizontalLayout verticalAlign="middle"/>
+    </s:layout>
+
     <s:RichEditableText editable="false"
                         fontWeight="bold"
                         text="{data.label}"/>
+
     <s:RichEditableText editable="false" text="{data.defaultValue.distance} {UnitMappingUtil.toPrettyUnits(data.defaultValue.units)}"/>
 </s:ItemRenderer>

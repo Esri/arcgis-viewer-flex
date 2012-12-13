@@ -30,11 +30,13 @@
             import mx.collections.ArrayList;
             import mx.core.FlexGlobals;
             import mx.core.UIComponent;
+            import mx.events.CollectionEvent;
+            import mx.events.CollectionEventKind;
 
             import spark.components.supportClasses.ListBase;
 
-            private var hideOpLayersTimer:Timer = new Timer(250);
-            private var hideBasemapsTimer:Timer = new Timer(250);
+            private var hideOpLayersTimer:Timer = new Timer(250, 1);
+            private var hideBasemapsTimer:Timer = new Timer(250, 1);
             private var hideSuspended:Boolean = false;
 
             private var expandLayerItems:Boolean;
@@ -67,7 +69,9 @@
                     var needToInitTOC:Boolean = (!configXML.layerlist.@visible[0] || configXML.layerlist.@visible[0] == "true");
                     if (needToInitTOC)
                     {
-                        AppEvent.dispatch(AppEvent.DATA_OPT_LAYERS, null, initTOCIfHasOpLayers);
+                        initTOC(expandLayerItems);
+                        hideOpLayersTimer.addEventListener(TimerEvent.TIMER, hideOpLayersTimer_timerHandler, false, 0, true);
+                        AppEvent.addListener(AppEvent.SUSPEND_TOC_HIDE_TIMER, suspendHideListener);
                     }
                     showThumbnails = (configXML.showthumbnails[0] != "false");
                 }
@@ -94,18 +98,6 @@
                 basemapSelectionComponent = showThumbnails ? basemapGallery : basemapsButtonBar;
                 preselectTopmostVisibleBasemap();
                 hideBasemapsTimer.addEventListener(TimerEvent.TIMER, hideBasemapsTimer_timerHandler, false, 0, true);
-            }
-
-            private function initTOCIfHasOpLayers(event:AppEvent):void
-            {
-                var opLayersList:Array = event.data as Array;
-                if (opLayersList.length > 0)
-                {
-                    initTOC(expandLayerItems);
-                    opLayersButton.visible = true;
-                    hideOpLayersTimer.addEventListener(TimerEvent.TIMER, hideOpLayersTimer_timerHandler, false, 0, true);
-                    AppEvent.addListener(AppEvent.SUSPEND_TOC_HIDE_TIMER, suspendHideListener);
-                }
             }
 
             private function initBasemapList():void
@@ -180,6 +172,27 @@
                 {
                     toc.expandLayerItems();
                 }
+                var tocLayers:ArrayCollection = toc.dataProvider as ArrayCollection;
+                opLayersButton.visible = tocLayers.length ? true : false;
+                tocLayers.addEventListener(CollectionEvent.COLLECTION_CHANGE, toc_collectionChangeHandler);
+            }
+
+            private function toc_collectionChangeHandler(event:CollectionEvent):void
+            {
+                if (event.kind == CollectionEventKind.ADD)
+                {
+                    if (ArrayCollection(event.target).length)
+                    {
+                        opLayersButton.visible = true;
+                    }
+                }
+                else if (event.kind == CollectionEventKind.REMOVE)
+                {
+                    if (!ArrayCollection(event.target).length)
+                    {
+                        opLayersButton.visible = false;
+                    }
+                }
             }
 
             private function getExcludeLayers():ArrayCollection
@@ -226,6 +239,21 @@
                 shouldShowOpLayers = true;
                 hideOpLayersTimer.reset();
                 updateContainerPosition(opLayersButton, opLayersContainer);
+            }
+
+            private function opLayersButton_clickHandler(event:MouseEvent):void
+            {
+                // a way to check if the click event has been done by keyboard action
+                if (isNaN(event.localX))
+                {
+                    shouldShowOpLayers = !shouldShowOpLayers;
+                    shouldShowBasemaps = false;
+                    if (shouldShowOpLayers)
+                    {
+                        updateContainerPosition(opLayersButton, opLayersContainer);
+                        toc.setFocus();
+                    }
+                }
             }
 
             private function updateContainerPosition(anchorComponent:DisplayObject, container:UIComponent):void
@@ -289,6 +317,67 @@
                 shouldShowBasemaps = true;
                 hideBasemapsTimer.reset();
                 updateContainerPosition(basemapsButton, basemapsContainer);
+                basemapGallery.setFocus();
+            }
+
+            private function basemapsButton_clickHandler(event:MouseEvent):void
+            {
+                // a way to check if the click event has been done by keyboard action
+                if (isNaN(event.localX))
+                {
+                    shouldShowBasemaps = !shouldShowBasemaps;
+                    shouldShowOpLayers = false;
+                    if (shouldShowBasemaps)
+                    {
+                        updateContainerPosition(basemapsButton, basemapsContainer);
+                        basemapGallery.setFocus();
+                    }
+                }
+            }
+
+            private function opLayersButton_keyUpHandler(event:KeyboardEvent):void
+            {
+                if (event.keyCode == Keyboard.RIGHT)
+                {
+                    // by pressing right set the focus on basemapsButtonBar or basemapsButton
+                    focusManager.getNextFocusManagerComponent().setFocus();
+                }
+            }
+
+            private function basemapsButton_keyUpHandler(event:KeyboardEvent):void
+            {
+                if (event.keyCode == Keyboard.LEFT)
+                {
+                    // by pressing left set the focus on basemapsButtonBar or opLayersButton
+                    focusManager.getNextFocusManagerComponent(true).setFocus();
+                }
+                else if (!shouldShowBasemaps && event.keyCode == Keyboard.DOWN)
+                {
+                    shouldShowBasemaps = true;
+                    updateContainerPosition(basemapsButton, basemapsContainer);
+                    basemapGallery.setFocus();
+                }
+            }
+
+            private function escapeKeyUpHandler(event:KeyboardEvent):void
+            {
+                if (event.keyCode == Keyboard.ESCAPE)
+                {
+                    shouldShowBasemaps = shouldShowOpLayers = false;
+                    if (event.currentTarget == opLayersContainer)
+                    {
+                        opLayersButton.setFocus();
+                    }
+                    else if (event.currentTarget == basemapsContainer)
+                    {
+                        basemapsButton.setFocus();
+                    }
+                }
+            }
+
+            private function keyFocusChangeHandler(event:FocusEvent):void
+            {
+                shouldShowBasemaps = shouldShowOpLayers = false;
             }
 
             private function basemapGallery_clickHandler(event:MouseEvent):void
@@ -311,24 +400,34 @@
     <s:HGroup id="mapLayersContainer" gap="9">
         <s:Button id="opLayersButton"
                   height="100%"
+                  click="opLayersButton_clickHandler(event)"
+                  keyUp="opLayersButton_keyUpHandler(event)"
                   label="{opLayerListButtonLabel}"
+                  maxWidth="265"
                   rollOut="startHideTimer()"
                   rollOver="opLayerListButton_rollOverHandler(event)"
+                  tabIndex="1"
                   visible="false"/>
 
         <s:ButtonBar id="basemapsButtonBar"
                      change="dispatchChangeBasemapEvent()"
                      dataProvider="{basemapList}"
                      includeIn="buttonOptions"
+                     keyUp="basemapsButton_keyUpHandler(event)"
                      labelField="label"
-                     requireSelection="true"/>
+                     requireSelection="true"
+                     tabIndex="3"/>
 
         <s:Button id="basemapsButton"
+                  click="basemapsButton_clickHandler(event)"
                   includeIn="thumbnailOptions"
+                  keyUp="basemapsButton_keyUpHandler(event)"
                   label="{basemapsLabel}"
+                  maxWidth="362"
                   rollOut="startBasemapsHideTimer()"
                   rollOver="basemapsButton_rollOverHandler(event)"
-                  skinClass="com.esri.viewer.skins.BasemapsButtonSkin"/>
+                  skinClass="com.esri.viewer.skins.BasemapsButtonSkin"
+                  tabIndex="4"/>
     </s:HGroup>
 
     <s:BorderContainer id="opLayersContainer"
@@ -336,17 +435,22 @@
                        backgroundColor="{getStyle('contentBackgroundColor')}"
                        click="opLayersContainer_clickHandler(event)"
                        includeInLayout="false"
+                       keyFocusChange="keyFocusChangeHandler(event)"
+                       keyUp="escapeKeyUpHandler(event)"
                        rollOut="startHideTimer()"
                        rollOver="hideOpLayersTimer.reset()"
                        visible="{shouldShowOpLayers}">
         <toc:TOC id="toc"
-                 left="2" right="2" top="3" bottom="3"/>
+                 left="2" right="2" top="3" bottom="3"
+                 tabIndex="2"/>
     </s:BorderContainer>
 
     <s:BorderContainer id="basemapsContainer"
                        backgroundColor="{getStyle('contentBackgroundColor')}"
                        includeIn="thumbnailOptions"
                        includeInLayout="false"
+                       keyFocusChange="keyFocusChangeHandler(event)"
+                       keyUp="escapeKeyUpHandler(event)"
                        rollOut="startBasemapsHideTimer()"
                        rollOver="hideBasemapsTimer.reset()"
                        visible="{shouldShowBasemaps}">
@@ -355,9 +459,11 @@
                 change="dispatchChangeBasemapEvent()"
                 click="basemapGallery_clickHandler(event)"
                 dataProvider="{basemapList}"
+                focusAlpha="0"
                 itemRenderer="widgets.MapSwitcher.BasemapItemRenderer"
                 maxHeight="362"
-                requireSelection="true">
+                requireSelection="true"
+                tabIndex="5">
             <s:layout>
                 <s:TileLayout paddingBottom="10"
                               paddingLeft="10"

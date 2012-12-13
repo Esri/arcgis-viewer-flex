@@ -16,9 +16,12 @@
 package com.esri.viewer.components
 {
 
+import flash.events.KeyboardEvent;
 import flash.events.MouseEvent;
+import flash.ui.Keyboard;
 
 import mx.controls.Image;
+import mx.managers.IFocusManagerComponent;
 
 import spark.components.supportClasses.SkinnableComponent;
 
@@ -30,15 +33,38 @@ import spark.components.supportClasses.SkinnableComponent;
  *
  * @private
  */
-public class TitlebarButton extends SkinnableComponent
+public class TitlebarButton extends SkinnableComponent implements IFocusManagerComponent
 {
+
+    //--------------------------------------------------------------------------
+    //
+    //  Properties
+    //
+    //--------------------------------------------------------------------------
+
+    //----------------------------------
+    //  icon
+    //----------------------------------
+
     [SkinPart(required="false")]
     public var icon:Image;
+
+    //----------------------------------
+    //  source
+    //----------------------------------
 
     [Bindable]
     public var source:Object;
 
+    //----------------------------------
+    //  callback
+    //----------------------------------
+
     public var callback:Function;
+
+    //----------------------------------
+    //  selectable
+    //----------------------------------
 
     public var selectable:Boolean = true;
 
@@ -61,6 +87,13 @@ public class TitlebarButton extends SkinnableComponent
             invalidateSkinState();
         }
     }
+
+
+    //--------------------------------------------------------------------------
+    //
+    //  Skin Management
+    //
+    //--------------------------------------------------------------------------
 
     override protected function getCurrentSkinState():String
     {
@@ -86,6 +119,50 @@ public class TitlebarButton extends SkinnableComponent
             icon.removeEventListener(MouseEvent.CLICK, icon_clickHandler);
         }
     }
+
+    //--------------------------------------------------------------------------
+    //
+    //  Focus Management
+    //
+    //--------------------------------------------------------------------------
+
+    private var keyboardPressed:Boolean = false;
+
+    override protected function keyDownHandler(event:KeyboardEvent):void
+    {
+        if (event.keyCode != Keyboard.SPACE)
+        {
+            return;
+        }
+
+        keyboardPressed = true;
+        event.updateAfterEvent();
+    }
+
+    override protected function keyUpHandler(event:KeyboardEvent):void
+    {
+        if (event.keyCode != Keyboard.SPACE)
+        {
+            return;
+        }
+
+        if (enabled && keyboardPressed)
+        {
+            // Mimic mouse click on the button.
+            keyboardPressed = false;
+            if (icon)
+            {
+                icon.dispatchEvent(new MouseEvent(MouseEvent.CLICK, true));
+            }
+        }
+        event.updateAfterEvent();
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    //  Event listeners
+    //
+    //--------------------------------------------------------------------------
 
     private function icon_clickHandler(event:MouseEvent):void
     {

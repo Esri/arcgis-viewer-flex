@@ -24,7 +24,9 @@
                    xmlns:mx="library://ns.adobe.com/flex/mx"
                    width="100%" height="100%"
                    cornerRadius="10"
-                   creationComplete="htmlPopup_creationCompleteHandler(event)">
+                   creationComplete="htmlPopup_creationCompleteHandler(event)"
+                   show="showHandler(event)"
+                   tabFocusEnabled="true">
     <s:filters>
         <s:GlowFilter alpha="0.8"
                       blurX="50"
@@ -42,6 +44,7 @@
             import mx.core.FlexGlobals;
             import mx.events.CloseEvent;
             import mx.events.FlexEvent;
+            import mx.managers.IFocusManagerComponent;
 
             [Bindable]
             public var content:String;
@@ -50,16 +53,16 @@
             public var btnLabel:String = "OK";
 
             [Bindable]
-            public var txtareaWidth:Number = 500;
+            public var txtareaWidth:Number = 300;
 
             [Bindable]
-            public var txtareaHeight:Number = 500;
+            public var txtareaHeight:Number = 300;
 
 
             public static function show(content:String = "",
                                         btnLabel:String = "OK",
-                                        width:Number = 500,
-                                        height:Number = 500,
+                                        width:Number = 300,
+                                        height:Number = 300,
                                         modal:Boolean = true,
                                         closeHandler:Function = null):HTMLPopup
             {
@@ -92,6 +95,21 @@
             {
                 setStyle("backgroundColor", getStyle("contentBackgroundColor"));
                 setStyle("backgroundAlpha", FlexGlobals.topLevelApplication.getStyle("backgroundAlpha"));
+                setFocus();
+            }
+
+            protected function showHandler(event:FlexEvent):void
+            {
+                focusManager.activate();
+                focusManager.setFocus(closeButton);
+                // draw the focus state later
+                closeButton.drawFocus(false);
+                callLater(drawFocusLater);
+            }
+
+            private function drawFocusLater():void
+            {
+                closeButton.drawFocus(true);
             }
         ]]>
     </fx:Script>
@@ -105,17 +123,25 @@
                              blurY="20"
                              brRadius="10"
                              distance="25"/>
-    <s:VGroup horizontalAlign="center" paddingBottom="10">
+    <s:VGroup hasFocusableChildren="true"
+              horizontalAlign="center"
+              paddingBottom="10">
         <s:Scroller width="{txtareaWidth}" height="{txtareaHeight}"
+                    focusEnabled="false"
                     hasFocusableChildren="false"
                     measuredSizeIncludesScrollBars="false"
                     minViewportInset="1">
-            <s:RichEditableText editable="false"
+            <s:RichEditableText width="{txtareaWidth}" height="{txtareaHeight}"
+                                editable="false"
+                                lineBreak="explicit"
                                 paddingLeft="3"
                                 paddingRight="3"
                                 paddingTop="5"
                                 textFlow="{TextConverter.importToFlow(content, TextConverter.TEXT_FIELD_HTML_FORMAT)}"/>
         </s:Scroller>
-        <s:Button click="close(event)" label="{btnLabel}"/>
+        <s:Button id="closeButton"
+                  click="close(event)"
+                  label="{btnLabel}"
+                  tabIndex="0"/>
     </s:VGroup>
 </s:BorderContainer>

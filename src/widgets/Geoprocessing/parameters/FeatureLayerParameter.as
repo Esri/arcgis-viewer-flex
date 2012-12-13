@@ -40,6 +40,7 @@ public class FeatureLayerParameter extends BaseParameter implements IGPFeaturePa
 
     public static const DRAW_SOURCE:String = "drawtool";
     public static const LAYERS_SOURCE:String = "layers";
+    public static const MAP_EXTENT_SOURCE:String = "extent";
 
     public static const POINT:String = "point";
     public static const POLYGON:String = "polygon";

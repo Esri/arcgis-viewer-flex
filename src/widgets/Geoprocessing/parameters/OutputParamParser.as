@@ -43,7 +43,10 @@ public class OutputParamParser extends BaseParamParser
                     featureParam.popUpInfo = PopUpInfoParser.parsePopUpInfo(paramXML.popup[0]);
                 }
 
-                featureParam.renderer = featureParam.geometryType ? parseRenderer(paramXML.renderer[0], featureParam.geometryType) : null;
+                if (featureParam.geometryType)
+                {
+                    featureParam.renderer = parseRenderer(paramXML, featureParam.geometryType);
+                }
             }
 
             params.push(param);

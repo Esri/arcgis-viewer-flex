@@ -21,16 +21,17 @@
                    xmlns:mx="library://ns.adobe.com/flex/mx"
                    xmlns:esri="http://www.esri.com/2008/ags"
                    xmlns:viewer="com.esri.viewer.*"
-                   widgetConfigLoaded="basewidget_widgetConfigLoaded(event)">
+                   initialize="basewidget_initializeHandler()"
+                   widgetConfigLoaded="basewidget_widgetConfigLoaded()">
     <fx:Script>
         <![CDATA[
             import com.esri.ags.events.MapEvent;
             import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
             import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
             import com.esri.ags.layers.FeatureLayer;
-            import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.layers.KMLLayer;
             import com.esri.ags.layers.Layer;
+            import com.esri.viewer.AppEvent;
 
             import mx.collections.ArrayCollection;
 
@@ -43,7 +44,20 @@
             [Bindable]
             private var respectCurrentMapScale:Boolean = true;
 
-            private function basewidget_widgetConfigLoaded(event:Event):void
+            private function basewidget_initializeHandler():void
+            {
+                if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
+                {
+                    this.percentWidth = this.percentHeight = 100;
+                    wTemplate.percentWidth = wTemplate.percentHeight = 100;
+                }
+                else
+                {
+                    wTemplate.width = wTemplate.height = wTemplate.minWidth = wTemplate.minHeight = 300;
+                }
+            }
+
+            private function basewidget_widgetConfigLoaded():void
             {
                 if (configXML)
                 {
@@ -81,6 +95,7 @@
                         legendLayers.push(layer);
                     }
                 }
+                AppEvent.addListener(AppEvent.REFRESH_LEGEND, legendRefreshHandler, false, 1);
                 map.addEventListener(MapEvent.LAYER_ADD, mapLayerAddHandler, false, 1);
                 map.addEventListener(MapEvent.LAYER_REMOVE, mapLayerRemoveHandler, false, 1);
                 populateLegend();
@@ -120,11 +135,15 @@
                 }
             }
 
+            private function legendRefreshHandler(event:AppEvent):void
+            {
+                myLegend.refresh();
+            }
+
             private function isLayerShownInLegend(layer:Layer):Boolean
             {
                 // filter layers which can't be shown in legend
-                if (!(layer.name.indexOf("hiddenLayer_") == -1 &&
-                    (layer is FeatureLayer || layer is ArcGISDynamicMapServiceLayer || layer is ArcGISTiledMapServiceLayer || layer is KMLLayer)))
+                if (!(layer.name.indexOf("hiddenLayer_") == -1 && (layer is FeatureLayer || layer is ArcGISDynamicMapServiceLayer || layer is ArcGISTiledMapServiceLayer || layer is KMLLayer)))
                 {
                     return false;
                 }
@@ -160,9 +179,7 @@
         ]]>
     </fx:Script>
 
-    <viewer:WidgetTemplate width="300" height="300"
-                           minHeight="300"
-                           minWidth="300">
+    <viewer:WidgetTemplate id="wTemplate">
         <esri:Legend id="myLegend"
                      width="100%" height="100%"
                      top="10"

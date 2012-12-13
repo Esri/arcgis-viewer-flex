@@ -8,14 +8,6 @@
 
 viewer|WidgetTemplate
 {
-    background-alpha: 0.8;
-    borderStyle: solid;
-    borderThickness: 1;
-    cornerRadius: 5;
-    dropShadowVisible: true;
-    horizontalScrollPolicy: off;
-    shadowDirection: right;
-    shadowDistance: 5;
     skinClass: ClassReference("com.esri.viewer.skins.WidgetTemplateSkin");
 }
 
@@ -23,23 +15,6 @@ viewerComps|TitlebarButton
 {
     skinClass: ClassReference("com.esri.viewer.skins.TitlebarButtonSkin");
 }
-
-.BannerTitle
-{
-    padding-bottom: 2;
-    padding-top: 4;
-}
-
-.BannerSubtitle
-{
-  
-}
-
-.WidgetTitle
-{
-    fontWeight: bold;
-}
-
 
 s|VScrollBar
 {

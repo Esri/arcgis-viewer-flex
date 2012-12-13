@@ -22,7 +22,8 @@
                    xmlns:viewer="com.esri.viewer.*"
                    xmlns:Locate="widgets.Locate.*"
                    xmlns:esri="http://www.esri.com/2008/ags"
-                   widgetConfigLoaded="init()">
+                   initialize="basewidget_initializeHandler()"
+                   widgetConfigLoaded="basewidget_widgetConfigLoaded()">
 
     <viewer:states>
         <s:State name="addrInput"/>
@@ -59,6 +60,7 @@
             import mx.containers.FormItem;
             import mx.core.UIComponent;
             import mx.events.FlexEvent;
+            import mx.managers.IFocusManagerComponent;
             import mx.rpc.AsyncResponder;
             import mx.rpc.Fault;
 
@@ -123,7 +125,23 @@
 
             private var popUpRenderer:PopUpRenderer = new PopUpRenderer();
 
-            private function init():void
+            private function basewidget_initializeHandler():void
+            {
+                if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
+                {
+                    this.percentWidth = this.percentHeight = 100;
+                    wTemplate.percentWidth = wTemplate.percentHeight = 100;
+                }
+                else
+                {
+                    wTemplate.width = 290;
+                    wTemplate.height = 240;
+                    wTemplate.minWidth = 210
+                    wTemplate.minHeight = 160;
+                }
+            }
+
+            private function basewidget_widgetConfigLoaded():void
             {
                 if (configXML)
                 {
@@ -187,8 +205,10 @@
             private function prepareResultSymbol():void
             {
                 const resultSymbolURL:String = configXML.symbols.picturemarkersymbol.@url || widgetIcon;
-                const resultSymbolHeight:Number = configXML.symbols.picturemarkersymbol.@height || 30;
-                const resultSymbolWidth:Number = configXML.symbols.picturemarkersymbol.@width || 30;
+                const parsedResultMarkerSymbolHeight:Number = parseFloat(configXML.symbols.picturemarkersymbol.@height[0]);
+                const resultSymbolHeight:Number = isNaN(parsedResultMarkerSymbolHeight) ? 0 : parsedResultMarkerSymbolHeight;
+                const parsedResultMarkerSymbolWidth:Number = parseFloat(configXML.symbols.picturemarkersymbol.@width[0]);
+                const resultSymbolWidth:Number = isNaN(parsedResultMarkerSymbolWidth) ? 0 : parsedResultMarkerSymbolWidth;
                 const resultSymbolXOffset:Number = configXML.symbols.picturemarkersymbol.@xoffset || 0;
                 const resultSymbolYOffset:Number = configXML.symbols.picturemarkersymbol.@yoffset || 0;
                 resultSymbol = new PictureMarkerSymbol(resultSymbolURL, resultSymbolWidth, resultSymbolHeight, resultSymbolXOffset, resultSymbolYOffset);
@@ -360,12 +380,10 @@
 
             private function locatorService_faultHandler(fault:Fault, token:Object = null):void
             {
-                var msg:String = "Unable to connect to Locator Service:\n"
-                    + locator.url + "\n\n"
-                    + "Most likely cause:\n"
-                    + ErrorMessageUtil.getKnownErrorCauseMessage(fault.faultCode) + "\n\n"
-                    + "Details:\n"
-                    + ErrorMessageUtil.makeHTMLSafe(fault.toString());
+                var msg:String = getDefaultString("locatorServiceConnectionError",
+                                                  locator.url,
+                                                  ErrorMessageUtil.getKnownErrorCauseMessage(fault),
+                                                  ErrorMessageUtil.makeHTMLSafe(fault.toString()));
                 showError(msg);
             }
 
@@ -646,7 +664,7 @@
             {
                 var result:ArrayCollection = new ArrayCollection();
                 var mapWKID:Number = map.spatialReference ? map.spatialReference.wkid : NaN;
-                var mapIsWebMercator:Boolean = mapWKID == 102100 || mapWKID == 3857 || mapWKID == 102113;
+                var mapIsWebMercator:Boolean = map.spatialReference.isWebMercator();
                 if (useBingLocator)
                 {
                     for each (var veGeocodeResult:VEGeocodeResult in data)
@@ -956,7 +974,16 @@
             {
                 if (event.keyCode == Keyboard.ENTER)
                 {
-                    locateIfAddressFieldInputValid();
+                    const focusedComponent:IFocusManagerComponent = focusManager.getFocus();
+
+                    if (focusedComponent == addressClearButton)
+                    {
+                        clearAddressFields();
+                    }
+                    else
+                    {
+                        locateIfAddressFieldInputValid();
+                    }
                 }
             }
 
@@ -1088,7 +1115,16 @@
             {
                 if (event.keyCode == Keyboard.ENTER)
                 {
-                    locateCoordinates();
+                    const focusedComponent:IFocusManagerComponent = focusManager.getFocus();
+
+                    if (focusedComponent == clearCoordinatesButton)
+                    {
+                        clearInputFieldsAndResults();
+                    }
+                    else
+                    {
+                        locateCoordinates();
+                    }
                 }
             }
 
@@ -1106,17 +1142,14 @@
     <fx:Declarations>
         <esri:Locator id="locator"
                       outSpatialReference="{map.spatialReference}"
-                      url="http://tasks.arcgisonline.com/ArcGIS/rest/services/Locators/TA_Streets_US_10/GeocodeServer"/>
+                      url="http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer"/>
         <esri:VEGeocoder id="veGeocoder"
                          culture="{bingCulture}"
                          key="{bingKey}"/>
     </fx:Declarations>
 
     <viewer:WidgetTemplate id="wTemplate"
-                           width="290" height="240"
                            closed="wTemplate_widgetClosedHandler(event)"
-                           minHeight="160"
-                           minWidth="210"
                            open="wTemplate_widgetOpenedHandler(event)"
                            visible="false">
         <s:Scroller width="100%" height="100%"
@@ -1191,7 +1224,9 @@
                           horizontalAlign="center"
                           paddingTop="5">
                     <s:Button click="locateCoordinates()" label="{submitLabel}"/>
-                    <s:Button click="clearInputFieldsAndResults()" label="{clearLabel}"/>
+                    <s:Button id="clearCoordinatesButton"
+                              click="clearInputFieldsAndResults()"
+                              label="{clearLabel}"/>
                 </s:HGroup>
                 <s:Label id="coordinatesRequiredFieldsLabel"
                          color="0xff0000"

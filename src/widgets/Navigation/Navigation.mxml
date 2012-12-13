@@ -25,7 +25,7 @@
         <![CDATA[
             import com.esri.ags.Map;
             import com.esri.viewer.AppEvent;
-            import com.esri.viewer.ViewerContainer;
+            import com.esri.viewer.utils.LocalizationUtil;
 
             import mx.events.FlexEvent;
 
@@ -208,14 +208,14 @@
                 <s:ArrayCollection>
                     <fx:Object action="pan"
                                imageIcon="assets/images/i_pan.png"
-                               label="Pan"/>
+                               label="{LocalizationUtil.getDefaultString('panLabel')}"/>
                     <fx:Object action="zoomin"
                                imageIcon="assets/images/i_zoomin.png"
-                               label="Zoom In"
+                               label="{LocalizationUtil.getDefaultString('zoomInLabel')}"
                                visible="false"/>
                     <fx:Object action="zoomout"
                                imageIcon="assets/images/i_zoomout.png"
-                               label="Zoom Out"/>
+                               label="{LocalizationUtil.getDefaultString('zoomOutLabel')}"/>
                 </s:ArrayCollection>
             </s:dataProvider>
         </s:ButtonBar>

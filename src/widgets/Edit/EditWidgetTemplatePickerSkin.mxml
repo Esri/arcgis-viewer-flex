@@ -54,7 +54,6 @@ Custom skin class for the TemplatePicker component.
             import spark.components.CheckBox;
             import spark.components.List;
             import spark.events.IndexChangeEvent;
-            import spark.layouts.TileLayout;
 
             private var _changeWatcher:ChangeWatcher;
             private var _templateCollectionChanged:Boolean;
@@ -153,10 +152,9 @@ Custom skin class for the TemplatePicker component.
                         templateList.itemRenderer = _templatePickerListItemRenderer;
                         // style and layout
                         templateList.setStyle("borderVisible", false);
-                        const tileLayout:TileLayout = new TileLayout();
-                        tileLayout.verticalGap = 0;
-                        tileLayout.horizontalGap = 0;
-                        templateList.layout = tileLayout;
+                        const verticalLayout:VerticalLayout = new VerticalLayout();
+                        verticalLayout.gap = 0;
+                        templateList.layout = verticalLayout;
                         templateList.visible = templateList.includeInLayout = featureLayer.visible && featureLayer.isInScaleRange;
                         vGrp.addElement(templateList);
 

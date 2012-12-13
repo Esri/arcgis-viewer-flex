@@ -35,11 +35,12 @@
     <fx:Script>
         <![CDATA[
             import com.esri.ags.layers.supportClasses.LOD;
+            import com.esri.viewer.utils.LocalizationUtil;
 
             private function formatSliderDataTip(value:Number):String
             {
                 const lod:LOD = hostComponent.map.lods[value];
-                return lod ? "1:" + numberFormatter.format(lod.scale) : resourceManager.getString('ViewerStrings', 'lodNotFoundError');
+                return lod ? "1:" + numberFormatter.format(lod.scale) : LocalizationUtil.getDefaultString('lodNotFoundError');
             }
         ]]>
     </fx:Script>

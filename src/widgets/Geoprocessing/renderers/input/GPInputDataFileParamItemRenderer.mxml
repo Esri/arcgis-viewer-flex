@@ -19,6 +19,7 @@
 <s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
                 xmlns:s="library://ns.adobe.com/flex/spark"
                 xmlns:mx="library://ns.adobe.com/flex/mx"
+                width="100%"
                 autoDrawBackground="false"
                 creationComplete="init()">
     <fx:Script>
@@ -40,6 +41,7 @@
             }
         ]]>
     </fx:Script>
+
     <fx:Declarations>
         <mx:RegExpValidator id="urlValidator"
                             expression="^(ht|f)tps?:\/\/[^\s\.]+(\.[^\s\.]+)*((\/|\.)[^\s\.]+)+\/?$"
@@ -50,11 +52,12 @@
                             triggerEvent="change"
                             valid="updateDefaultValue()"/>
     </fx:Declarations>
+
     <mx:FormItem width="100%"
                  label="{data.label}"
                  required="{data.required}">
         <s:TextInput id="urlInput"
-                     width="150"
+                     width="100%"
                      text="{data.defaultValue.url}"
                      toolTip="{data.toolTip}"/>
     </mx:FormItem>

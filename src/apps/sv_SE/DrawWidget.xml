@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<configuration label="Draw and measure (default)">
+    <distanceunits>
+        <distanceunit id="km"/>
+        <distanceunit id="m"/>
+    </distanceunits>
+    <areaunits>
+        <areaunit id="sq km"/>
+        <areaunit id="sq m"/>
+        <areaunit id="ha"/>
+    </areaunits>
+</configuration>
+
+<!--
+    See Draw widget tag reference at
+    http://links.esri.com/drawwidget
+-->

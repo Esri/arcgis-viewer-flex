@@ -28,6 +28,8 @@
 
     <fx:Script>
         <![CDATA[
+            import com.esri.viewer.utils.LocalizationUtil;
+
             import mx.events.FlexEvent;
 
             private const BOOKMARK_CLICK:String = "bookmarkClick";
@@ -57,7 +59,9 @@
 
     <s:states>
         <s:State name="normal"/>
-        <s:State name="hovered"/>
+        <s:State name="hovered" stateGroups="drawBackground"/>
+        <s:State name="normalAndShowsCaret" stateGroups="drawBackground"/>
+        <s:State name="hoveredAndShowsCaret" stateGroups="drawBackground"/>
     </s:states>
 
     <!-- border -->
@@ -77,8 +81,8 @@
             radiusY="4">
         <s:fill>
             <s:SolidColor alpha="0.3"
-                          alpha.hovered="0.8"
-                          color.hovered="{getStyle('rollOverColor')}"
+                          alpha.drawBackground="0.8"
+                          color.drawBackground="{getStyle('rollOverColor')}"
                           color.normal="{getStyle('contentBackgroundColor')}"/>
         </s:fill>
     </s:Rect>
@@ -105,6 +109,7 @@
               right="15"
               click="deleteBookmark(event)"
               source="assets/images/w_close_red.png"
+              toolTip="{LocalizationUtil.getDefaultString('deleteBookmarkTooltip')}"
               verticalCenter="0"
               visible="{bookmark.userCreated}"/>
 

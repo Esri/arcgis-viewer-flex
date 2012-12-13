@@ -19,10 +19,8 @@
 <s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
                 xmlns:s="library://ns.adobe.com/flex/spark"
                 xmlns:mx="library://ns.adobe.com/flex/mx"
+                width="100%"
                 autoDrawBackground="false">
-    <s:layout>
-        <s:HorizontalLayout verticalAlign="middle"/>
-    </s:layout>
     <fx:Script>
         <![CDATA[
             import flashx.textLayout.conversion.TextConverter;
@@ -42,9 +40,15 @@
             }
         ]]>
     </fx:Script>
+
+    <s:layout>
+        <s:HorizontalLayout verticalAlign="middle"/>
+    </s:layout>
+
     <s:RichEditableText editable="false"
                         fontWeight="bold"
                         text="{data.label}"/>
+
     <s:RichEditableText editable="false"
                         textFlow="{TextConverter.importToFlow(url, TextConverter.TEXT_FIELD_HTML_FORMAT)}"
                         toolTip="{data.defaultValue.url}"/>

@@ -17,6 +17,7 @@ package com.esri.viewer.managers
 {
 
 import com.esri.ags.clusterers.ESRIClusterer;
+import com.esri.ags.renderers.IRenderer;
 
 public class LayerCreationProperties
 {
@@ -25,13 +26,18 @@ public class LayerCreationProperties
     public var bandIds:String;
     public var bingMapKey:String;
     public var clusterer:ESRIClusterer;
+    public var columnDelimiter:String;
     public var culture:String;
     public var definitionExpression:String;
+    public var disableClientCaching:Boolean;
     public var displayLevels:String;
     public var gdbVersion:String;
     public var imageFormat:String;
+    public var isEditable:Boolean;
     public var label:String;
     public var layerId:String;
+    public var latitudeFieldName:String;
+    public var longitudeFieldName:String;
     public var maxAllowableOffset:Number;
     public var maxImageHeight:Number;
     public var maxImageWidth:Number;
@@ -41,12 +47,15 @@ public class LayerCreationProperties
     public var noData:Number;
     public var password:String;
     public var proxyUrl:String;
+    public var renderer:IRenderer;
     public var serviceHost:String;
     public var serviceName:String;
     public var serviceMode:String;
     public var serviceURL:String;
     public var skipGetCapabilities:String;
+    public var sourceFields:String;
     public var style:String;
+    public var tileMatrixSetId:String;
     public var token:String;
     public var type:String;
     public var url:String;
@@ -68,13 +77,18 @@ public class LayerCreationProperties
         creationProps.bandIds = layerObject.bandIds;
         creationProps.bingMapKey = layerObject.key;
         creationProps.clusterer = layerObject.clusterer;
+        creationProps.columnDelimiter = layerObject.columnDelimiter;
         creationProps.culture = layerObject.culture;
         creationProps.definitionExpression = layerObject.definitionExpression;
+        creationProps.disableClientCaching = layerObject.disableClientCaching;
         creationProps.displayLevels = layerObject.displayLevels;
         creationProps.gdbVersion = layerObject.gdbVersion;
         creationProps.imageFormat = layerObject.imageFormat;
+        creationProps.isEditable = layerObject.isEditable;
+        creationProps.latitudeFieldName = layerObject.latitudeFieldName;
         creationProps.label = layerObject.label;
         creationProps.layerId = layerObject.layerId;
+        creationProps.longitudeFieldName = layerObject.longitudeFieldName;
         creationProps.maxAllowableOffset = layerObject.maxAllowableOffset;
         creationProps.maxImageHeight = layerObject.maxImageHeight;
         creationProps.maxImageWidth = layerObject.maxImageWidth;
@@ -84,12 +98,15 @@ public class LayerCreationProperties
         creationProps.noData = Number(layerObject.noData);
         creationProps.password = layerObject.password;
         creationProps.proxyUrl = layerObject.proxyUrl;
+        creationProps.renderer = layerObject.renderer;
         creationProps.serviceHost = layerObject.serviceHost;
         creationProps.serviceName = layerObject.serviceName;
         creationProps.serviceMode = layerObject.serviceMode;
         creationProps.serviceURL = layerObject.serviceURL;
         creationProps.skipGetCapabilities = layerObject.skipGetCapabilities;
+        creationProps.sourceFields = layerObject.sourceFields;
         creationProps.style = layerObject.style;
+        creationProps.tileMatrixSetId = layerObject.tileMatrixSetId;
         creationProps.token = layerObject.token;
         creationProps.type = layerObject.type;
         creationProps.url = layerObject.url;
@@ -105,4 +122,5 @@ public class LayerCreationProperties
         return creationProps;
     }
 }
+
 }
