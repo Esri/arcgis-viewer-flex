@@ -70,6 +70,7 @@
 
             private var singleAddressFieldName:String;
             private var findTask:FindTask = new FindTask();
+            private var isGeocodeEnabled:Boolean;
             private var isFindEnabled:Boolean;
             private var searchLayers:Array = [];
             private var zoomScale:Number = 10000;
@@ -160,15 +161,19 @@
                     searchPrompt = configXML.labels.searchprompt[0] || hostBaseWidget.getDefaultString("searchPrompt");
                     noResultsFoundLabel = configXML.labels.noresults[0] || hostBaseWidget.getDefaultString("noResultsFoundLabel");
                     searchResultTitleLabel = configXML.labels.searchresulttitle[0] || hostBaseWidget.getDefaultString("searchResultTitleLabel");
-                    isFindEnabled = (configXML.searchlayers[0] != null);
 
                     configureResultSymbols();
                     configureResultGraphic();
 
                     importSearchResultHistory();
 
-                    configureLocator();
+                    isGeocodeEnabled = (configXML.geocoding.@enabled[0] != "false");
+                    if (isGeocodeEnabled)
+                    {
+                        configureLocator();
+                    }
 
+                    isFindEnabled = (configXML.searchlayers.@enabled[0] != "false" && configXML.searchlayers[0] != null);
                     if (isFindEnabled)
                     {
                         configureSearchLayers();
@@ -220,7 +225,7 @@
             {
                 super.commitProperties();
 
-                if (locatorConfigured
+                if (isGeocodeEnabled && locatorConfigured
                     || (isFindEnabled && searchLayersConfigured))
                 {
                     configureSearchInput();
@@ -351,7 +356,7 @@
 
             private function search():void
             {
-                if (!searchTerm)
+                if (!searchTerm || (!isGeocodeEnabled && !isFindEnabled))
                 {
                     return;
                 }
@@ -369,27 +374,27 @@
                 totalResultsToProcess = 0;
                 searchResults.removeAll();
 
-                totalResultsToProcess++;
+                lastSearchTimestamp = getTimer();
+
+                if (isGeocodeEnabled)
+                {
+                    totalResultsToProcess++;
+
+                    const addressData:Object = {};
+                    addressData[singleAddressFieldName] = searchTerm;
+                    var locatorParams:AddressToLocationsParameters = new AddressToLocationsParameters();
+                    locatorParams.address = addressData;
+                    locatorParams.outFields = [ "Ymax", "Ymin", "Xmax", "Xmin" ];
+                    locatorParams.location = map.extent.center;
+                    locatorParams.distance = calculateExtentRadius();
+
+                    locator.addressToLocations(locatorParams, new AsyncResponder(locator_resultHandler, locator_faultHandler, lastSearchTimestamp));
+                }
 
                 if (isFindEnabled)
                 {
                     totalResultsToProcess += searchLayers.length;
-                }
 
-                lastSearchTimestamp = getTimer();
-
-                const addressData:Object = {};
-                addressData[singleAddressFieldName] = searchTerm;
-                var locatorParams:AddressToLocationsParameters = new AddressToLocationsParameters();
-                locatorParams.address = addressData;
-                locatorParams.outFields = [ "Ymax", "Ymin", "Xmax", "Xmin" ];
-                locatorParams.location = map.extent.center;
-                locatorParams.distance = calculateExtentRadius();
-
-                locator.addressToLocations(locatorParams, new AsyncResponder(locator_resultHandler, locator_faultHandler, lastSearchTimestamp));
-
-                if (isFindEnabled)
-                {
                     var searchLayer:SearchLayer;
                     for (var i1:Number = 0; i1 < searchLayers.length; i1++)
                     {
@@ -995,6 +1000,13 @@
                     for (var i:int = searchResultItems.length - 1; i >= 0; i--)
                     {
                         searchResult = searchResultItems[i];
+
+                        if (searchResult is FindResult && !isFindEnabled
+                            || searchResult is AddressCandidate && !isGeocodeEnabled)
+                        {
+                            continue;
+                        }
+
                         if (SearchResultUtil.searchResultToLabel(searchResult).toLowerCase().indexOf(input) != -1)
                         {
                             matches.unshift(searchResult);
