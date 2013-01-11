@@ -506,17 +506,9 @@
                         {
                             map.scale = zoomScale;
                         }
-                        map.centerAt(queryResult.center);
                     }
-                    else
-                    {
-                        map.extent = queryResult.geometry.extent;
 
-                        if (!map.extent.contains(queryResult.geometry))
-                        {
-                            map.level--;
-                        }
-                    }
+                    map.zoomTo(queryResult.center);
                 }
                 clearTimeout(hitimer);
                 hitimer = setTimeout(showHighlight, 300, [ queryResult ]);

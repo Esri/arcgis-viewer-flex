@@ -824,18 +824,9 @@
                             {
                                 map.scale = zoomScale;
                             }
-
-                            map.centerAt(searchResult.center);
                         }
-                        else
-                        {
-                            map.extent = searchResult.geometry.extent;
 
-                            if (!map.extent.contains(searchResult.geometry))
-                            {
-                                map.level--;
-                            }
-                        }
+                        map.zoomTo(searchResult.geometry);
                     }
                     clearTimeout(hitimer);
                     hitimer = setTimeout(showHighlight, 300, [ searchResult ]);

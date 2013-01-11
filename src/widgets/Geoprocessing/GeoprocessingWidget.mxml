@@ -793,8 +793,7 @@
 
             private function zoomToOutputFeatures():void
             {
-                var outputFeaturesExtent:Extent = gpParamHandler.getOutputFeaturesExtent();
-                updateMapExtent(outputFeaturesExtent);
+                map.zoomTo(gpParamHandler.getOutputFeaturesExtent());
             }
 
             protected function menuItem_contextMenuDeleteHandler(event:ContextMenuEvent):void
@@ -936,7 +935,7 @@
 
             private function zoomToResultImageLayers():void
             {
-                updateMapExtent(largestResultImageLayerExtent);
+                map.zoomTo(largestResultImageLayerExtent);
             }
 
             private function extractLargestResultImageLayerExtent():void
@@ -977,18 +976,6 @@
                     function resultImageFailure(fault:Fault, token:Object):void
                     {
                         //Swallow error
-                    }
-                }
-            }
-
-            private function updateMapExtent(newExtent:Extent):void
-            {
-                if (newExtent)
-                {
-                    map.extent = newExtent;
-                    if (!map.extent.contains(newExtent))
-                    {
-                        map.level--;
                     }
                 }
             }

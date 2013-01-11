@@ -183,11 +183,7 @@
 
             private function updateMapExtent(layerExtent:Extent):void
             {
-                _layer.map.extent = layerExtent;
-                if (!_layer.map.extent.contains(layerExtent))
-                {
-                    _layer.map.level--;
-                }
+                _layer.map.zoomTo(layerExtent);
             }
 
             private function transparencyLabel_clickHandler(event:MouseEvent):void
