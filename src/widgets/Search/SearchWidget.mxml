@@ -1003,7 +1003,9 @@
                  visible="false"
                  visible.graphicalInput="true">
             <s:layout>
-                <s:VerticalLayout gap="10" horizontalAlign="center"/>
+                <s:VerticalLayout gap="10"
+                                  horizontalAlign="center"
+                                  paddingTop="4"/>
             </s:layout>
             <s:HGroup id="boxGraphical"
                       width="100%"
@@ -1102,7 +1104,9 @@
                  visible="false"
                  visible.textInput="true">
             <s:layout>
-                <s:VerticalLayout gap="10" horizontalAlign="center"/>
+                <s:VerticalLayout gap="10"
+                                  horizontalAlign="center"
+                                  paddingTop="4"/>
             </s:layout>
             <s:HGroup id="boxText"
                       width="100%"
