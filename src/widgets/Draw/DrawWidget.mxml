@@ -433,6 +433,7 @@
                         cboArea.dataProvider = configArea;
                     }
                 }
+
                 AppEvent.addListener(AppEvent.DATA_PUBLISH, sharedDataUpdated);
             }
 
@@ -500,7 +501,7 @@
                 if (data.key == "Deactivate_DrawTool")
                 {
                     setMapAction(null, null, null, null);
-                    editTool.deactivate();
+                    resetEditing();
                     if (selectedDrawingIcon)
                     {
                         selectedDrawingIcon.filters = [];
@@ -509,11 +510,21 @@
                 }
             }
 
+            private function resetEditing():void
+            {
+                isEditing = false;
+                if (editGraphic)
+                {
+                    editGraphic.checkForMouseListeners = false;
+                }
+                editGraphic = null;
+                lastActiveEditType = "none";
+                editTool.deactivate();
+            }
+
             private function activateDrawTool(event:MouseEvent):void
             {
                 addSharedData("Deactivate_DrawTool", null); // to be able to deactivate drawTool on other widgets
-                editTool.deactivate();
-                lastActiveEditType = "none";
 
                 // apply glow
                 selectedDrawingIcon = FocusableImage(event.currentTarget);
@@ -522,7 +533,9 @@
 
                 frmDraw.visible = true;
                 showMeasurements = false;
-                isEditing = false;
+
+                resetEditing();
+
                 drawType = selectedDrawingIcon.name;
                 switch (drawType)
                 {
@@ -613,7 +626,7 @@
             private function clear():void
             {
                 graphicsLayer.clear();
-                editTool.deactivate();
+                resetEditing();
                 updateHasDrawnGraphics();
                 clearGraphicToMeasurementGraphic();
             }
@@ -693,7 +706,8 @@
                 customContextMenu.customItems.push(menuItem);
                 lastDrawnGraphic.contextMenu = customContextMenu;
 
-                lastDrawnGraphic.addEventListener(MouseEvent.CLICK, graphic_clickHandler, false, 0, true);
+                lastDrawnGraphic.addEventListener(MouseEvent.MOUSE_DOWN, graphic_mouseDownHandler, false, 0, true);
+                lastDrawnGraphic.checkForMouseListeners = false;
                 graphicsLayer.add(lastDrawnGraphic);
 
                 var geom:Geometry = lastDrawnGraphic.geometry;
@@ -762,59 +776,63 @@
                 graphicsLayer.remove(drawnGraphic);
                 // also remove measurement label if any
                 graphicsLayer.remove(getMeasurementGraphic(drawnGraphic));
-                editTool.deactivate();
+                resetEditing();
                 updateHasDrawnGraphics();
             }
 
-            private function moveMeasurementGraphicToTop(drawnGraphic:Graphic):void
+            protected function graphic_mouseDownHandler(event:MouseEvent):void
             {
-                const measurementGraphic:Graphic = getMeasurementGraphic(drawnGraphic);
-                if (measurementGraphic)
+                var graphic:Graphic = event.currentTarget as Graphic;
+                graphic.removeEventListener(MouseEvent.MOUSE_DOWN, graphic_mouseDownHandler);
+                graphic.addEventListener(MouseEvent.MOUSE_MOVE, graphic_mouseMoveHandler);
+                graphic.addEventListener(MouseEvent.MOUSE_UP, graphic_mouseUpHandler);
+            }
+
+            protected function graphic_mouseMoveHandler(event:MouseEvent):void
+            {
+                var graphic:Graphic = event.currentTarget as Graphic;
+                graphic.removeEventListener(MouseEvent.MOUSE_MOVE, graphic_mouseMoveHandler);
+                graphic.removeEventListener(MouseEvent.MOUSE_UP, graphic_mouseUpHandler);
+                graphic.addEventListener(MouseEvent.MOUSE_DOWN, graphic_mouseDownHandler);
+            }
+
+            protected function graphic_mouseUpHandler(event:MouseEvent):void
+            {
+                var graphic:Graphic = event.currentTarget as Graphic;
+                graphic.removeEventListener(MouseEvent.MOUSE_MOVE, graphic_mouseMoveHandler);
+                graphic.removeEventListener(MouseEvent.MOUSE_UP, graphic_mouseUpHandler);
+                graphic.addEventListener(MouseEvent.MOUSE_DOWN, graphic_mouseDownHandler);
+
+                handleGraphicClick(graphic);
+            }
+
+            private function handleGraphicClick(currentGraphic:Graphic):void
+            {
+                if (editGraphic !== currentGraphic)
                 {
-                    measurementGraphic.graphicsLayer.moveToTop(measurementGraphic);
+                    resetEditing();
+                    editGraphic = currentGraphic;
                 }
-            }
 
-            private function drawIcon_rollOverHandler(event:MouseEvent):void
-            {
-                clearSelectionFilter();
-                event.target.filters = [ glowFilter ];
-            }
-
-            private function drawIcon_rollOutHandler(event:MouseEvent):void
-            {
-                clearSelectionFilter();
-            }
-
-            private function graphic_clickHandler(event:MouseEvent):void
-            {
-                if (editGraphic !== Graphic(event.currentTarget))
-                {
-                    editGraphic = Graphic(event.currentTarget);
-                    lastActiveEditType = "none"; // make sure move and edit vertices is the 1st mode
-                }
                 if (editGraphic.geometry is Polyline || editGraphic.geometry is Polygon)
                 {
                     if (lastActiveEditType == "none")
                     {
                         isEditing = true;
                         lastActiveEditType = "moveEditVertices";
-                        editTool.activate(EditTool.MOVE | EditTool.EDIT_VERTICES, [ editGraphic ]);
+                        activateEditing(EditTool.MOVE | EditTool.EDIT_VERTICES, editGraphic);
                         CursorManager.setCursor(moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
                     }
                     else if (lastActiveEditType == "moveEditVertices")
                     {
                         isEditing = true;
                         lastActiveEditType = "moveRotateScale";
-                        editTool.activate(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, [ editGraphic ]);
+                        activateEditing(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, editGraphic);
                         CursorManager.setCursor(moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
                     }
                     else if (lastActiveEditType == "moveRotateScale")
                     {
-                        isEditing = false;
-                        editGraphic = null;
-                        lastActiveEditType = "none";
-                        editTool.deactivate();
+                        resetEditing();
                     }
                 }
                 else if (editGraphic.geometry is Extent)
@@ -823,15 +841,12 @@
                     {
                         isEditing = true;
                         lastActiveEditType = "moveScale";
-                        editTool.activate(EditTool.MOVE | EditTool.SCALE, [ editGraphic ]);
+                        activateEditing(EditTool.MOVE | EditTool.SCALE, editGraphic);
                         CursorManager.setCursor(moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
                     }
                     else
                     {
-                        isEditing = false;
-                        editGraphic = null;
-                        lastActiveEditType = "none";
-                        editTool.deactivate();
+                        resetEditing();
                     }
                 }
                 else
@@ -840,15 +855,12 @@
                     {
                         isEditing = true;
                         lastActiveEditType = "moveEditVertices";
-                        editTool.activate(EditTool.EDIT_VERTICES | EditTool.MOVE, [ editGraphic ]);
+                        activateEditing(EditTool.EDIT_VERTICES | EditTool.MOVE, editGraphic);
                         CursorManager.setCursor(moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
                     }
                     else
                     {
-                        isEditing = false;
-                        editGraphic = null;
-                        lastActiveEditType = "none";
-                        editTool.deactivate();
+                        resetEditing();
                     }
                 }
 
@@ -860,6 +872,21 @@
                     addEditToolEventListeners();
                     moveMeasurementGraphicToTop(editGraphic);
                     map.addEventListener(MouseEvent.MOUSE_DOWN, map_mouseDownHandler);
+                }
+            }
+
+            private function activateEditing(editMode:Number, graphic:Graphic):void
+            {
+                graphic.checkForMouseListeners = true;
+                editTool.activate(editMode, [ graphic ]);
+            }
+
+            private function moveMeasurementGraphicToTop(drawnGraphic:Graphic):void
+            {
+                const measurementGraphic:Graphic = getMeasurementGraphic(drawnGraphic);
+                if (measurementGraphic)
+                {
+                    measurementGraphic.graphicsLayer.moveToTop(measurementGraphic);
                 }
             }
 
@@ -897,10 +924,7 @@
                     map.removeEventListener(MouseEvent.MOUSE_UP, map_mouseUpHandler);
                     map.removeEventListener(MouseEvent.MOUSE_MOVE, map_mouseMoveHandler);
 
-                    isEditing = false;
-                    editGraphic = null;
-                    lastActiveEditType = "none";
-                    editTool.deactivate();
+                    resetEditing();
                 }
             }
 
@@ -967,25 +991,25 @@
                         }
                         if (lastActiveEditType == "moveEditVertices")
                         {
-                            editTool.activate(EditTool.MOVE | EditTool.EDIT_VERTICES, [ graphic ]);
+                            activateEditing(EditTool.MOVE | EditTool.EDIT_VERTICES, graphic);
                         }
                         else if (lastActiveEditType == "moveRotateScale")
                         {
-                            editTool.activate(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, [ graphic ]);
+                            activateEditing(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, graphic);
                         }
                     }
                     else if (graphic.geometry is Extent)
                     {
                         if (lastActiveEditType == "moveScale")
                         {
-                            editTool.activate(EditTool.MOVE | EditTool.SCALE, [ graphic ]);
+                            activateEditing(EditTool.MOVE | EditTool.SCALE, graphic);
                         }
                     }
                     else
                     {
                         if (lastActiveEditType == "moveEditVertices")
                         {
-                            editTool.activate(EditTool.EDIT_VERTICES | EditTool.MOVE, [ graphic ]);
+                            activateEditing(EditTool.EDIT_VERTICES | EditTool.MOVE, graphic);
                         }
                     }
                     if (getMeasurementGraphic(graphic))
@@ -1401,6 +1425,17 @@
                     longest = n.length > longest.length ? n : longest;
                 }
                 return longest;
+            }
+
+            private function drawIcon_rollOverHandler(event:MouseEvent):void
+            {
+                clearSelectionFilter();
+                event.target.filters = [ glowFilter ];
+            }
+
+            private function drawIcon_rollOutHandler(event:MouseEvent):void
+            {
+                clearSelectionFilter();
             }
         ]]>
     </fx:Script>
