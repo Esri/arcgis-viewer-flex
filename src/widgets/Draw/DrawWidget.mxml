@@ -194,6 +194,7 @@
             [Embed(source="/assets/images/move_cursor.png")]
             private var moveCursorIcon:Class;
 
+            private var moveCursorIconId:int;
             private var graphicToMeasurementGraphic:Dictionary = new Dictionary(true);
 
             private function basewidget_initializeHandler():void
@@ -501,7 +502,7 @@
                 if (data.key == "Deactivate_DrawTool")
                 {
                     setMapAction(null, null, null, null);
-                    resetEditing();
+                    stopEditing();
                     if (selectedDrawingIcon)
                     {
                         selectedDrawingIcon.filters = [];
@@ -510,7 +511,7 @@
                 }
             }
 
-            private function resetEditing():void
+            private function stopEditing():void
             {
                 isEditing = false;
                 if (editGraphic)
@@ -534,7 +535,7 @@
                 frmDraw.visible = true;
                 showMeasurements = false;
 
-                resetEditing();
+                stopEditing();
 
                 drawType = selectedDrawingIcon.name;
                 switch (drawType)
@@ -626,7 +627,7 @@
             private function clear():void
             {
                 graphicsLayer.clear();
-                resetEditing();
+                stopEditing();
                 updateHasDrawnGraphics();
                 clearGraphicToMeasurementGraphic();
             }
@@ -776,7 +777,7 @@
                 graphicsLayer.remove(drawnGraphic);
                 // also remove measurement label if any
                 graphicsLayer.remove(getMeasurementGraphic(drawnGraphic));
-                resetEditing();
+                stopEditing();
                 updateHasDrawnGraphics();
             }
 
@@ -803,14 +804,14 @@
                 graphic.removeEventListener(MouseEvent.MOUSE_UP, graphic_mouseUpHandler);
                 graphic.addEventListener(MouseEvent.MOUSE_DOWN, graphic_mouseDownHandler);
 
-                handleGraphicClick(graphic);
+                toggleEditing(graphic);
             }
 
-            private function handleGraphicClick(currentGraphic:Graphic):void
+            private function toggleEditing(currentGraphic:Graphic):void
             {
                 if (editGraphic !== currentGraphic)
                 {
-                    resetEditing();
+                    stopEditing();
                     editGraphic = currentGraphic;
                 }
 
@@ -818,49 +819,45 @@
                 {
                     if (lastActiveEditType == "none")
                     {
-                        isEditing = true;
                         lastActiveEditType = "moveEditVertices";
-                        activateEditing(EditTool.MOVE | EditTool.EDIT_VERTICES, editGraphic);
-                        CursorManager.setCursor(moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
+                        startEditing(EditTool.MOVE | EditTool.EDIT_VERTICES, editGraphic);
+                        showMoveCursor();
                     }
                     else if (lastActiveEditType == "moveEditVertices")
                     {
-                        isEditing = true;
                         lastActiveEditType = "moveRotateScale";
-                        activateEditing(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, editGraphic);
-                        CursorManager.setCursor(moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
+                        startEditing(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, editGraphic);
+                        showMoveCursor();
                     }
                     else if (lastActiveEditType == "moveRotateScale")
                     {
-                        resetEditing();
+                        stopEditing();
                     }
                 }
                 else if (editGraphic.geometry is Extent)
                 {
                     if (lastActiveEditType == "none")
                     {
-                        isEditing = true;
                         lastActiveEditType = "moveScale";
-                        activateEditing(EditTool.MOVE | EditTool.SCALE, editGraphic);
-                        CursorManager.setCursor(moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
+                        startEditing(EditTool.MOVE | EditTool.SCALE, editGraphic);
+                        showMoveCursor();
                     }
                     else
                     {
-                        resetEditing();
+                        stopEditing();
                     }
                 }
                 else
                 {
                     if (lastActiveEditType == "none")
                     {
-                        isEditing = true;
                         lastActiveEditType = "moveEditVertices";
-                        activateEditing(EditTool.EDIT_VERTICES | EditTool.MOVE, editGraphic);
-                        CursorManager.setCursor(moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
+                        startEditing(EditTool.EDIT_VERTICES | EditTool.MOVE, editGraphic);
+                        showMoveCursor();
                     }
                     else
                     {
-                        resetEditing();
+                        stopEditing();
                     }
                 }
 
@@ -875,10 +872,17 @@
                 }
             }
 
-            private function activateEditing(editMode:Number, graphic:Graphic):void
+            private function startEditing(editMode:Number, graphic:Graphic):void
             {
+                isEditing = true;
                 graphic.checkForMouseListeners = true;
                 editTool.activate(editMode, [ graphic ]);
+            }
+
+            private function showMoveCursor():void
+            {
+                CursorManager.setCursor(
+                    moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
             }
 
             private function moveMeasurementGraphicToTop(drawnGraphic:Graphic):void
@@ -924,7 +928,7 @@
                     map.removeEventListener(MouseEvent.MOUSE_UP, map_mouseUpHandler);
                     map.removeEventListener(MouseEvent.MOUSE_MOVE, map_mouseMoveHandler);
 
-                    resetEditing();
+                    stopEditing();
                 }
             }
 
@@ -982,7 +986,6 @@
                 {
                     var normalizedGeometries:Array = item as Array;
                     graphic.geometry = normalizedGeometries[0];
-                    isEditing = true;
                     if (graphic.geometry is Polyline || graphic.geometry is Polygon)
                     {
                         if (lastActiveEditType == "moveScale")
@@ -991,25 +994,25 @@
                         }
                         if (lastActiveEditType == "moveEditVertices")
                         {
-                            activateEditing(EditTool.MOVE | EditTool.EDIT_VERTICES, graphic);
+                            startEditing(EditTool.MOVE | EditTool.EDIT_VERTICES, graphic);
                         }
                         else if (lastActiveEditType == "moveRotateScale")
                         {
-                            activateEditing(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, graphic);
+                            startEditing(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, graphic);
                         }
                     }
                     else if (graphic.geometry is Extent)
                     {
                         if (lastActiveEditType == "moveScale")
                         {
-                            activateEditing(EditTool.MOVE | EditTool.SCALE, graphic);
+                            startEditing(EditTool.MOVE | EditTool.SCALE, graphic);
                         }
                     }
                     else
                     {
                         if (lastActiveEditType == "moveEditVertices")
                         {
-                            activateEditing(EditTool.EDIT_VERTICES | EditTool.MOVE, graphic);
+                            startEditing(EditTool.EDIT_VERTICES | EditTool.MOVE, graphic);
                         }
                     }
                     if (getMeasurementGraphic(graphic))
