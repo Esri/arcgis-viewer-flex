@@ -26,10 +26,13 @@
     <fx:Script>
         <![CDATA[
             import com.esri.ags.Map;
+            import com.esri.ags.SpatialReference;
             import com.esri.ags.Units;
             import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.Geometry;
             import com.esri.ags.geometry.MapPoint;
+            import com.esri.ags.geometry.Multipoint;
+            import com.esri.ags.geometry.Polygon;
             import com.esri.ags.geometry.Polyline;
             import com.esri.ags.portal.PopUpRenderer;
             import com.esri.ags.portal.supportClasses.PopUpInfo;
@@ -38,11 +41,13 @@
             import com.esri.ags.symbols.SimpleMarkerSymbol;
             import com.esri.ags.symbols.Symbol;
             import com.esri.ags.tasks.FindTask;
+            import com.esri.ags.tasks.GeometryServiceSingleton;
             import com.esri.ags.tasks.JSONTask;
             import com.esri.ags.tasks.supportClasses.AddressCandidate;
             import com.esri.ags.tasks.supportClasses.AddressToLocationsParameters;
             import com.esri.ags.tasks.supportClasses.FindParameters;
             import com.esri.ags.tasks.supportClasses.FindResult;
+            import com.esri.ags.tasks.supportClasses.ProjectParameters;
             import com.esri.ags.utils.GeometryUtil;
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.BaseWidget;
@@ -56,7 +61,6 @@
             import mx.rpc.Fault;
             import mx.utils.StringUtil;
 
-            import spark.components.List;
             import spark.events.IndexChangeEvent;
             import spark.events.TextOperationEvent;
 
@@ -466,12 +470,21 @@
                 }
                 else if (searchResults.length == 1)
                 {
-                    showSearchResultOnMap(searchResults.getItemAt(0));
+                    storeSearchResult(searchResults.getItemAt(0));
+                    var searchResult:Object = getSearchResult(searchResults.getItemAt(0));
+                    searchTerm = searchResult.label;
+                    projectToMapSpatialReferenceAndShowResultOnMap(searchResult);
                 }
                 else
                 {
                     currentState = "noResults";
                 }
+            }
+
+            private function storeSearchResult(searchResult:Object):void
+            {
+                searchResultHistory.addItem(searchResult);
+                exportSearchResultHistory();
             }
 
             private function exportSearchResultHistory():void
@@ -489,6 +502,255 @@
                 {
                     //ignore
                 }
+            }
+
+            private function getSearchResult(searchResult:Object):Object
+            {
+                var result:Object;
+
+                if (searchResult is FindResult)
+                {
+                    result = {};
+                    const findResult:FindResult = searchResult as FindResult;
+                    result.label = findResult.value;
+                    result.geometry = findResult.feature.geometry;
+                    result.extent = null;
+                }
+                else if (searchResult is AddressCandidate)
+                {
+                    result = {};
+                    const addressCandidate:AddressCandidate = searchResult as AddressCandidate;
+                    result.label = addressCandidate.address;
+                    result.geometry = addressCandidate.location;
+                    result.extent = getGeographicResultExtent(addressCandidate);
+                }
+
+                return result;
+            }
+
+            private function getGeographicResultExtent(addressCandidate:AddressCandidate):Extent
+            {
+                const canCreateResultExtent:Boolean = addressCandidate
+                    && addressCandidate.attributes
+                    && Boolean(addressCandidate.attributes.Xmin) && Boolean(addressCandidate.attributes.Ymin)
+                    && Boolean(addressCandidate.attributes.Xmax) && Boolean(addressCandidate.attributes.Ymax)
+                    && !isNaN(addressCandidate.attributes.Xmin) && !isNaN(addressCandidate.attributes.Ymin)
+                    && !isNaN(addressCandidate.attributes.Xmax) && !isNaN(addressCandidate.attributes.Ymax);
+
+                return canCreateResultExtent ? new Extent(addressCandidate.attributes.Xmin,
+                                                          addressCandidate.attributes.Ymin,
+                                                          addressCandidate.attributes.Xmax,
+                                                          addressCandidate.attributes.Ymax,
+                                                          new SpatialReference(4326)) : null;
+            }
+
+            private function projectToMapSpatialReferenceAndShowResultOnMap(searchResult:Object):void
+            {
+                var needToProjectGeometryServerSide:Boolean;
+
+                if (map.spatialReference.isWebMercator()
+                    && searchResult.geometry.spatialReference
+                    && searchResult.geometry.spatialReference.wkid == 4326)
+                {
+                    searchResult.geometry = WebMercatorUtil.geographicToWebMercator(searchResult.geometry);
+                }
+                else if (map.spatialReference.wkid == 4326
+                    && searchResult.geometry.spatialReference
+                    && searchResult.geometry.spatialReference.isWebMercator())
+                {
+                    searchResult.geometry = WebMercatorUtil.webMercatorToGeographic(searchResult.geometry);
+                }
+                else if (!map.spatialReference.equals(searchResult.geometry.spatialReference))
+                {
+                    needToProjectGeometryServerSide = true;
+                }
+
+                var needToProjectExtentServerSide:Boolean;
+
+                if (searchResult.extent)
+                {
+                    if (map.spatialReference.isWebMercator()
+                        && searchResult.extent.spatialReference.wkid == 4326)
+                    {
+                        searchResult.extent = WebMercatorUtil.geographicToWebMercator(searchResult.extent);
+                    }
+                    else if (map.spatialReference.wkid == 4326
+                        && searchResult.extent.spatialReference
+                        && searchResult.extent.spatialReference.isWebMercator())
+                    {
+                        //do nothing since we're assuming the search result extent's SR is in Geographic
+                    }
+                    else if (!map.spatialReference.equals(searchResult.extent.spatialReference))
+                    {
+                        needToProjectExtentServerSide = true;
+                    }
+                }
+
+                var previousShowBusyCursorValue:Boolean = GeometryServiceSingleton.instance.showBusyCursor;
+
+                if (needToProjectGeometryServerSide)
+                {
+                    projectGeometryServerSide();
+                }
+                else if (needToProjectExtentServerSide)
+                {
+                    projectExtentServerSide();
+                }
+                else
+                {
+                    handleProjectionComplete();
+                }
+
+                function projectGeometryServerSide():void
+                {
+                    var projectionParams:ProjectParameters = new ProjectParameters();
+                    projectionParams.geometries = [ searchResult.geometry ];
+                    projectionParams.outSpatialReference = map.spatialReference;
+
+                    GeometryServiceSingleton.instance.showBusyCursor = true;
+                    GeometryServiceSingleton.instance.project(
+                        projectionParams, new AsyncResponder(projectGeometryResultHandler,
+                                                             projectFaultHandler));
+                }
+
+                function projectGeometryResultHandler(geometry:Array, token:Object = null):void
+                {
+                    searchResult.geometry = geometry[0];
+
+                    if (needToProjectExtentServerSide)
+                    {
+                        projectExtentServerSide();
+                    }
+                    else
+                    {
+                        handleProjectionComplete();
+                    }
+                }
+
+                function projectExtentServerSide():void
+                {
+                    var projectionParams:ProjectParameters = new ProjectParameters();
+                    projectionParams.geometries = [ searchResult.extent ];
+                    projectionParams.outSpatialReference = map.spatialReference;
+
+                    GeometryServiceSingleton.instance.showBusyCursor = true;
+                    GeometryServiceSingleton.instance.project(
+                        projectionParams, new AsyncResponder(projectExtentResultHandler,
+                                                             projectFaultHandler));
+                }
+
+                function projectExtentResultHandler(extent:Array, token:Object = null):void
+                {
+                    searchResult.extent = extent[0];
+                    handleProjectionComplete();
+                }
+
+                function handleProjectionComplete():void
+                {
+                    GeometryServiceSingleton.instance.showBusyCursor = previousShowBusyCursorValue;
+
+                    if (hasValidGeometry(searchResult.geometry)
+                        && hasValidGeometry(searchResult.extent))
+                    {
+                        showSearchResultOnMap(searchResult);
+                    }
+                    else
+                    {
+                        showError(hostBaseWidget.getDefaultString("cannotDisplayResult"), SINGLE_LINE_SEARCH);
+                    }
+                }
+
+                function projectFaultHandler(fault:Fault, token:Object = null):void
+                {
+                    showError(hostBaseWidget.getDefaultString("projectionError",
+                                                              ErrorMessageUtil.makeHTMLSafe(fault.toString())), SINGLE_LINE_SEARCH);
+                }
+            }
+
+            private function hasValidGeometry(geometry:Geometry):Boolean
+            {
+                if (geometry.type == Geometry.MAPPOINT)
+                {
+                    return isValidMapPoint(geometry as MapPoint);
+                }
+                else if (geometry.type == Geometry.MULTIPOINT)
+                {
+                    return isValidMultiPoint(geometry as Multipoint);
+                }
+                else if (geometry.type == Geometry.EXTENT)
+                {
+                    return isValidPolygon((geometry as Extent).toPolygon());
+                }
+                else if (geometry.type == Geometry.POLYGON)
+                {
+                    return isValidPolygon(geometry as Polygon);
+                }
+                else if (geometry.type == Geometry.POLYLINE)
+                {
+                    return isValidPolyline(geometry as Polyline);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            private function isValidMapPoint(point:MapPoint):Boolean
+            {
+                return !isNaN(point.x) && !isNaN(point.y);
+            }
+
+            private function isValidMultiPoint(multiPoint:Multipoint):Boolean
+            {
+                return hasValidMapPoints(multiPoint.points);
+            }
+
+            private function hasValidMapPoints(points:Array):Boolean
+            {
+                var isValid:Boolean = true;
+
+                for each (var point:MapPoint in points)
+                {
+                    if (!isValidMapPoint(point))
+                    {
+                        isValid = false;
+                        break;
+                    }
+                }
+
+                return isValid;
+            }
+
+            private function isValidPolyline(polyline:Polyline):Boolean
+            {
+                var isValid:Boolean = true;
+
+                for each (var path:Array in polyline.paths)
+                {
+                    if (!hasValidMapPoints(path))
+                    {
+                        isValid = false;
+                        break;
+                    }
+                }
+
+                return isValid;
+            }
+
+            private function isValidPolygon(polygon:Polygon):Boolean
+            {
+                var isValid:Boolean = true;
+
+                for each (var ring:Array in polygon.rings)
+                {
+                    if (!hasValidMapPoints(ring))
+                    {
+                        isValid = false;
+                        break;
+                    }
+                }
+
+                return isValid;
             }
 
             private function locator_faultHandler(info:Object, searchTimestamp:int):void
@@ -527,69 +789,51 @@
                 decreaseProcessedResultCount();
             }
 
-            //TODO: refactor!
-            private function processSelectedSearchResult(searchResultList:List):void
+            private function processSelectedSearchResult():void
             {
-                showSearchResultOnMap(searchResultList.selectedItem);
-                searchResultList.selectedIndex = -1;
-                searchResultList.dataProvider.removeAll();
+                storeSearchResult(resultList.selectedItem);
+                var searchResult:Object = getSearchResult(resultList.selectedItem);
+                searchTerm = searchResult.label;
+                projectToMapSpatialReferenceAndShowResultOnMap(searchResult);
+                resetSearchResultSelection();
+            }
+
+            private function resetSearchResultSelection():void
+            {
+                resultList.selectedIndex = -1;
+                resultList.dataProvider.removeAll();
                 currentState = "normal";
             }
 
+            //assumes search result SR compatible with map's
             private function showSearchResultOnMap(searchResult:Object):void
             {
-                map.defaultGraphicsLayer.remove(searchResultGraphic);
-                const infoWindowRenderer:ClassFactory = new ClassFactory(PopUpRenderer);
-                const popUpInfo:PopUpInfo = new PopUpInfo();
-                popUpInfo.title = searchResultTitleLabel;
-                popUpInfo.showZoomToButton = false; //hide the zoom to button as map would be zoomed-in 
-
-                var resultExtent:Extent;
-
-                if (searchResult is FindResult)
-                {
-                    const findResult:FindResult = searchResult as FindResult;
-                    const resultLabel:String = findResult.value;
-                    searchTerm = resultLabel;
-
-                    searchResultGraphic.geometry = findResult.feature.geometry;
-                    searchResultGraphic.symbol = getSymbolForGeometryType(searchResultGraphic.geometry.type);
-
-                    popUpInfo.description = findResult.value;
-                }
-                else if (searchResult is AddressCandidate)
-                {
-                    const addressCandidate:AddressCandidate = searchResult as AddressCandidate;
-                    searchTerm = addressCandidate.address as String;
-                    resultExtent = getGeographicResultExtent(addressCandidate);
-
-                    if (map.spatialReference.isWebMercator())
-                    {
-                        resultExtent = WebMercatorUtil.geographicToWebMercator(resultExtent) as Extent;
-                    }
-
-                    searchResultGraphic.geometry = addressCandidate.location;
-                    searchResultGraphic.symbol = getSymbolForGeometryType(searchResultGraphic.geometry.type);
-
-                    popUpInfo.description = addressCandidate.address as String;
-                }
-                else
+                if (!searchResult)
                 {
                     return;
                 }
 
-                storeSearchResult(searchResult);
+                searchResultGraphic.geometry = searchResult.geometry;
+                searchResultGraphic.symbol = getSymbolForGeometryType(searchResultGraphic.geometry.type);
+                var resultExtent:Extent = searchResult.extent;
 
+                const popUpInfo:PopUpInfo = new PopUpInfo();
+                popUpInfo.description = searchResult.label;
+                popUpInfo.title = searchResultTitleLabel;
+                popUpInfo.showZoomToButton = false; //hide the zoom to button as map would be zoomed-in 
+
+                const infoWindowRenderer:ClassFactory = new ClassFactory(PopUpRenderer);
                 infoWindowRenderer.properties = { popUpInfo: popUpInfo };
                 searchResultGraphic.infoWindowRenderer = infoWindowRenderer;
 
+                popUpRenderer.popUpInfo = popUpInfo;
+                popUpRenderer.graphic = searchResultGraphic;
+
+                map.defaultGraphicsLayer.remove(searchResultGraphic);
                 if (searchResultGraphic.symbol)
                 {
                     map.defaultGraphicsLayer.add(searchResultGraphic);
                 }
-
-                popUpRenderer.popUpInfo = popUpInfo;
-                popUpRenderer.graphic = searchResultGraphic;
 
                 const resultPoint:MapPoint = getGeometryCenter(searchResultGraphic.geometry);
 
@@ -637,27 +881,6 @@
                 }
 
                 return symbol;
-            }
-
-            private function getGeographicResultExtent(addressCandidate:AddressCandidate):Extent
-            {
-                const canCreateResultExtent:Boolean = addressCandidate
-                    && addressCandidate.attributes
-                    && !isNaN(addressCandidate.attributes.Xmin)
-                    && !isNaN(addressCandidate.attributes.Ymin)
-                    && !isNaN(addressCandidate.attributes.Xmax)
-                    && !isNaN(addressCandidate.attributes.Ymax);
-
-                return canCreateResultExtent ? new Extent(addressCandidate.attributes.Xmin,
-                                                          addressCandidate.attributes.Ymin,
-                                                          addressCandidate.attributes.Xmax,
-                                                          addressCandidate.attributes.Ymax) : null;
-            }
-
-            private function storeSearchResult(searchResult:Object):void
-            {
-                searchResultHistory.addItem(searchResult);
-                exportSearchResultHistory();
             }
 
             private function getGeometryCenter(geometry:Geometry):MapPoint
@@ -802,14 +1025,14 @@
 
             protected function resultList_changeHandler(event:IndexChangeEvent):void
             {
-                processSelectedSearchResult(resultList);
+                processSelectedSearchResult();
             }
 
             protected function searchInput_enterHandler(event:FlexEvent):void
             {
                 if (resultList.selectedIndex > -1)
                 {
-                    processSelectedSearchResult(resultList);
+                    processSelectedSearchResult();
                 }
                 else
                 {
