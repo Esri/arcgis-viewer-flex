@@ -17,7 +17,7 @@
     <application path="index.mxml"/>
   </applications>
   <modules>
-  	<module application="src/index.mxml" destPath="widgets/AttributeTable/AttributeTableWidget.swf" optimize="true" sourcePath="src/widgets/AttributeTable/AttributeTableWidget.mxml"/>
+    <module application="src/index.mxml" destPath="widgets/AttributeTable/AttributeTableWidget.swf" optimize="true" sourcePath="src/widgets/AttributeTable/AttributeTableWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/Bookmark/BookmarkWidget.swf" optimize="true" sourcePath="src/widgets/Bookmark/BookmarkWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/Coordinate/CoordinateWidget.swf" optimize="true" sourcePath="src/widgets/Coordinate/CoordinateWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/Chart/ChartWidget.swf" optimize="true" sourcePath="src/widgets/Chart/ChartWidget.mxml"/>
