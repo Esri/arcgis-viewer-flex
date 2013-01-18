@@ -881,7 +881,13 @@
 
             private function showMoveCursor():void
             {
-                CursorManager.setCursor(
+                var hasMoveCursorIdBeenSet:Boolean = (moveCursorIconId > 0);
+                if (hasMoveCursorIdBeenSet)
+                {
+                    CursorManager.removeCursor(moveCursorIconId);
+                }
+
+                moveCursorIconId = CursorManager.setCursor(
                     moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
             }
 
