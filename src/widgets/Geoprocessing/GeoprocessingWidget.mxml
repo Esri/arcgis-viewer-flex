@@ -148,7 +148,6 @@
                             }
                         }
                         gp.outSpatialReference = map.spatialReference;
-                        getExecutionType();
                         autoSubmit = (configXML.autosubmit[0] == "true");
 
                         if (configXML.useamf.length() > 0)
@@ -198,26 +197,6 @@
                 }
             }
 
-            private function getExecutionType():void
-            {
-                var gpTaskInspector:JSONTask = new JSONTask();
-                var urlVars:URLVariables = new URLVariables();
-                urlVars.f = "json";
-                gpTaskInspector.url = gp.url;
-                gpTaskInspector.proxyURL = gp.proxyURL;
-                gpTaskInspector.execute(urlVars, new AsyncResponder(gpTaskInspector_resultHandler, gpTaskInspector_faultHandler));
-            }
-
-            private function gpTaskInspector_resultHandler(serviceDescription:Object, token:Object = null):void
-            {
-                executionType = serviceDescription.executionType;
-            }
-
-            private function gpTaskInspector_faultHandler(fault:Fault, token:Object = null):void
-            {
-                showError(getDefaultString("unableToDetermineGPExecutionType", ErrorMessageUtil.makeHTMLSafe(fault.toString())));
-            }
-
             private function fetchGPServerDescription():void
             {
                 var gpServerInspector:JSONTask = new JSONTask();
@@ -236,11 +215,19 @@
 
             private function gpServerInspector_resultHandler(gpServerDescription:Object, token:Object = null):void
             {
+                getExecutionType(gpServerDescription);
+
                 if (!hasUseAMFBeenSet)
                 {
                     checkAMFSupport(gpServerDescription);
                 }
+
                 checkResultMapServerSupport(gpServerDescription);
+            }
+
+            private function getExecutionType(gpServerDescription:Object):void
+            {
+                executionType = gpServerDescription.executionType;
             }
 
             private function checkAMFSupport(gpServerDescription:Object):void
@@ -263,6 +250,7 @@
             private function gpServerInspector_faultHandler(fault:Fault, token:Object = null):void
             {
                 //Could not fetch service capabilities
+                showError(getDefaultString("unableToDetermineGPExecutionType", ErrorMessageUtil.makeHTMLSafe(fault.toString())));
             }
 
             private function buildUI(config:XML):void
