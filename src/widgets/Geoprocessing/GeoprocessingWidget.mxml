@@ -215,36 +215,9 @@
 
             private function gpServerInspector_resultHandler(gpServerDescription:Object, token:Object = null):void
             {
-                getExecutionType(gpServerDescription);
-
-                if (!hasUseAMFBeenSet)
-                {
-                    checkAMFSupport(gpServerDescription);
-                }
-
-                checkResultMapServerSupport(gpServerDescription);
-            }
-
-            private function getExecutionType(gpServerDescription:Object):void
-            {
                 executionType = gpServerDescription.executionType;
-            }
-
-            private function checkAMFSupport(gpServerDescription:Object):void
-            {
-                var version:Number = gpServerDescription.currentVersion;
-                if (version >= 10.1)
-                {
-                    gp.useAMF = true;
-                }
-            }
-
-            private function checkResultMapServerSupport(gpServerDescription:Object):void
-            {
-                if (gpServerDescription.resultMapServerName)
-                {
-                    hasResultMapServer = true;
-                }
+                gp.useAMF = !hasUseAMFBeenSet && (gpServerDescription.currentVersion >= 10.1);
+                hasResultMapServer = Boolean(gpServerDescription.resultMapServerName);
             }
 
             private function gpServerInspector_faultHandler(fault:Fault, token:Object = null):void
