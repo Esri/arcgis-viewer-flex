@@ -18,6 +18,8 @@ package com.esri.viewer.components.toc.tocClasses
 
 import com.esri.ags.layers.Layer;
 import com.esri.ags.layers.TiledMapServiceLayer;
+import com.esri.ags.symbols.CompositeSymbol;
+import com.esri.ags.symbols.Symbol;
 import com.esri.viewer.AppEvent;
 import com.esri.viewer.components.toc.TOC;
 import com.esri.viewer.components.toc.controls.CheckBoxIndeterminate;
@@ -29,6 +31,8 @@ import mx.controls.Image;
 import mx.controls.treeClasses.TreeItemRenderer;
 import mx.controls.treeClasses.TreeListData;
 import mx.core.FlexGlobals;
+
+import spark.components.Group;
 
 /**
  * A custom tree item renderer for a map Table of Contents.
@@ -52,6 +56,8 @@ public class TocItemRenderer extends TreeItemRenderer
 
     private static const POST_CHECKBOX_GAP:Number = 4;
 
+    private static const LEGEND_SWATCH_SIZE:Number = 20;
+
     private var _tocLayerMenu:TocLayerMenu;
 
     [Embed(source="assets/images/Context_menu11.png")]
@@ -59,6 +65,7 @@ public class TocItemRenderer extends TreeItemRenderer
     public var contextCls:Class;
 
     private var _layerMenuImage:Image;
+    private var _legendSwatchContainer:Group;
 
     //--------------------------------------------------------------------------
     //
@@ -71,6 +78,30 @@ public class TocItemRenderer extends TreeItemRenderer
         super();
 
         addEventListener(MouseEvent.CLICK, itemClickHandler);
+    }
+
+    //--------------------------------------------------------------------------
+    //
+    //  Overriden Properties
+    //
+    //--------------------------------------------------------------------------
+
+    /**
+     * @private
+     */
+    override public function set data(value:Object):void
+    {
+        super.data = value;
+
+        if (value is TocLegendItem)
+        {
+            var symbol:Symbol = TocLegendItem(value).legendItemInfo.symbol;
+            if (symbol && !(symbol is CompositeSymbol))
+            {
+                _legendSwatchContainer.removeAllElements();
+                _legendSwatchContainer.addElement(symbol.createSwatch(LEGEND_SWATCH_SIZE, LEGEND_SWATCH_SIZE));
+            }
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -109,6 +140,12 @@ public class TocItemRenderer extends TreeItemRenderer
             this._layerMenuImage.addEventListener(MouseEvent.CLICK, onLayerMenuImageClick);
             this._layerMenuImage.addEventListener(MouseEvent.DOUBLE_CLICK, onLayerMenuImageDoubleClick);
         }
+
+        if (!_legendSwatchContainer)
+        {
+            _legendSwatchContainer = new Group();
+            addChild(_legendSwatchContainer);
+        }
     }
 
     /**
@@ -129,11 +166,14 @@ public class TocItemRenderer extends TreeItemRenderer
 
             // Hide the checkbox for child items of tiled map services
             var checkboxVisible:Boolean = true;
-            if (isTiledLayerChild(item))
+            if (isTiledLayerChild(item) || (item is TocLegendItem))
             {
                 checkboxVisible = false;
             }
             _checkbox.visible = checkboxVisible;
+
+            // show legend for TocLegendItem
+            _legendSwatchContainer.visible = item is TocLegendItem;
 
             // hide the option button if this is not a layer
             if (!isLayerItem(item))
@@ -179,6 +219,7 @@ public class TocItemRenderer extends TreeItemRenderer
         {
             var w:Number = measuredWidth;
             w += _checkbox.measuredWidth;
+            w += _legendSwatchContainer.measuredWidth;
             w += _layerMenuImage.measuredWidth;
             w += 2 * (PRE_CHECKBOX_GAP + POST_CHECKBOX_GAP); // once for the checkbox and once for the option image
             measuredWidth = w;
@@ -203,12 +244,21 @@ public class TocItemRenderer extends TreeItemRenderer
         }
         startx += PRE_CHECKBOX_GAP;
 
-        // Position the checkbox between the disclosure icon and the item icon
-        _checkbox.x = startx;
-        _checkbox.setActualSize(_checkbox.measuredWidth, _checkbox.measuredHeight);
-        _checkbox.y = (unscaledHeight - _checkbox.height) / 2;
-        startx = _checkbox.x + _checkbox.width + POST_CHECKBOX_GAP;
-
+        if (_checkbox.visible)
+        {
+            // Position the checkbox between the disclosure icon and the item icon
+            _checkbox.x = startx;
+            _checkbox.setActualSize(_checkbox.measuredWidth, _checkbox.measuredHeight);
+            _checkbox.y = (unscaledHeight - _checkbox.height) / 2;
+            startx = _checkbox.x + _checkbox.width + POST_CHECKBOX_GAP;
+        }
+        else if (data is TocLegendItem)
+        {
+            startx += TocLegendItem(data).parent is TocMapLayerItem ? 0 : POST_CHECKBOX_GAP;
+            _legendSwatchContainer.x = startx;
+            _legendSwatchContainer.y = -(_legendSwatchContainer.height / 2);
+            startx = _legendSwatchContainer.x + LEGEND_SWATCH_SIZE + POST_CHECKBOX_GAP;
+        }
 
         if (icon)
         {
