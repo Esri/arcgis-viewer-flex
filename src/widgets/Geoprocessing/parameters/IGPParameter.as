@@ -18,6 +18,9 @@ package widgets.Geoprocessing.parameters
 
 public interface IGPParameter
 {
+    function get serviceInfo():Object;
+    function set serviceInfo(value:Object):void;
+
     function get name():String;
     function get label():String;
     function get type():String;

@@ -218,6 +218,7 @@
                 executionType = gpServerDescription.executionType;
                 gp.useAMF = !hasUseAMFBeenSet && (gpServerDescription.currentVersion >= 10.1);
                 hasResultMapServer = Boolean(gpServerDescription.resultMapServerName);
+                gpParamHandler.setServiceInfo(gpServerDescription);
             }
 
             private function gpServerInspector_faultHandler(fault:Fault, token:Object = null):void
