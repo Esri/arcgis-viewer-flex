@@ -31,6 +31,7 @@
 
             [Bindable]
             private var title:String;
+            private var includeLegendItems:Boolean = true; // include legend items in the TOC
 
             private function basewidget_initializeHandler():void
             {
@@ -54,6 +55,10 @@
                     title = configXML.labels.title || getDefaultString("layerListTitle");
                     // added in version 2.5
                     expandLayerItems = configXML.expandlayeritems == "true";
+                    if (configXML.includelegenditems.length())
+                    {
+                        includeLegendItems = configXML.includelegenditems == "true";
+                    }
                 }
 
                 if (configData && configData.opLayers.length > 0) // do not initialize TOC if there are no operational layers
@@ -69,6 +74,7 @@
                 toc.excludeLayers = getExcludeLayers();
                 toc.basemapLayers = getBasemapLayers();
                 toc.excludeGraphicsLayers = true;
+                toc.includeLegendItems = includeLegendItems;
                 if (expandLayerItems)
                 {
                     toc.expandLayerItems();

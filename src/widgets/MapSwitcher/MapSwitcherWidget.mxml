@@ -40,6 +40,7 @@
             private var hideSuspended:Boolean = false;
 
             private var expandLayerItems:Boolean;
+            private var includeLegendItems:Boolean = true; // include legend items in the TOC
             private var basemapSelectionComponent:ListBase;
             private var previousConfigBasemapsTotal:int;
 
@@ -65,7 +66,11 @@
                     opLayerListButtonLabel = configXML.labels.layerlistlabel || getDefaultString("layerListLabel");
                     basemapsLabel = configXML.labels.basemapslabel || getDefaultString("basemap");
                     expandLayerItems = (configXML.expandlayeritems == "true");
-
+                    if (configXML.includelegenditems.length())
+                    {
+                        includeLegendItems = (configXML.includelegenditems == "true");
+                    }
+                    
                     var needToInitTOC:Boolean = (!configXML.layerlist.@visible[0] || configXML.layerlist.@visible[0] == "true");
                     if (needToInitTOC)
                     {
