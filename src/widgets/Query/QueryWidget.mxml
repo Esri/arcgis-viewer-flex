@@ -245,6 +245,7 @@
                         queryLayer.url = layerURL;
                     }
                     resultFeatureLayer = new FeatureLayer();
+                    resultFeatureLayer.outFields = queryLayer.outFields;
                     resultFeatureLayer.visible = false;
                     resultFeatureLayer.isEditable = false;
 
