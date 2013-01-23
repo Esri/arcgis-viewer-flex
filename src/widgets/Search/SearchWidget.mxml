@@ -712,6 +712,7 @@
                     infoWindowRenderer.properties = { popUpInfo: configurePopUpInfo(resultAttributes)};
                     graphic.infoWindowRenderer = infoWindowRenderer;
                 }
+                resultFeatureLayer.outFields = queryLayer.outFields;
                 resultFeatureLayer.visible = true;
                 resultFeatureLayer.featureCollection = new FeatureCollection(featureSet, layerDetails);
                 switch (featureSet.geometryType)
