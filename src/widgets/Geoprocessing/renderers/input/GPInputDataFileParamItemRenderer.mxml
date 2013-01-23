@@ -24,6 +24,10 @@
                 creationComplete="init()">
     <fx:Script>
         <![CDATA[
+            import widgets.Geoprocessing.parameters.DataFileParameter;
+
+            private var param:DataFileParameter;
+
             private function init():void
             {
                 //trigger initial validation
@@ -38,6 +42,12 @@
             private function clearDefaultValue():void
             {
                 data.defaultValue.url = "";
+            }
+
+            override public function set data(value:Object):void
+            {
+                param = value as DataFileParameter;
+                super.data = value;
             }
         ]]>
     </fx:Script>
