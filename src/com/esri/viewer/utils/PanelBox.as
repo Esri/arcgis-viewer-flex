@@ -49,8 +49,8 @@ public class PanelBox extends DividedBox
     private var alphas:Array = [ 1, 1 ];
     private var ratios:Array = [ 0, 255 ];
 
-    private var expandPanelTooltip:String = "Click to expand the panel";
-    private var collapsePanelTooltip:String = "Click to collapse the panel";
+    private var expandPanelTooltip:String = LocalizationUtil.getDefaultString("panelExpandTooltip");
+    private var collapsePanelTooltip:String = LocalizationUtil.getDefaultString("panelCollapseTooltip");
 
     private var _buttonIndexToSelection:Dictionary = new Dictionary();
 
