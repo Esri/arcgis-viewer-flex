@@ -649,8 +649,11 @@
                 {
                     GeometryServiceSingleton.instance.showBusyCursor = previousShowBusyCursorValue;
 
-                    if (!searchResult.extent && hasValidGeometry(searchResult.geometry) ||
-                        hasValidGeometry(searchResult.geometry) && hasValidGeometry(searchResult.extent))
+                    var resultHasValidGeometry:Boolean = hasValidGeometry(searchResult.geometry);
+                    var resultHasExtentAndIsValid:Boolean = searchResult.extent && hasValidGeometry(searchResult.extent);
+
+                    if (resultHasExtentAndIsValid && resultHasValidGeometry
+                        || resultHasValidGeometry)
                     {
                         showSearchResultOnMap(searchResult);
                     }
