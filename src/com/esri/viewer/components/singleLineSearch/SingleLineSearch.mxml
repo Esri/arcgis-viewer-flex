@@ -350,12 +350,12 @@
 
             private function search():void
             {
-                currentState = "normal";
-
                 if (!searchTerm)
                 {
                     return;
                 }
+
+                currentState = "searching";
 
                 const hasCurrentSearchInProgress:Boolean = totalResultsToProcess > 0;
                 if (hasCurrentSearchInProgress)
@@ -930,7 +930,10 @@
                     return;
                 }
 
-                currentState = "normal";
+                if (currentState != "searching")
+                {
+                    currentState = "normal";
+                }
             }
 
             protected function searchInput_changeHandler(event:TextOperationEvent):void
@@ -1052,6 +1055,7 @@
 
     <s:states>
         <s:State name="normal"/>
+        <s:State name="searching"/>
         <s:State name="showingSearchResults" stateGroups="showing"/>
         <s:State name="showingPreviousSearchResults" stateGroups="showing"/>
         <s:State name="noResults" stateGroups="showing"/>
