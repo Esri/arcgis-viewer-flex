@@ -649,8 +649,11 @@
                 {
                     GeometryServiceSingleton.instance.showBusyCursor = previousShowBusyCursorValue;
 
-                    if (hasValidGeometry(searchResult.geometry)
-                        && hasValidGeometry(searchResult.extent))
+                    var resultHasValidGeometry:Boolean = hasValidGeometry(searchResult.geometry);
+                    var resultHasExtentAndIsValid:Boolean = searchResult.extent && hasValidGeometry(searchResult.extent);
+
+                    if (resultHasExtentAndIsValid && resultHasValidGeometry
+                        || resultHasValidGeometry)
                     {
                         showSearchResultOnMap(searchResult);
                     }
@@ -669,35 +672,38 @@
 
             private function hasValidGeometry(geometry:Geometry):Boolean
             {
-                if (geometry.type == Geometry.MAPPOINT)
+                var isValid:Boolean;
+
+                if (geometry)
                 {
-                    return isValidMapPoint(geometry as MapPoint);
+                    if (geometry.type == Geometry.MAPPOINT)
+                    {
+                        isValid = isValidMapPoint(geometry as MapPoint);
+                    }
+                    else if (geometry.type == Geometry.MULTIPOINT)
+                    {
+                        isValid = isValidMultiPoint(geometry as Multipoint);
+                    }
+                    else if (geometry.type == Geometry.EXTENT)
+                    {
+                        isValid = isValidPolygon((geometry as Extent).toPolygon());
+                    }
+                    else if (geometry.type == Geometry.POLYGON)
+                    {
+                        isValid = isValidPolygon(geometry as Polygon);
+                    }
+                    else if (geometry.type == Geometry.POLYLINE)
+                    {
+                        isValid = isValidPolyline(geometry as Polyline);
+                    }
                 }
-                else if (geometry.type == Geometry.MULTIPOINT)
-                {
-                    return isValidMultiPoint(geometry as Multipoint);
-                }
-                else if (geometry.type == Geometry.EXTENT)
-                {
-                    return isValidPolygon((geometry as Extent).toPolygon());
-                }
-                else if (geometry.type == Geometry.POLYGON)
-                {
-                    return isValidPolygon(geometry as Polygon);
-                }
-                else if (geometry.type == Geometry.POLYLINE)
-                {
-                    return isValidPolyline(geometry as Polyline);
-                }
-                else
-                {
-                    return false;
-                }
+
+                return isValid;
             }
 
             private function isValidMapPoint(point:MapPoint):Boolean
             {
-                return !isNaN(point.x) && !isNaN(point.y);
+                return point && !isNaN(point.x) && !isNaN(point.y);
             }
 
             private function isValidMultiPoint(multiPoint:Multipoint):Boolean
@@ -707,14 +713,19 @@
 
             private function hasValidMapPoints(points:Array):Boolean
             {
-                var isValid:Boolean = true;
+                var isValid:Boolean;
 
-                for each (var point:MapPoint in points)
+                if (points && points.length > 0)
                 {
-                    if (!isValidMapPoint(point))
+                    isValid = true;
+
+                    for each (var point:MapPoint in points)
                     {
-                        isValid = false;
-                        break;
+                        if (!isValidMapPoint(point))
+                        {
+                            isValid = false;
+                            break;
+                        }
                     }
                 }
 
@@ -723,14 +734,19 @@
 
             private function isValidPolyline(polyline:Polyline):Boolean
             {
-                var isValid:Boolean = true;
+                var isValid:Boolean;
 
-                for each (var path:Array in polyline.paths)
+                if (polyline && polyline.paths && polyline.paths.length > 0)
                 {
-                    if (!hasValidMapPoints(path))
+                    isValid = true;
+
+                    for each (var path:Array in polyline.paths)
                     {
-                        isValid = false;
-                        break;
+                        if (!hasValidMapPoints(path))
+                        {
+                            isValid = false;
+                            break;
+                        }
                     }
                 }
 
@@ -739,14 +755,19 @@
 
             private function isValidPolygon(polygon:Polygon):Boolean
             {
-                var isValid:Boolean = true;
+                var isValid:Boolean;
 
-                for each (var ring:Array in polygon.rings)
+                if (polygon && polygon.rings && polygon.rings.length > 0)
                 {
-                    if (!hasValidMapPoints(ring))
+                    isValid = true;
+
+                    for each (var ring:Array in polygon.rings)
                     {
-                        isValid = false;
-                        break;
+                        if (!hasValidMapPoints(ring))
+                        {
+                            isValid = false;
+                            break;
+                        }
                     }
                 }
 
