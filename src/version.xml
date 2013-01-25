@@ -1,2 +1,2 @@
-<?xml version="1.0"?>
-<esrifv apiversion="3.101" builddate="2012-12-12"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<esrifv apiversion="3.101" builddate="@BUILD_DATE@"/>
