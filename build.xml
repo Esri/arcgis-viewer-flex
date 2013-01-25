@@ -28,7 +28,7 @@
             description="Runs Flash Builder"/>
 
     <target name="full-build"
-            depends="clean,backup-actionScriptProperties,update-actionScriptProperties,run-flash-builder,restore-actionScriptProperties,check-fb-result,build-all-resoure-modules,update-index.html,copy-index.html,copy-verion.xml"
+            depends="clean,backup-actionScriptProperties,update-actionScriptProperties,run-flash-builder,restore-actionScriptProperties,check-fb-result,build-all-resoure-modules,update-index.html,copy-index.html,copy-version.xml"
             description="Runs a full build"/>
 
     <target name="clean" description="Deletes dist directory">
@@ -213,7 +213,7 @@
         <copy file="${dist.dir}/index.html" tofile="${dist.dir}/default.htm"/>
     </target>
 
-    <target name="copy-verion.xml">
+    <target name="copy-version.xml">
         <tstamp>
             <format property="today" pattern="yyyy-MM-dd"/>
         </tstamp>
