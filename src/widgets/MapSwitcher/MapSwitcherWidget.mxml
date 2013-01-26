@@ -70,7 +70,7 @@
                     {
                         includeLegendItems = (configXML.includelegenditems == "true");
                     }
-                    
+
                     var needToInitTOC:Boolean = (!configXML.layerlist.@visible[0] || configXML.layerlist.@visible[0] == "true");
                     if (needToInitTOC)
                     {
