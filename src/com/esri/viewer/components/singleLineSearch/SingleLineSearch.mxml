@@ -86,6 +86,7 @@
             private var searchLayersConfigured:Boolean;
             private var locatorConfigured:Boolean;
             private var searchResultHistory:ItemHistory = new ItemHistory();
+            private var searchResultHistoryStorage:SharedObject;
             private var searchResultGraphic:com.esri.ags.Graphic;
             private var lastSearchTimestamp:int;
 
@@ -135,6 +136,9 @@
             {
                 registerClassAlias("com.esri.ags.tasks.supportClasses.FindResult", FindResult);
                 registerClassAlias("com.esri.ags.tasks.supportClasses.AddressCandidate", AddressCandidate);
+
+                searchResultHistoryStorage =
+                    SharedObject.getLocal(SEARCH_RESULT_SHARED_OBJECT_NAME);
             }
 
             private function init():void
@@ -321,11 +325,8 @@
             {
                 try
                 {
-                    const storedSearchResultHistory:SharedObject =
-                        SharedObject.getLocal(SEARCH_RESULT_SHARED_OBJECT_NAME);
-
                     searchResultHistory.importHistory
-                        (storedSearchResultHistory.data.searchResultHistory as Array);
+                        (searchResultHistoryStorage.data.searchResultHistory as Array);
                 }
                 catch (err:Error)
                 {
@@ -491,12 +492,9 @@
             {
                 try
                 {
-                    const searchResultHistoryToStore:SharedObject =
-                        SharedObject.getLocal(SEARCH_RESULT_SHARED_OBJECT_NAME);
-
-                    searchResultHistoryToStore.data.searchResultHistory =
+                    searchResultHistoryStorage.data.searchResultHistory =
                         searchResultHistory.exportHistory();
-                    searchResultHistoryToStore.flush();
+                    searchResultHistoryStorage.flush();
                 }
                 catch (err:Error)
                 {
