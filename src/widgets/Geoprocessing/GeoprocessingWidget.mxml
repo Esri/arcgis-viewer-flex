@@ -95,6 +95,8 @@
             private var hasUseAMFBeenSet:Boolean;
             private var largestResultImageLayerExtent:Extent;
             private var graphicEditor:GraphicEditor;
+            private var inputLabel:String;
+            private var outputLabel:String;
 
             [Bindable]
             private var submitLabel:String;
@@ -156,39 +158,13 @@
                             hasUseAMFBeenSet = true;
                         }
 
-                        fetchGPServerDescription();
-
                         submitLabel = configXML.labels.submitlabel || getDefaultString('gpSubmitLabel');
                         clearFeatureLabel = configXML.labels.clearfeaturelabel || getDefaultString("clearLabel");
                         helpLabel = configXML.labels.helplabel || getDefaultString("helpLabel");
-                        var inputLabel:String = configXML.labels.inputlabel || getDefaultString("inputLabel");
-                        var outputLabel:String = configXML.labels.outputlabel || getDefaultString("outputLabel");
+                        inputLabel = configXML.labels.inputlabel || getDefaultString("inputLabel");
+                        outputLabel = configXML.labels.outputlabel || getDefaultString("outputLabel");
 
-                        buildUI(configXML);
-
-                        initGraphicContextMenu();
-                        drawTool.map = map;
-                        graphicEditor = new GraphicEditor(map);
-
-                        visibleGraphicsLayersWatcher.map = map;
-                        visibleGraphicsLayersWatcher.startWatching();
-                        inputParamsDataGroup.visibleGraphicsLayers = visibleGraphicsLayersWatcher.visibleGraphicsLayers;
-
-                        inputParamsDataGroup.addEventListener(FeatureInputParamEvent.DRAW, inputParamsDataGroup_drawFeatureHandler, false, 0, true);
-                        inputParamsDataGroup.addEventListener(FeatureInputParamEvent.CLEAR, inputParamsDataGroup_clearFeatureHandler, false, 0, true);
-
-                        if (gpParamHandler.hasMapExtentInputParams())
-                        {
-                            map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
-                            gpParamHandler.updateMapExtentInputParams(map.extent)
-                        }
-
-                        needsToShowOutputView = gpParamHandler.hasVisibleOutput();
-                        if (needsToShowOutputView)
-                        {
-                            wTemplate.addTitlebarButton("assets/images/GeoprocessingTool16.png", inputLabel, inputTitlebarButton_clickHandler);
-                            wTemplate.addTitlebarButton("assets/images/i_table.png", outputLabel, outputTitlebarButton_clickHandler);
-                        }
+                        fetchGPServerDescription();
                     }
                     catch (error:Error)
                     {
@@ -223,13 +199,76 @@
 
                 gpServerDescription.url = gpServerURL;
                 gpServerDescription.proxyURL = gp.proxyURL;
+                checkIfUploadSupported(gpServerDescription);
                 gpParamHandler.setServiceInfo(gpServerDescription);
+            }
+
+            private function checkIfUploadSupported(gpServerDescription:Object):void
+            {
+                if (gpServerDescription.currentVersion >= 10.1)
+                {
+                    var uploadsInfoRequest:JSONTask = new JSONTask(gpServerDescription.url + "uploads/info");
+                    uploadsInfoRequest.proxyURL = gpServerDescription.proxyURL;
+                    var urlVars:URLVariables = new URLVariables();
+                    urlVars.f = "json";
+                    uploadsInfoRequest.execute(urlVars, new AsyncResponder(uploadsInfoRequest_resultHandler,
+                                                                           uploadsInfoRequest_faultHandler,
+                                                                           gpServerDescription));
+                }
+                else
+                {
+                    gpServerDescription.supportsUploads = false;
+                    continueInitialization();
+                }
+            }
+
+            private function uploadsInfoRequest_resultHandler(response:Object, gpServerDescription:Object):void
+            {
+                gpServerDescription.maxUploadFileSize = response.maxUploadFileSize; //TODO: needs validation?
+                gpServerDescription.supportsUploads = true;
+                continueInitialization();
+            }
+
+            protected function uploadsInfoRequest_faultHandler(fault:Fault, gpServerDescription:Object):void
+            {
+                gpServerDescription.supportsUploads = false;
+                continueInitialization();
             }
 
             private function gpServerInspector_faultHandler(fault:Fault, token:Object = null):void
             {
                 //Could not fetch service capabilities
                 showError(getDefaultString("unableToDetermineGPExecutionType", ErrorMessageUtil.makeHTMLSafe(fault.toString())));
+                continueInitialization();
+            }
+
+            private function continueInitialization():void
+            {
+                buildUI(configXML);
+
+                initGraphicContextMenu();
+                drawTool.map = map;
+                graphicEditor = new GraphicEditor(map);
+
+                visibleGraphicsLayersWatcher.map = map;
+                visibleGraphicsLayersWatcher.startWatching();
+                inputParamsDataGroup.visibleGraphicsLayers = visibleGraphicsLayersWatcher.visibleGraphicsLayers;
+
+                inputParamsDataGroup.addEventListener(FeatureInputParamEvent.DRAW, inputParamsDataGroup_drawFeatureHandler, false, 0, true);
+                inputParamsDataGroup.addEventListener(FeatureInputParamEvent.CLEAR, inputParamsDataGroup_clearFeatureHandler, false, 0, true);
+
+                if (gpParamHandler.hasMapExtentInputParams())
+                {
+                    map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
+                    gpParamHandler.updateMapExtentInputParams(map.extent)
+                }
+
+                needsToShowOutputView = gpParamHandler.hasVisibleOutput();
+                if (needsToShowOutputView)
+                {
+                    wTemplate.addTitlebarButton("assets/images/GeoprocessingTool16.png", inputLabel, inputTitlebarButton_clickHandler);
+                    wTemplate.addTitlebarButton("assets/images/i_table.png", outputLabel, outputTitlebarButton_clickHandler);
+                }
             }
 
             private function buildUI(config:XML):void
