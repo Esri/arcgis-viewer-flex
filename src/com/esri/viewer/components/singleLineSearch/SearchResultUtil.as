@@ -33,6 +33,10 @@ public class SearchResultUtil
         {
             return (searchResult as AddressCandidate).address as String;
         }
+        else if (searchResult == null)
+        {
+            return "";
+        }
         else
         {
             return searchResult as String;
