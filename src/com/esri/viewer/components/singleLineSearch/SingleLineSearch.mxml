@@ -819,7 +819,6 @@
 
             private function resetSearchResultSelection():void
             {
-                resultList.selectedIndex = -1;
                 resultList.dataProvider.removeAll();
                 currentState = "normal";
             }
