@@ -204,7 +204,9 @@
                 urlVars.f = "json";
                 gpServerInspector.url = getGPServerURL(gp.url);
                 gpServerInspector.proxyURL = gp.proxyURL;
-                gpServerInspector.execute(urlVars, new AsyncResponder(gpServerInspector_resultHandler, gpServerInspector_faultHandler));
+                gpServerInspector.execute(urlVars, new AsyncResponder(gpServerInspector_resultHandler,
+                                                                      gpServerInspector_faultHandler,
+                                                                      gpServerInspector.url));
             }
 
             private function getGPServerURL(url:String):String
@@ -213,11 +215,14 @@
                 return url.substr(0, lastPathIndex);
             }
 
-            private function gpServerInspector_resultHandler(gpServerDescription:Object, token:Object = null):void
+            private function gpServerInspector_resultHandler(gpServerDescription:Object, gpServerURL:String):void
             {
                 executionType = gpServerDescription.executionType;
                 gp.useAMF = !hasUseAMFBeenSet && (gpServerDescription.currentVersion >= 10.1);
                 hasResultMapServer = Boolean(gpServerDescription.resultMapServerName);
+
+                gpServerDescription.url = gpServerURL;
+                gpServerDescription.proxyURL = gp.proxyURL;
                 gpParamHandler.setServiceInfo(gpServerDescription);
             }
 
