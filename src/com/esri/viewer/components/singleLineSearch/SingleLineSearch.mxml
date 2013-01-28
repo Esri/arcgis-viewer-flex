@@ -810,11 +810,14 @@
 
             private function processSelectedSearchResult():void
             {
-                storeSearchResult(resultList.selectedItem);
-                var searchResult:Object = getSearchResult(resultList.selectedItem);
-                searchTerm = searchResult.label;
-                projectToMapSpatialReferenceAndShowResultOnMap(searchResult);
-                resetSearchResultSelection();
+                if (resultList.selectedItem)
+                {
+                    storeSearchResult(resultList.selectedItem);
+                    var searchResult:Object = getSearchResult(resultList.selectedItem);
+                    searchTerm = searchResult.label;
+                    projectToMapSpatialReferenceAndShowResultOnMap(searchResult);
+                    resetSearchResultSelection();
+                }
             }
 
             private function resetSearchResultSelection():void
@@ -1046,7 +1049,10 @@
 
             protected function resultList_changeHandler(event:IndexChangeEvent):void
             {
-                processSelectedSearchResult();
+                if (resultList.selectedIndex > -1)
+                {
+                    processSelectedSearchResult();
+                }
             }
 
             protected function searchInput_enterHandler(event:FlexEvent):void
