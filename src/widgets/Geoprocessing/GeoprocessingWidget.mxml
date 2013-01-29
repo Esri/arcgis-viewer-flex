@@ -98,6 +98,8 @@
             private var graphicEditor:GraphicEditor;
             private var inputLabel:String;
             private var outputLabel:String;
+            private var taskDescription:String;
+            private var taskHelpURL:String;
 
             [Bindable]
             private var submitLabel:String;
@@ -158,6 +160,9 @@
                             gp.useAMF = (configXML.useamf == "true");
                             hasUseAMFBeenSet = true;
                         }
+
+                        taskDescription = configXML.description[0];
+                        taskHelpURL = configXML.helpurl[0];
 
                         submitLabel = configXML.labels.submitlabel || getDefaultString('gpSubmitLabel');
                         clearFeatureLabel = configXML.labels.clearfeaturelabel || getDefaultString("clearLabel");
@@ -245,7 +250,7 @@
 
             private function continueInitialization():void
             {
-                buildUI(configXML);
+                buildUI();
 
                 initGraphicContextMenu();
                 graphicEditor = new GraphicEditor(map);
@@ -271,22 +276,19 @@
                 }
             }
 
-            private function buildUI(config:XML):void
+            private function buildUI():void
             {
-                if (configXML.description[0])
+                if (taskDescription)
                 {
-                    descriptionText.text = configXML.description;
-                    if (descriptionText.text)
-                    {
-                        descriptionText.visible = true;
-                        descriptionText.includeInLayout = true;
-                    }
+                    descriptionText.text = taskDescription;
+                    descriptionText.visible = true;
+                    descriptionText.includeInLayout = true;
                 }
 
-                if (configXML.helpurl[0])
+                if (taskHelpURL)
                 {
                     var color:uint = getStyle('color');
-                    var linkText:String = "<a href='" + configXML.helpurl + "' target='_blank'><font color='#" + color.toString(16) + "'>" + helpLabel + "</font></a>";
+                    var linkText:String = "<a href='" + taskHelpURL + "' target='_blank'><font color='#" + color.toString(16) + "'>" + helpLabel + "</font></a>";
                     helpLink.textFlow = TextConverter.importToFlow(linkText, TextConverter.TEXT_FIELD_HTML_FORMAT);
                 }
 
