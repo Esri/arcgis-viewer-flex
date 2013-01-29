@@ -997,6 +997,7 @@
             }
         ]]>
     </fx:Script>
+
     <fx:Declarations>
         <esri:Geoprocessor id="gp"
                            executeComplete="gp_executeCompleteHandler(event)"
@@ -1005,10 +1006,12 @@
                            jobComplete="gp_jobCompleteHandler(event)"
                            useAMF="false"/>
     </fx:Declarations>
+
     <viewer:states>
         <s:State name="input"/>
         <s:State name="output"/>
     </viewer:states>
+
     <viewer:WidgetTemplate id="wTemplate"
                            closed="wTemplate_closedHandler(event)"
                            minimized="wTemplate_minimizedHandler(event)"
@@ -1016,35 +1019,43 @@
         <viewer:layout>
             <s:VerticalLayout/>
         </viewer:layout>
+
         <s:Label id="descriptionText"
                  fontWeight="bold"
                  includeInLayout="false"
                  visible="false"/>
+
         <s:Scroller width="100%" height="100%"
                     includeIn="input"
                     itemCreationPolicy="immediate">
             <supportClasses:InputParamDataGroup id="inputParamsDataGroup"
                                                 width="100%" height="100%"/>
         </s:Scroller>
+
         <s:Scroller width="100%" height="100%"
                     includeIn="output"
                     itemCreationPolicy="immediate">
             <supportClasses:OutputParamDataGroup id="outputParamsDataGroup"
                                                  width="100%" height="100%"/>
         </s:Scroller>
+
         <s:Label id="missingRequiredFieldsText"
                  color="0xFF0000"
                  includeIn="input"
                  includeInLayout="false"
                  visible="false"/>
+
         <s:HGroup width="100%" verticalAlign="middle">
             <s:RichEditableText id="helpLink"
                                 editable="false"
                                 selectable="false"/>
+
             <mx:Spacer width="100%"/>
+
             <mx:Image id="busyAnimation"
                       source="assets/images/loader.swf"
                       visible="false"/>
+
             <s:Button id="clearOutputFeaturesButton"
                       click="clearAllGraphics()"
                       includeInLayout="false"
