@@ -274,6 +274,8 @@
                     wTemplate.addTitlebarButton("assets/images/GeoprocessingTool16.png", inputLabel, inputTitlebarButton_clickHandler);
                     wTemplate.addTitlebarButton("assets/images/i_table.png", outputLabel, outputTitlebarButton_clickHandler);
                 }
+
+                setInputState();
             }
 
             private function buildUI():void
@@ -1016,6 +1018,7 @@
     </fx:Declarations>
 
     <viewer:states>
+        <s:State name="startup"/>
         <s:State name="input"/>
         <s:State name="output"/>
     </viewer:states>
@@ -1027,6 +1030,8 @@
         <viewer:layout>
             <s:VerticalLayout/>
         </viewer:layout>
+
+        <mx:Image includeIn="startup" source="assets/images/loader.swf"/>
 
         <s:Label id="descriptionText"
                  fontWeight="bold"
