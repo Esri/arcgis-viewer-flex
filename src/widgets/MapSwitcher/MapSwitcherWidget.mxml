@@ -173,6 +173,7 @@
                 toc.excludeLayers = getExcludeLayers();
                 toc.basemapLayers = getBasemapLayers();
                 toc.excludeGraphicsLayers = true;
+                toc.includeLegendItems = includeLegendItems;
                 if (expandLayerItems)
                 {
                     toc.expandLayerItems();
