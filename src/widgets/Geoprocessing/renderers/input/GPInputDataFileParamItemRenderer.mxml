@@ -25,9 +25,8 @@
         <![CDATA[
             import com.esri.viewer.utils.LocalizationUtil;
 
-            import mx.controls.Alert;
-
             import widgets.Geoprocessing.parameters.DataFileParameter;
+            import widgets.Geoprocessing.supportClasses.ParamErrorEvent;
 
             private const UPLOAD_FILE_PARAM_NAME:String = "file";
 
@@ -194,8 +193,7 @@
 
             private function dispatchError(message:String, title:String = null):void
             {
-                //TODO: dispatch error instead of showing Alert
-                Alert.show(message, title);
+                owner.dispatchEvent(new ParamErrorEvent(ParamErrorEvent.ERROR, message, title));
             }
 
             private function removeFile():void
