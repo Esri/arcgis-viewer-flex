@@ -1319,39 +1319,45 @@
                     if (outFields && outFields.length)
                     {
                         var attributeInspectorFieldInspectors:Array = [];
-                        for each (var field:Field in featureLayer.layerDetails.fields)
+                        var fieldInspector:FieldInspector;
+                        for each (var fieldObject:Object in outFields)
                         {
-                            var fieldInspector:FieldInspector = new FieldInspector;
+                            fieldInspector = new FieldInspector;
                             fieldInspector.featureLayer = featureLayer;
-                            fieldInspector.fieldName = field.name;
-                            fieldInspector.visible = false;
-                            for each (var fieldObject:Object in outFields)
-                            {
-                                if (fieldObject.name == field.name)
-                                {
-                                    fieldInspector.label = fieldObject.alias;
-                                    fieldInspector.toolTip = fieldObject.tooltip;
-                                    fieldInspector.visible = true;
-                                    break;
-                                }
-                            }
+                            fieldInspector.visible = true;
+                            fieldInspector.fieldName = fieldObject.name;
+                            fieldInspector.label = fieldObject.alias;
+                            fieldInspector.toolTip = fieldObject.tooltip;
+
                             attributeInspectorFieldInspectors.push(fieldInspector);
                         }
+                        for each (var field:Field in featureLayer.layerDetails.fields)
+                        {
+                            if (outFields.indexOf(field.name) == -1)
+                            {
+                                fieldInspector = new FieldInspector;
+                                fieldInspector.featureLayer = featureLayer;
+                                fieldInspector.visible = false;
+                                fieldInspector.fieldName = field.name;
+
+                                attributeInspectorFieldInspectors.push(fieldInspector);
+                            }
+                        }
                         editor.attributeInspector.fieldInspectors = attributeInspectorFieldInspectors;
+                        editor.attributeInspector.formFieldsOrder = AttributeInspector.FIELD_INSPECTOR_ORDER;
                     }
                     else
                     {
-                        editor.attributeInspector.fieldInspectors = [];
+                        var formFieldsOrder:String = settingsObject.formFieldsOrder;
+                        if (formFieldsOrder)
+                        {
+                            editor.attributeInspector.formFieldsOrder = formFieldsOrder;
+                        }
                     }
                     var singleToMultilineThreshold:Number = settingsObject.singleToMultilineThreshold;
                     if (singleToMultilineThreshold && !isNaN(singleToMultilineThreshold))
                     {
                         editor.attributeInspector.singleToMultilineThreshold = singleToMultilineThreshold;
-                    }
-                    var formFieldsOrder:String = settingsObject.formFieldsOrder;
-                    if (formFieldsOrder)
-                    {
-                        editor.attributeInspector.formFieldsOrder = formFieldsOrder;
                     }
                     var showObjectID:String = settingsObject.showObjectID;
                     if (showObjectID)
