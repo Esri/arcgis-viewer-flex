@@ -82,8 +82,14 @@
                 if (toMegaBytes(fileRef.size) <= maxAllowedUploadSizeInMB)
                 {
                     addFileReferenceListeners();
-                    fileRef.upload(createURLRequest(data.serviceInfo.url + "uploads/upload"),
-                                   UPLOAD_FILE_PARAM_NAME);
+
+                    var uploadURL:String = param.serviceInfo.url + "uploads/upload";
+                    if (param.serviceInfo.proxyURL)
+                    {
+                        uploadURL = param.serviceInfo.proxyURL + "?" + uploadURL;
+                    }
+
+                    fileRef.upload(createURLRequest(uploadURL), UPLOAD_FILE_PARAM_NAME);
                     currentState = "uploading";
                     progressBar.setProgress(0, toMegaBytes(fileRef.size));
                 }
