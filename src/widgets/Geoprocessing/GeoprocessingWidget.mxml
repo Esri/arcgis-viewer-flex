@@ -247,7 +247,6 @@
                 buildUI(configXML);
 
                 initGraphicContextMenu();
-                drawTool.map = map;
                 graphicEditor = new GraphicEditor(map);
 
                 visibleGraphicsLayersWatcher.map = map;
@@ -1005,8 +1004,6 @@
                            getResultDataComplete="gp_resultDataCompleteHandler(event)"
                            jobComplete="gp_jobCompleteHandler(event)"
                            useAMF="false"/>
-        <esri:DrawTool id="drawTool" drawEnd="map_drawEndHandler(event)"/>
-        <esri:EditTool id="editTool" map="{map}"/>
     </fx:Declarations>
     <viewer:states>
         <s:State name="input"/>
