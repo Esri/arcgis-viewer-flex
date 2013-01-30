@@ -53,7 +53,7 @@
 
                 if (!param || !param.serviceInfo.supportsUploads)
                 {
-                    currentState = "urlInputOnly";
+                    currentState = "urlInputModeOnly";
                 }
             }
 
@@ -133,7 +133,7 @@
                 catch (error:Error)
                 {
                     dispatchError(LocalizationUtil.getDefaultString('couldNotProcessUploadResponse'), LocalizationUtil.getDefaultString('fileUploadError'));
-                    currentState = "noFileSet";
+                    currentState = "inputModeSelection";
                 }
             }
 
@@ -148,12 +148,12 @@
                 else if (response.error)
                 {
                     dispatchError(response.error.message, LocalizationUtil.getDefaultString('fileUploadError'));
-                    currentState = "noFileSet";
+                    currentState = "inputModeSelection";
                 }
                 else
                 {
                     dispatchError(LocalizationUtil.getDefaultString('uploadUnknownError'), LocalizationUtil.getDefaultString('fileUploadError'));
-                    currentState = "noFileSet";
+                    currentState = "inputModeSelection";
                 }
             }
 
@@ -166,7 +166,7 @@
             {
                 fileRef.cancel();
                 removeFileReferenceListeners();
-                currentState = "noFileSet";
+                currentState = "inputModeSelection";
             }
 
             private function removeFileReferenceListeners():void
@@ -181,14 +181,14 @@
             {
                 removeFileReferenceListeners();
                 dispatchError(LocalizationUtil.getDefaultString('uploadIOError', event.errorID), LocalizationUtil.getDefaultString('fileUploadError'));
-                currentState = "noFileSet";
+                currentState = "inputModeSelection";
             }
 
             private function fileRef_securityErrorHandler(event:SecurityErrorEvent):void
             {
                 removeFileReferenceListeners();
                 dispatchError(LocalizationUtil.getDefaultString('uploadSecurityError', event.errorID), LocalizationUtil.getDefaultString('fileUploadError'));
-                currentState = "noFileSet";
+                currentState = "inputModeSelection";
             }
 
             private function dispatchError(message:String, title:String = null):void
@@ -199,13 +199,23 @@
             private function removeFile():void
             {
                 param.defaultValue.itemID = null;
-                currentState = "noFileSet";
+                currentState = "inputModeSelection";
+            }
+
+            private function removeURL():void
+            {
+                clearURL();
+                urlInput.text = "";
+                currentState = "inputModeSelection";
             }
         ]]>
     </fx:Script>
 
     <fx:Declarations>
         <mx:RegExpValidator id="urlValidator"
+                            enabled="false"
+                            enabled.urlInputMode="true"
+                            enabled.urlInputModeOnly="true"
                             expression="^(ht|f)tps?:\/\/[^\s\.]+(\.[^\s\.]+)*((\/|\.)[^\s\.]+)+\/?$"
                             invalid="clearURL()"
                             property="text"
@@ -216,27 +226,27 @@
     </fx:Declarations>
 
     <s:states>
-        <s:State name="noFileSet" stateGroups="fileInputMode"/>
-        <s:State name="fileReady" stateGroups="fileInputMode"/>
+        <s:State name="inputModeSelection"/>
+        <s:State name="browsing" stateGroups="fileInputMode"/>
         <s:State name="uploading" stateGroups="fileInputMode"/>
-        <s:State name="urlInputOnly"/>
+        <s:State name="fileReady" stateGroups="fileInputMode"/>
+        <s:State name="urlInputMode"/>
+        <s:State name="urlInputModeOnly"/>
     </s:states>
 
     <mx:FormItem width="100%"
                  label="{data.label}"
                  required="{data.required}">
-        <s:TextInput id="urlInput"
-                     width="100"
-                     prompt="{LocalizationUtil.getDefaultString('fileURL')}"
-                     text="{data.defaultValue.url}"
-                     toolTip="{data.toolTip}"/>
-
-        <s:Label excludeFrom="urlInputOnly" text="{LocalizationUtil.getDefaultString('or')}"/>
-
-        <s:HGroup excludeFrom="urlInputOnly" verticalAlign="middle">
+        <s:HGroup width="100%" verticalAlign="middle">
             <s:Button click="browseForUpload()"
-                      includeIn="noFileSet"
+                      includeIn="inputModeSelection"
                       label="{LocalizationUtil.getDefaultString('uploadFile')}"/>
+
+            <s:Label includeIn="inputModeSelection" text="{LocalizationUtil.getDefaultString('or')}"/>
+
+            <s:Button click="currentState = 'urlInputMode'"
+                      includeIn="inputModeSelection"
+                      label="{LocalizationUtil.getDefaultString('fileURL')}"/>
 
             <mx:ProgressBar id="progressBar"
                             width="65"
@@ -258,7 +268,18 @@
 
             <s:Button click="removeFile()"
                       includeIn="fileReady"
-                      label="{LocalizationUtil.getDefaultString('tocMapLayerRemoveLabel')}"/>
+                      label="{LocalizationUtil.getDefaultString('attachmentCancelLabel')}"/>
+
+            <s:TextInput id="urlInput"
+                         width="100%"
+                         includeIn="urlInputMode, urlInputModeOnly"
+                         prompt="{LocalizationUtil.getDefaultString('fileURL')}"
+                         text="{data.defaultValue.url}"
+                         toolTip="{data.toolTip}"/>
+
+            <s:Button click="removeURL()"
+                      includeIn="urlInputMode"
+                      label="{LocalizationUtil.getDefaultString('attachmentCancelLabel')}"/>
         </s:HGroup>
     </mx:FormItem>
 </s:ItemRenderer>
