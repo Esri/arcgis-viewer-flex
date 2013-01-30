@@ -87,6 +87,9 @@
             <param name="LOCALE" value="ar"/>
         </antcall>
         <antcall target="build-resoure-module">
+            <param name="LOCALE" value="da_DK"/>
+        </antcall>
+        <antcall target="build-resoure-module">
             <param name="LOCALE" value="de_DE"/>
         </antcall>
         <antcall target="build-resoure-module">
@@ -99,6 +102,9 @@
             <param name="LOCALE" value="fr_FR"/>
         </antcall>
         <antcall target="build-resoure-module">
+            <param name="LOCALE" value="he_IL"/>
+        </antcall>
+        <antcall target="build-resoure-module">
             <param name="LOCALE" value="it_IT"/>
         </antcall>
         <antcall target="build-resoure-module">
@@ -106,6 +112,9 @@
         </antcall>
         <antcall target="build-resoure-module">
             <param name="LOCALE" value="ko_KR"/>
+        </antcall>
+        <antcall target="build-resoure-module">
+            <param name="LOCALE" value="lt_LT"/>
         </antcall>
         <antcall target="build-resoure-module">
             <param name="LOCALE" value="nb_NO"/>
@@ -118,6 +127,9 @@
         </antcall>
         <antcall target="build-resoure-module">
             <param name="LOCALE" value="pt_BR"/>
+        </antcall>
+        <antcall target="build-resoure-module">
+            <param name="LOCALE" value="pt_PT"/>
         </antcall>
         <antcall target="build-resoure-module">
             <param name="LOCALE" value="ro_RO"/>
@@ -178,18 +190,24 @@
             flashvars.resourceModuleURLs = "assets/locale/${fb.locale}.swf";
             //flashvars.localeChain = "ar";
             //flashvars.resourceModuleURLs = "assets/locale/ar.swf";
+            //flashvars.localeChain = "da_DK";
+            //flashvars.resourceModuleURLs = "assets/locale/da_DK.swf";
             //flashvars.localeChain = "de_DE";
             //flashvars.resourceModuleURLs = "assets/locale/de_DE.swf";
             //flashvars.localeChain = "es_ES";
             //flashvars.resourceModuleURLs = "assets/locale/es_ES.swf";
             //flashvars.localeChain = "fr_FR";
             //flashvars.resourceModuleURLs = "assets/locale/fr_FR.swf";
+            //flashvars.localeChain = "he_IL";
+            //flashvars.resourceModuleURLs = "assets/locale/he_IL.swf";
             //flashvars.localeChain = "it_IT";
             //flashvars.resourceModuleURLs = "assets/locale/it_IT.swf";
             //flashvars.localeChain = "ja_JP";
             //flashvars.resourceModuleURLs = "assets/locale/ja_JP.swf";
             //flashvars.localeChain = "ko_KR";
             //flashvars.resourceModuleURLs = "assets/locale/ko_KR.swf";
+            //flashvars.localeChain = "lt_LT";
+            //flashvars.resourceModuleURLs = "assets/locale/lt_LT.swf";
             //flashvars.localeChain = "nb_NO";
             //flashvars.resourceModuleURLs = "assets/locale/nb_NO.swf";
             //flashvars.localeChain = "nl_NL";
@@ -198,6 +216,8 @@
             //flashvars.resourceModuleURLs = "assets/locale/pl_PL.swf";
             //flashvars.localeChain = "pt_BR";
             //flashvars.resourceModuleURLs = "assets/locale/pt_BR.swf";
+            //flashvars.localeChain = "pt_PT";
+            //flashvars.resourceModuleURLs = "assets/locale/pt_PT.swf";
             //flashvars.localeChain = "ro_RO";
             //flashvars.resourceModuleURLs = "assets/locale/ro_RO.swf";
             //flashvars.localeChain = "ru_RU";
