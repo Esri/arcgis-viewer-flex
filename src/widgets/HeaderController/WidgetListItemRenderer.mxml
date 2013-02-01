@@ -36,6 +36,8 @@
 
             import mx.events.FlexEvent;
 
+            import spark.components.DataGroup;
+
             private const WIDGET_ITEM_CLICK:String = "widgetListItemClick";
 
             [Bindable]
@@ -52,6 +54,8 @@
 
             [Bindable]
             private var lrRad:int = 0;
+
+            private var isLastItem:Boolean;
 
             private function itemrenderer_dataChangeHandler(event:FlexEvent):void
             {
@@ -72,7 +76,7 @@
                     urRad = 4;
                     scs.alpha = 0.3;
                 }
-                else if (itemIndex == event.currentTarget.parent.dataProvider.length - 1)
+                else if (isLastItem)
                 {
                     llRad = 4;
                     lrRad = 4;
@@ -88,6 +92,14 @@
                     urRad = 0;
                     scs.alpha = 0.3;
                 }
+            }
+
+            override public function set itemIndex(value:int):void
+            {
+                super.itemIndex = value;
+
+                var dataGroup:DataGroup = parent as DataGroup;
+                isLastItem = (dataGroup && (value == dataGroup.numElements - 1));
             }
 
             private function itemrenderer_clickHandler(event:MouseEvent):void
