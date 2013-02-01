@@ -246,7 +246,7 @@
 
             <s:Button click="currentState = 'urlInputMode'"
                       includeIn="inputModeSelection"
-                      label="{LocalizationUtil.getDefaultString('fileURL')}"/>
+                      label="{LocalizationUtil.getDefaultString('byURL')}"/>
 
             <mx:ProgressBar id="progressBar"
                             width="65"
