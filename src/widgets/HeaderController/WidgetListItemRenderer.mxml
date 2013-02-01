@@ -141,7 +141,9 @@
                      maxDisplayedLines="3"
                      showTruncationTip="true"/>
         </s:HGroup>
-        <s:Line id="divider" width="100%">
+
+        <!--divider-->
+        <s:Line width="100%">
             <s:stroke>
                 <s:SolidColorStroke id="scs"
                                     alpha="0.3"
