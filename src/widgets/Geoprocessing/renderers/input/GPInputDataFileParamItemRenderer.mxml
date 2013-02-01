@@ -255,9 +255,12 @@
                             labelPlacement="center"
                             mode="manual"/>
 
-            <s:Button click="cancelUpload()"
-                      includeIn="uploading"
-                      label="{LocalizationUtil.getDefaultString('attachmentCancelLabel')}"/>
+            <s:Label buttonMode="true"
+                     click="cancelUpload()"
+                     fontWeight="bold"
+                     includeIn="uploading"
+                     text="{LocalizationUtil.getDefaultString('attachmentCancelLabel')}"
+                     textDecoration="underline"/>
 
             <s:Label fontWeight="bold"
                      includeIn="fileReady"
@@ -266,9 +269,12 @@
                      showTruncationTip="true"
                      text="{uploadedFile}"/>
 
-            <s:Button click="removeFile()"
-                      includeIn="fileReady"
-                      label="{LocalizationUtil.getDefaultString('attachmentCancelLabel')}"/>
+            <s:Label buttonMode="true"
+                     click="removeFile()"
+                     fontWeight="bold"
+                     includeIn="fileReady"
+                     text="{LocalizationUtil.getDefaultString('showAttributesText')}"
+                     textDecoration="underline"/>
 
             <s:TextInput id="urlInput"
                          width="100%"
@@ -277,9 +283,12 @@
                          text="{data.defaultValue.url}"
                          toolTip="{data.toolTip}"/>
 
-            <s:Button click="removeURL()"
-                      includeIn="urlInputMode"
-                      label="{LocalizationUtil.getDefaultString('attachmentCancelLabel')}"/>
+            <s:Label buttonMode="true"
+                     click="removeURL()"
+                     fontWeight="bold"
+                     includeIn="urlInputMode"
+                     text="{LocalizationUtil.getDefaultString('showAttributesText')}"
+                     textDecoration="underline"/>
         </s:HGroup>
     </mx:FormItem>
 </s:ItemRenderer>
