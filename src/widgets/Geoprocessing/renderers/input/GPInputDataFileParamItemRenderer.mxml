@@ -206,6 +206,8 @@
             {
                 clearURL();
                 urlInput.text = "";
+                urlInput.errorString = "";
+                urlInput.validateNow();
                 currentState = "inputModeSelection";
             }
         ]]>
