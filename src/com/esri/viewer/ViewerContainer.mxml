@@ -126,7 +126,11 @@
 
                 AppEvent.addListener(AppEvent.CONFIG_LOADED, configLoadedHandler);
 
-                //tell the modules it's on business.
+                if (mapManager.map)
+                {
+                    mapManager.map.setFocus();
+                }
+
                 AppEvent.dispatch(ViewerContainer.CONTAINER_INITIALIZED);
             }
 
