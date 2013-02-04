@@ -44,16 +44,10 @@
             private var widgetItem:WidgetItem;
 
             [Bindable]
-            private var ulRad:int = 0;
+            private var upperRad:int = 0;
 
             [Bindable]
-            private var urRad:int = 0;
-
-            [Bindable]
-            private var llRad:int = 0;
-
-            [Bindable]
-            private var lrRad:int = 0;
+            private var lowerRad:int = 0;
 
             private var isLastItem:Boolean;
 
@@ -70,26 +64,26 @@
 
                 if (itemIndex == 0)
                 {
-                    llRad = 0;
-                    lrRad = 0;
-                    ulRad = 4;
-                    urRad = 4;
+                    lowerRad = 0;
+                    lowerRad = 0;
+                    upperRad = 4;
+                    upperRad = 4;
                     scs.alpha = 0.3;
                 }
                 else if (isLastItem)
                 {
-                    llRad = 4;
-                    lrRad = 4;
-                    ulRad = 0;
-                    urRad = 0;
+                    lowerRad = 4;
+                    lowerRad = 4;
+                    upperRad = 0;
+                    upperRad = 0;
                     scs.alpha = 0;
                 }
                 else
                 {
-                    llRad = 0;
-                    lrRad = 0;
-                    ulRad = 0;
-                    urRad = 0;
+                    lowerRad = 0;
+                    lowerRad = 0;
+                    upperRad = 0;
+                    upperRad = 0;
                     scs.alpha = 0.3;
                 }
             }
@@ -116,14 +110,14 @@
 
     <!-- border/background rectangle -->
     <s:Rect left="0" right="-2" top="-6" bottom="0"
-            bottomLeftRadiusX="{llRad}"
-            bottomLeftRadiusY="{llRad}"
-            bottomRightRadiusX="{lrRad}"
-            bottomRightRadiusY="{lrRad}"
-            topLeftRadiusX="{ulRad}"
-            topLeftRadiusY="{ulRad}"
-            topRightRadiusX="{urRad}"
-            topRightRadiusY="{urRad}">
+            bottomLeftRadiusX="{lowerRad}"
+            bottomLeftRadiusY="{lowerRad}"
+            bottomRightRadiusX="{lowerRad}"
+            bottomRightRadiusY="{lowerRad}"
+            topLeftRadiusX="{upperRad}"
+            topLeftRadiusY="{upperRad}"
+            topRightRadiusX="{upperRad}"
+            topRightRadiusY="{upperRad}">
         <s:fill>
             <s:SolidColor alpha="0.3"
                           alpha.hovered="0.8"
