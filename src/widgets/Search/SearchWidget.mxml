@@ -71,6 +71,7 @@
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.utils.ClustererParser;
             import com.esri.viewer.utils.ErrorMessageUtil;
+            import com.esri.viewer.utils.LabelUtil;
 
             import mx.collections.ArrayCollection;
             import mx.collections.ArrayList;
@@ -377,6 +378,10 @@
                         boxText.visible = false;
                         boxText.includeInLayout = false;
                     }
+                    else
+                    {
+                        cboLayerText.typicalItem = LabelUtil.findLongestItemLabel(configSearchText, "label");
+                    }
                 }
                 else
                 {
@@ -389,12 +394,16 @@
             {
                 if (configSearchGraphical.length)
                 {
-                    cboLayerGraphical.dataProvider = configSearchGraphical;
+                    cboLayerGraphical.dataProvider = new ArrayList(configSearchGraphical);
                     txtLabelGraphical.text = configSearchGraphical[0].graphicallabel;
                     if (configSearchGraphical.length == 1)
                     {
                         boxGraphical.visible = false;
                         boxGraphical.includeInLayout = false;
+                    }
+                    else
+                    {
+                        cboLayerGraphical.typicalItem = LabelUtil.findLongestItemLabel(configSearchGraphical, "label");
                     }
                 }
                 else
@@ -1002,7 +1011,9 @@
                       horizontalAlign="center"
                       verticalAlign="middle">
                 <s:Label id="lblLayerGraphical" text="{layerLabel}"/>
-                <mx:ComboBox id="cboLayerGraphical" change="searchLayerChangedGraphical()"/>
+                <s:DropDownList id="cboLayerGraphical"
+                                change="searchLayerChangedGraphical()"
+                                requireSelection="true"/>
             </s:HGroup>
             <s:Label id="txtLabelGraphical"
                      width="100%"
@@ -1103,7 +1114,9 @@
                       horizontalAlign="center"
                       verticalAlign="middle">
                 <s:Label id="lblLayerText" text="{layerLabel}"/>
-                <mx:ComboBox id="cboLayerText" change="searchLayerChangedText()"/>
+                <s:DropDownList id="cboLayerText"
+                                change="searchLayerChangedText()"
+                                requireSelection="true"/>
             </s:HGroup>
             <s:RichEditableText id="txtLabelText"
                                 width="100%"

@@ -373,13 +373,14 @@
 
         <s:Label includeIn="selectSingleLayer" text="{singleGraphicsLayerSelectionName}"/>
 
-        <mx:ComboBox id="visibleGraphicsLayersSelection"
-                     width="100%"
-                     change="updateSelectedGraphicsLayer()"
-                     creationComplete="updateSelectedGraphicsLayer()"
-                     dataProvider="{visibleValidGraphicsLayers}"
-                     includeIn="selectLayers"
-                     labelField="name"/>
+        <s:DropDownList id="visibleGraphicsLayersSelection"
+                        width="100%"
+                        change="updateSelectedGraphicsLayer()"
+                        creationComplete="updateSelectedGraphicsLayer()"
+                        dataProvider="{visibleValidGraphicsLayers}"
+                        includeIn="selectLayers"
+                        labelField="name"
+                        requireSelection="true"/>
 
         <s:HGroup id="drawImageGroup"
                   width="100%"

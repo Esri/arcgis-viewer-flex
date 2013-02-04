@@ -81,9 +81,10 @@
                           text="{data.defaultValue.distance}"
                           toolTip="{data.toolTip}"/>
 
-        <mx:ComboBox id="unitSelection"
-                     width="100%"
-                     change="updateUnits()"
-                     labelFunction="unitLabelFunction"/>
+        <s:DropDownList id="unitSelection"
+                        width="100%"
+                        change="updateUnits()"
+                        labelFunction="unitLabelFunction"
+                        requireSelection="true"/>
     </mx:FormItem>
 </s:ItemRenderer>
