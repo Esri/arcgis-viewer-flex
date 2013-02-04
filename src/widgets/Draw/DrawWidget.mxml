@@ -51,6 +51,7 @@
             import com.esri.ags.utils.GeometryUtil;
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.AppEvent;
+            import com.esri.viewer.utils.LabelUtil;
 
             import mx.managers.CursorManager;
             import mx.managers.CursorManagerPriority;
@@ -226,6 +227,9 @@
 
                     initializeFontList();
 
+                    //setting typical text since using typicalItem will set TextInput#widthInChars, which produces extra long width 
+                    fontNameSelection.textInput.typicalText = LabelUtil.findLongestItemLabel(fontList.source);
+
                     defaultDrawColor = configXML.defaultdrawcolor || 0x3FAFDC;
                     defaultTextFontSize = configXML.defaulttextfontsize || 20;
                     // drawing labels
@@ -349,6 +353,7 @@
                             configDistance.addItem(dUnit);
                         }
                         cboDistance.dataProvider = configDistance;
+                        cboDistance.typicalItem = LabelUtil.findLongestItemLabel(configDistance.source, 'name');
                     }
 
                     // area units
@@ -432,8 +437,14 @@
                             configArea.addItem(aUnit);
                         }
                         cboArea.dataProvider = configArea;
+                        cboArea.typicalItem = LabelUtil.findLongestItemLabel(configArea.source, 'name');
                     }
                 }
+
+                markerStyle.typicalItem = LabelUtil.findLongestItemLabel(markerStyle.dataProvider.toArray(), 'name');
+                lineStyle.typicalItem = LabelUtil.findLongestItemLabel(lineStyle.dataProvider.toArray(), 'name');
+                fillStyle.typicalItem = LabelUtil.findLongestItemLabel(fillStyle.dataProvider.toArray(), 'name');
+
 
                 AppEvent.addListener(AppEvent.DATA_PUBLISH, sharedDataUpdated);
             }
@@ -1425,17 +1436,6 @@
                 moveMeasurementGraphicToTop(drawnGraphic);
             }
 
-            protected function getLongestString(... rest):String
-            {
-                var longest:String = "";
-                for (var i:int = 0; i < rest.length; i++)
-                {
-                    var n:String = getDefaultString(rest[i]);
-                    longest = n.length > longest.length ? n : longest;
-                }
-                return longest;
-            }
-
             private function drawIcon_rollOverHandler(event:MouseEvent):void
             {
                 clearSelectionFilter();
@@ -1681,13 +1681,6 @@
                                             width="100%"
                                             labelField="name"
                                             selectedIndex="0">
-                                <s:typicalItem>
-                                    <fx:Object name="{getLongestString('markerStyleCircle',
-                                                                       'markerStyleCross',
-                                                                       'markerStyleDiamond',
-                                                                       'markerStyleSquare',
-                                                                       'markerStyleX')}"/>
-                                </s:typicalItem>
                                 <s:ArrayList>
                                     <fx:Object name="{getDefaultString('markerStyleCircle')}" style="{SimpleMarkerSymbol.STYLE_CIRCLE}"/>
                                     <fx:Object name="{getDefaultString('markerStyleCross')}" style="{SimpleMarkerSymbol.STYLE_CROSS}"/>
@@ -1765,14 +1758,6 @@
                                             width="100%"
                                             labelField="name"
                                             selectedIndex="0">
-                                <s:typicalItem>
-                                    <fx:Object name="{getLongestString('fillStyleSolid',
-                                                                       'fillStyleBackwardDiagonal',
-                                                                       'fillStyleCross',
-                                                                       'fillStyleForwardDiagonal',
-                                                                       'fillStyleHorizontal',
-                                                                       'fillStyleVertical')}"/>
-                                </s:typicalItem>
                                 <s:ArrayList>
                                     <fx:Object name="{getDefaultString('fillStyleSolid')}" style="{SimpleFillSymbol.STYLE_SOLID}"/>
                                     <fx:Object name="{getDefaultString('fillStyleBackwardDiagonal')}" style="{SimpleFillSymbol.STYLE_BACKWARD_DIAGONAL}"/>
@@ -1838,15 +1823,6 @@
                                             width="100%"
                                             labelField="name"
                                             selectedIndex="0">
-                                <s:typicalItem>
-                                    <fx:Object name="{getLongestString('lineStyleSolid',
-                                                                       'lineStyleDashes',
-                                                                       'lineStyleDot',
-                                                                       'lineStyleDash',
-                                                                       'lineStyleDot',
-                                                                       'lineStyleDashDot',
-                                                                       'lineStyleDashDotDot')}"/>
-                                </s:typicalItem>
                                 <s:ArrayList>
                                     <fx:Object name="{getDefaultString('lineStyleSolid')}" style="{SimpleLineSymbol.STYLE_SOLID}"/>
                                     <fx:Object name="{getDefaultString('lineStyleDash')}" style="{SimpleLineSymbol.STYLE_DASH}"/>
@@ -1903,16 +1879,6 @@
                                         labelField="name"
                                         requireSelection="true"
                                         selectedIndex="0">
-                            <s:typicalItem>
-                                <fx:Object name="{getLongestString('unitsSquareKilometers',
-                                                                   'unitsSquareMiles',
-                                                                   'unitsAcres',
-                                                                   'unitsHectares',
-                                                                   'unitsSquareMeters',
-                                                                   'unitsSquareFeet',
-                                                                   'unitsYards',
-                                                                   'unitsSquareYards')}"/>
-                            </s:typicalItem>
                             <s:ArrayList>
                                 <fx:Object name="{getDefaultString('unitsSquareKilometers')}"
                                            abbr="{getDefaultString('unitsSquareKilometersAbbr')}"
@@ -1953,13 +1919,6 @@
                                         labelField="name"
                                         requireSelection="true"
                                         selectedIndex="0">
-                            <s:typicalItem>
-                                <fx:Object name="{getLongestString('unitsKilometers',
-                                                                   'unitsMiles',
-                                                                   'unitsMeters',
-                                                                   'unitsFeet',
-                                                                   'unitsYards')}"/>
-                            </s:typicalItem>
                             <s:ArrayList>
                                 <fx:Object name="{getDefaultString('unitsKilometers')}"
                                            abbr="{getDefaultString('unitsKilometersAbbr')}"

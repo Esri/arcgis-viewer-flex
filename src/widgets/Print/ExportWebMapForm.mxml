@@ -24,6 +24,7 @@
             import com.esri.ags.tasks.supportClasses.PrintServiceInfo;
             import com.esri.viewer.BaseWidget;
             import com.esri.viewer.utils.ErrorMessageUtil;
+            import com.esri.viewer.utils.LabelUtil;
 
             import mx.collections.IList;
             import mx.rpc.Fault;
@@ -381,6 +382,8 @@
                 {
                     layoutTemplatesDDL.selectedItem = printParameters.layoutTemplate;
                 }
+
+                layoutTemplatesDDL.typicalItem = LabelUtil.findLongestItemLabel(layoutTemplates.toArray());
             }
 
             private function isContained(item:*, list:IList):Boolean
@@ -439,6 +442,8 @@
                 {
                     formatsDDL.selectedItem = printParameters.format;
                 }
+
+                formatsDDL.typicalItem = LabelUtil.findLongestItemLabel(formats.toArray());
             }
 
             private function printTask_jobCompleteHandler(event:PrintEvent):void
@@ -508,7 +513,6 @@
                  includeInLayout="{shouldShowTemplateOptions}"
                  visible="{shouldShowTemplateOptions}">
         <s:DropDownList id="layoutTemplatesDDL"
-                        width="175"
                         dataProvider="{printTask.getServiceInfoLastResult.layoutTemplates}"
                         requireSelection="true"/>
     </mx:FormItem>
@@ -518,7 +522,6 @@
                  includeInLayout="{shouldShowFormatOptions}"
                  visible="{shouldShowFormatOptions}">
         <s:DropDownList id="formatsDDL"
-                        width="100"
                         dataProvider="{printTask.getServiceInfoLastResult.formats}"
                         requireSelection="true"/>
     </mx:FormItem>
