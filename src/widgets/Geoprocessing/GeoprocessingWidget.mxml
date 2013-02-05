@@ -71,6 +71,7 @@
             import widgets.Geoprocessing.supportClasses.GPParamHandler;
             import widgets.Geoprocessing.supportClasses.GraphicEditor;
             import widgets.Geoprocessing.supportClasses.LayerOrderer;
+            import widgets.Geoprocessing.supportClasses.ParamErrorEvent;
             import widgets.Geoprocessing.supportClasses.VisibleGraphicsLayersWatcher;
 
             private const SYNCHRONOUS:String = "esriExecutionTypeSynchronous";
@@ -95,6 +96,10 @@
             private var hasUseAMFBeenSet:Boolean;
             private var largestResultImageLayerExtent:Extent;
             private var graphicEditor:GraphicEditor;
+            private var inputLabel:String;
+            private var outputLabel:String;
+            private var taskDescription:String;
+            private var taskHelpURL:String;
 
             [Bindable]
             private var submitLabel:String;
@@ -148,7 +153,6 @@
                             }
                         }
                         gp.outSpatialReference = map.spatialReference;
-                        getExecutionType();
                         autoSubmit = (configXML.autosubmit[0] == "true");
 
                         if (configXML.useamf.length() > 0)
@@ -157,65 +161,22 @@
                             hasUseAMFBeenSet = true;
                         }
 
-                        fetchGPServerDescription();
+                        taskDescription = configXML.description[0];
+                        taskHelpURL = configXML.helpurl[0];
 
                         submitLabel = configXML.labels.submitlabel || getDefaultString('gpSubmitLabel');
                         clearFeatureLabel = configXML.labels.clearfeaturelabel || getDefaultString("clearLabel");
                         helpLabel = configXML.labels.helplabel || getDefaultString("helpLabel");
-                        var inputLabel:String = configXML.labels.inputlabel || getDefaultString("inputLabel");
-                        var outputLabel:String = configXML.labels.outputlabel || getDefaultString("outputLabel");
+                        inputLabel = configXML.labels.inputlabel || getDefaultString("inputLabel");
+                        outputLabel = configXML.labels.outputlabel || getDefaultString("outputLabel");
 
-                        buildUI(configXML);
-
-                        initGraphicContextMenu();
-                        drawTool.map = map;
-                        graphicEditor = new GraphicEditor(map);
-
-                        visibleGraphicsLayersWatcher.map = map;
-                        visibleGraphicsLayersWatcher.startWatching();
-                        inputParamsDataGroup.visibleGraphicsLayers = visibleGraphicsLayersWatcher.visibleGraphicsLayers;
-
-                        inputParamsDataGroup.addEventListener(FeatureInputParamEvent.DRAW, inputParamsDataGroup_drawFeatureHandler, false, 0, true);
-                        inputParamsDataGroup.addEventListener(FeatureInputParamEvent.CLEAR, inputParamsDataGroup_clearFeatureHandler, false, 0, true);
-
-                        if (gpParamHandler.hasMapExtentInputParams())
-                        {
-                            map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
-                            gpParamHandler.updateMapExtentInputParams(map.extent)
-                        }
-
-                        needsToShowOutputView = gpParamHandler.hasVisibleOutput();
-                        if (needsToShowOutputView)
-                        {
-                            wTemplate.addTitlebarButton("assets/images/GeoprocessingTool16.png", inputLabel, inputTitlebarButton_clickHandler);
-                            wTemplate.addTitlebarButton("assets/images/i_table.png", outputLabel, outputTitlebarButton_clickHandler);
-                        }
+                        fetchGPServerDescription();
                     }
                     catch (error:Error)
                     {
                         showError(getDefaultString("initializationError", ErrorMessageUtil.makeHTMLSafe(error.message)));
                     }
                 }
-            }
-
-            private function getExecutionType():void
-            {
-                var gpTaskInspector:JSONTask = new JSONTask();
-                var urlVars:URLVariables = new URLVariables();
-                urlVars.f = "json";
-                gpTaskInspector.url = gp.url;
-                gpTaskInspector.proxyURL = gp.proxyURL;
-                gpTaskInspector.execute(urlVars, new AsyncResponder(gpTaskInspector_resultHandler, gpTaskInspector_faultHandler));
-            }
-
-            private function gpTaskInspector_resultHandler(serviceDescription:Object, token:Object = null):void
-            {
-                executionType = serviceDescription.executionType;
-            }
-
-            private function gpTaskInspector_faultHandler(fault:Fault, token:Object = null):void
-            {
-                showError(getDefaultString("unableToDetermineGPExecutionType", ErrorMessageUtil.makeHTMLSafe(fault.toString())));
             }
 
             private function fetchGPServerDescription():void
@@ -225,7 +186,9 @@
                 urlVars.f = "json";
                 gpServerInspector.url = getGPServerURL(gp.url);
                 gpServerInspector.proxyURL = gp.proxyURL;
-                gpServerInspector.execute(urlVars, new AsyncResponder(gpServerInspector_resultHandler, gpServerInspector_faultHandler));
+                gpServerInspector.execute(urlVars, new AsyncResponder(gpServerInspector_resultHandler,
+                                                                      gpServerInspector_faultHandler,
+                                                                      gpServerInspector.url));
             }
 
             private function getGPServerURL(url:String):String
@@ -234,53 +197,100 @@
                 return url.substr(0, lastPathIndex);
             }
 
-            private function gpServerInspector_resultHandler(gpServerDescription:Object, token:Object = null):void
+            private function gpServerInspector_resultHandler(gpServerDescription:Object, gpServerURL:String):void
             {
-                if (!hasUseAMFBeenSet)
-                {
-                    checkAMFSupport(gpServerDescription);
-                }
-                checkResultMapServerSupport(gpServerDescription);
+                executionType = gpServerDescription.executionType;
+                gp.useAMF = !hasUseAMFBeenSet && (gpServerDescription.currentVersion >= 10.1);
+                hasResultMapServer = Boolean(gpServerDescription.resultMapServerName);
+
+                gpServerDescription.url = gpServerURL;
+                gpServerDescription.proxyURL = gp.proxyURL;
+                checkIfUploadSupported(gpServerDescription);
+                gpParamHandler.setServiceInfo(gpServerDescription);
             }
 
-            private function checkAMFSupport(gpServerDescription:Object):void
+            private function checkIfUploadSupported(gpServerDescription:Object):void
             {
-                var version:Number = gpServerDescription.currentVersion;
-                if (version >= 10.1)
+                if (gpServerDescription.currentVersion >= 10.1)
                 {
-                    gp.useAMF = true;
+                    var uploadsInfoRequest:JSONTask = new JSONTask(gpServerDescription.url + "uploads/info");
+                    uploadsInfoRequest.proxyURL = gpServerDescription.proxyURL;
+                    var urlVars:URLVariables = new URLVariables();
+                    urlVars.f = "json";
+                    uploadsInfoRequest.execute(urlVars, new AsyncResponder(uploadsInfoRequest_resultHandler,
+                                                                           uploadsInfoRequest_faultHandler,
+                                                                           gpServerDescription));
+                }
+                else
+                {
+                    gpServerDescription.supportsUploads = false;
+                    continueInitialization();
                 }
             }
 
-            private function checkResultMapServerSupport(gpServerDescription:Object):void
+            private function uploadsInfoRequest_resultHandler(response:Object, gpServerDescription:Object):void
             {
-                if (gpServerDescription.resultMapServerName)
-                {
-                    hasResultMapServer = true;
-                }
+                gpServerDescription.maxUploadFileSize = response.maxUploadFileSize;
+                gpServerDescription.supportsUploads = !isNaN(gpServerDescription.maxUploadFileSize);
+                continueInitialization();
+            }
+
+            protected function uploadsInfoRequest_faultHandler(fault:Fault, gpServerDescription:Object):void
+            {
+                gpServerDescription.supportsUploads = false;
+                continueInitialization();
             }
 
             private function gpServerInspector_faultHandler(fault:Fault, token:Object = null):void
             {
                 //Could not fetch service capabilities
+                showError(getDefaultString("unableToDetermineGPExecutionType", ErrorMessageUtil.makeHTMLSafe(fault.toString())));
+                continueInitialization();
             }
 
-            private function buildUI(config:XML):void
+            private function continueInitialization():void
             {
-                if (configXML.description[0])
+                buildUI();
+
+                initGraphicContextMenu();
+                graphicEditor = new GraphicEditor(map);
+
+                visibleGraphicsLayersWatcher.map = map;
+                visibleGraphicsLayersWatcher.startWatching();
+                inputParamsDataGroup.visibleGraphicsLayers = visibleGraphicsLayersWatcher.visibleGraphicsLayers;
+
+                inputParamsDataGroup.addEventListener(FeatureInputParamEvent.DRAW, inputParamsDataGroup_drawFeatureHandler, false, 0, true);
+                inputParamsDataGroup.addEventListener(FeatureInputParamEvent.CLEAR, inputParamsDataGroup_clearFeatureHandler, false, 0, true);
+
+                if (gpParamHandler.hasMapExtentInputParams())
                 {
-                    descriptionText.text = configXML.description;
-                    if (descriptionText.text)
-                    {
-                        descriptionText.visible = true;
-                        descriptionText.includeInLayout = true;
-                    }
+                    map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
+                    gpParamHandler.updateMapExtentInputParams(map.extent)
                 }
 
-                if (configXML.helpurl[0])
+                needsToShowOutputView = gpParamHandler.hasVisibleOutput();
+                if (needsToShowOutputView)
+                {
+                    wTemplate.addTitlebarButton("assets/images/GeoprocessingTool16.png", inputLabel, inputTitlebarButton_clickHandler);
+                    wTemplate.addTitlebarButton("assets/images/i_table.png", outputLabel, outputTitlebarButton_clickHandler);
+                }
+
+                setInputState();
+            }
+
+            private function buildUI():void
+            {
+                if (taskDescription)
+                {
+                    descriptionText.text = taskDescription;
+                    descriptionText.visible = true;
+                    descriptionText.includeInLayout = true;
+                }
+
+                if (taskHelpURL)
                 {
                     var color:uint = getStyle('color');
-                    var linkText:String = "<a href='" + configXML.helpurl + "' target='_blank'><font color='#" + color.toString(16) + "'>" + helpLabel + "</font></a>";
+                    var linkText:String = "<a href='" + taskHelpURL + "' target='_blank'><font color='#" + color.toString(16) + "'>" + helpLabel + "</font></a>";
                     helpLink.textFlow = TextConverter.importToFlow(linkText, TextConverter.TEXT_FIELD_HTML_FORMAT);
                 }
 
@@ -990,8 +1000,14 @@
                     }
                 }
             }
+
+            protected function paramDataGroup_errorHandler(event:ParamErrorEvent):void
+            {
+                showError(event.message, event.title);
+            }
         ]]>
     </fx:Script>
+
     <fx:Declarations>
         <esri:Geoprocessor id="gp"
                            executeComplete="gp_executeCompleteHandler(event)"
@@ -999,13 +1015,14 @@
                            getResultDataComplete="gp_resultDataCompleteHandler(event)"
                            jobComplete="gp_jobCompleteHandler(event)"
                            useAMF="false"/>
-        <esri:DrawTool id="drawTool" drawEnd="map_drawEndHandler(event)"/>
-        <esri:EditTool id="editTool" map="{map}"/>
     </fx:Declarations>
+
     <viewer:states>
+        <s:State name="startup"/>
         <s:State name="input"/>
         <s:State name="output"/>
     </viewer:states>
+
     <viewer:WidgetTemplate id="wTemplate"
                            closed="wTemplate_closedHandler(event)"
                            minimized="wTemplate_minimizedHandler(event)"
@@ -1013,35 +1030,46 @@
         <viewer:layout>
             <s:VerticalLayout/>
         </viewer:layout>
+
+        <mx:Image includeIn="startup" source="assets/images/loader.swf"/>
+
         <s:Label id="descriptionText"
                  fontWeight="bold"
                  includeInLayout="false"
                  visible="false"/>
+
         <s:Scroller width="100%" height="100%"
                     includeIn="input"
                     itemCreationPolicy="immediate">
             <supportClasses:InputParamDataGroup id="inputParamsDataGroup"
-                                                width="100%" height="100%"/>
+                                                width="100%" height="100%"
+                                                error="paramDataGroup_errorHandler(event)"/>
         </s:Scroller>
+
         <s:Scroller width="100%" height="100%"
                     includeIn="output"
                     itemCreationPolicy="immediate">
             <supportClasses:OutputParamDataGroup id="outputParamsDataGroup"
                                                  width="100%" height="100%"/>
         </s:Scroller>
+
         <s:Label id="missingRequiredFieldsText"
                  color="0xFF0000"
                  includeIn="input"
                  includeInLayout="false"
                  visible="false"/>
+
         <s:HGroup width="100%" verticalAlign="middle">
             <s:RichEditableText id="helpLink"
                                 editable="false"
                                 selectable="false"/>
+
             <mx:Spacer width="100%"/>
+
             <mx:Image id="busyAnimation"
                       source="assets/images/loader.swf"
                       visible="false"/>
+
             <s:Button id="clearOutputFeaturesButton"
                       click="clearAllGraphics()"
                       includeInLayout="false"

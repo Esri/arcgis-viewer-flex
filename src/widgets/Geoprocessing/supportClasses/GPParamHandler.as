@@ -35,7 +35,6 @@ import widgets.Geoprocessing.parameters.IGPParameter;
 import widgets.Geoprocessing.parameters.InputParamParser;
 import widgets.Geoprocessing.parameters.OutputParamParser;
 
-
 public class GPParamHandler
 {
     public function GPParamHandler(paramsXML:XML)
@@ -406,6 +405,16 @@ public class GPParamHandler
                 featureParam.layer.clear();
                 featureParam.layer.add(new Graphic(extentPolygon));
             }
+        }
+    }
+
+    public function setServiceInfo(serviceInfo:Object):void
+    {
+        var allParams:Array = _inputParams.concat(_outputParams);
+
+        for each (var param:IGPParameter in allParams)
+        {
+            param.serviceInfo = serviceInfo;
         }
     }
 }
