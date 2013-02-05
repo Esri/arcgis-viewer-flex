@@ -611,7 +611,8 @@
                     paramName = param.name;
                     if (asyncResultMap[paramName])
                     {
-                        if (hasResultMapServer)
+                        if (hasResultMapServer
+                            && isResultMapServerOutputType(param.type))
                         {
                             processResultImageLayer(paramName);
                         }
@@ -627,6 +628,12 @@
                     showOutputFeaturesClearButton();
                     extractLargestResultImageLayerExtent();
                 }
+            }
+
+            private function isResultMapServerOutputType(type:String):Boolean
+            {
+                return type == GPParameterTypes.FEATURE_RECORD_SET_LAYER
+                    || type == GPParameterTypes.RASTER_DATA_LAYER;
             }
 
             private function processResultImageLayer(paramName:String):void
