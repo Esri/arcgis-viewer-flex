@@ -615,6 +615,12 @@
 
             private function processResultImageLayer(paramName:String):void
             {
+                var outputParam:IGPParameter = gpParamHandler.findOutputParamByName(paramName);
+                if (!outputParam.visible)
+                {
+                    return;
+                }
+
                 var lastExecutedJob:JobInfo = gp.submitJobLastResult;
                 var resultImageLayer:GPResultImageLayer = gp.getResultImageLayer(lastExecutedJob.jobId, paramName);
                 resultImageLayer.id = paramName;
@@ -636,6 +642,11 @@
             {
                 var resultDataType:String = parameterValue.dataType;
                 var outputParam:IGPParameter = gpParamHandler.findOutputParamByName(parameterValue.paramName);
+
+                if (!outputParam.visible)
+                {
+                    return;
+                }
 
                 if (resultDataType == GPParameterTypes.GP_DATA_FILE)
                 {

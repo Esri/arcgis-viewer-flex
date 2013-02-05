@@ -30,6 +30,7 @@ public class OutputParamParser extends BaseParamParser
             param = GPParameterFactory.getGPParamFromType(paramXML.@type);
             param.label = paramXML.@label;
             param.name = paramXML.@name;
+            param.visible = (paramXML.@visible == "true");
             param.toolTip = paramXML.@tooltip;
 
             var featureParam:IGPFeatureParameter = param as IGPFeatureParameter;
