@@ -299,10 +299,13 @@ public class TocMapLayerItem extends TocItem
     {
         for each (var layerLegendInfo:LayerLegendInfo in arr)
         {
-            _layerLegendInfos.push(layerLegendInfo);
-            if (layerLegendInfo.layerLegendInfos)
+            if (layerLegendInfo) // check if layerLegendInfo exists
             {
-                getLayerLegendInfos(layerLegendInfo.layerLegendInfos);
+                _layerLegendInfos.push(layerLegendInfo);
+                if (layerLegendInfo.layerLegendInfos)
+                {
+                    getLayerLegendInfos(layerLegendInfo.layerLegendInfos);
+                }
             }
         }
     }
