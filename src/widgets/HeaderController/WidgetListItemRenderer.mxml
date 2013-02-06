@@ -65,24 +65,18 @@
                 if (itemIndex == 0)
                 {
                     lowerRad = 0;
-                    lowerRad = 0;
-                    upperRad = 4;
                     upperRad = 4;
                     scs.alpha = 0.3;
                 }
                 else if (isLastItem)
                 {
                     lowerRad = 4;
-                    lowerRad = 4;
-                    upperRad = 0;
                     upperRad = 0;
                     scs.alpha = 0;
                 }
                 else
                 {
                     lowerRad = 0;
-                    lowerRad = 0;
-                    upperRad = 0;
                     upperRad = 0;
                     scs.alpha = 0.3;
                 }
