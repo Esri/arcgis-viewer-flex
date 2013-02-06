@@ -79,7 +79,8 @@ public class ResultAttributes
 
         function displayFields(fieldName:String, fieldXML:XML, field:Field):void
         {
-            value = graphic.attributes[fieldName] ? String(graphic.attributes[fieldName]) : "";
+            var fieldNameTextValue:String = graphic.attributes[fieldName];
+            value = fieldNameTextValue ? fieldNameTextValue : "";
 
             if (value)
             {
