@@ -30,7 +30,7 @@ public class TocLegendItem extends TocItem
         super(parentItem);
 
         _legendItemInfo = legendItemInfo;
-        label = legendItemInfo.label;
+        label = legendItemInfo.label ? legendItemInfo.label : " ";
     }
 
     //--------------------------------------------------------------------------
