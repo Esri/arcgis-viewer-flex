@@ -27,7 +27,7 @@ public class ResultAttributes
                                               featureSet:FeatureSet = null,
                                               layer:FeatureLayer = null,
                                               layerDetails:LayerDetails = null,
-                                              widgetTitle:String = null,
+                                              fallbackTitle:String = null,
                                               titleField:String = null,
                                               linkField:String = null,
                                               linkAlias:String = null):ResultAttributes
@@ -71,8 +71,9 @@ public class ResultAttributes
                 }
             }
         }
+
         resultAttributes.attributes = graphic.attributes;
-        resultAttributes.title = title ? title : widgetTitle;
+        resultAttributes.title = title ? title : fallbackTitle;
         resultAttributes.content = content;
         resultAttributes.link = link ? link : null;
         resultAttributes.linkAlias = linkAlias;
