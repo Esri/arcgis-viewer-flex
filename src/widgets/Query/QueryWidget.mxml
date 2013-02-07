@@ -98,7 +98,6 @@
             private var mouseDownStageX:Number;
             private var mouseDownStageY:Number;
             private var dateFormatter:DateFormatter = new DateFormatter();
-            private var textDirection:String;
 
             private var loadingLabel:String;
             private var textFilterClear:String;
@@ -137,8 +136,6 @@
             {
                 if (configXML)
                 {
-                    textDirection = getStyle("direction");
-
                     loadingLabel = configXML.labels.loading || configXML.labels.loadinglabel || getDefaultString("loadingLabel"); // other widgets use "loadinglabel" in their xml and so should this, but since 2.1 was released with "loading", we'll keep QueryWidget slightly inconsistent
                     textFilterLabel = configXML.labels.filterresults || getDefaultString("filterTitleBarTooltip");
                     textFilterClear = configXML.labels.filterclear || getDefaultString("showallTitleBarTooltip");
@@ -409,7 +406,7 @@
                 for each (var graphic:Graphic in featureSet.features)
                 {
                     var resultAttributes:ResultAttributes =
-                        ResultAttributes.toResultAttributes(queryFields, textDirection, graphic, featureSet, queryLayer, layerDetails, widgetTitle, queryTitleField, queryLinkField, queryLinkAlias);
+                        ResultAttributes.toResultAttributes(queryFields, graphic, featureSet, queryLayer, layerDetails, widgetTitle, queryTitleField, queryLinkField, queryLinkAlias);
                     graphicToResultAttributes[graphic] = resultAttributes;
 
                     var searchResult:ResultItem = new ResultItem(graphic, resultAttributes);

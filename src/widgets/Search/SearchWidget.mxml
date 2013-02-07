@@ -104,7 +104,6 @@
             private var selectedDrawingIcon:FocusableImage;
             private var textsearchLabel:String;
             private var zoomScale:Number = 50000;
-            private var textDirection:String;
 
             [Bindable]
             private var clearLabel:String;
@@ -162,8 +161,6 @@
             {
                 if (configXML)
                 {
-                    textDirection = getStyle("direction");
-
                     geometryService.url = GeometryServiceSingleton.instance.url;
                     geometryService.token = GeometryServiceSingleton.instance.token;
                     geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
@@ -703,7 +700,7 @@
                 for each (var graphic:Graphic in featureSet.features)
                 {
                     var resultAttributes:ResultAttributes =
-                        ResultAttributes.toResultAttributes(queryFields, textDirection, graphic, featureSet, queryLayer, layerDetails, widgetTitle, queryTitleField, queryLinkField, queryLinkAlias);
+                        ResultAttributes.toResultAttributes(queryFields, graphic, featureSet, queryLayer, layerDetails, widgetTitle, queryTitleField, queryLinkField, queryLinkAlias);
 
                     var searchResult:ResultItem = new ResultItem(graphic, resultAttributes);
                     result.addItem(searchResult);

@@ -10,6 +10,8 @@ import com.esri.ags.layers.supportClasses.FeatureType;
 import com.esri.ags.layers.supportClasses.Field;
 import com.esri.ags.layers.supportClasses.LayerDetails;
 
+import mx.core.FlexGlobals;
+import mx.core.LayoutDirection;
 import mx.formatters.DateFormatter;
 
 [Bindable]
@@ -22,12 +24,11 @@ public class ResultAttributes
     public var linkAlias:String;
 
     public static function toResultAttributes(fields:XMLList,
-                                              textDirection:String = null,
                                               graphic:Graphic = null,
                                               featureSet:FeatureSet = null,
                                               layer:FeatureLayer = null,
                                               layerDetails:LayerDetails = null,
-                                              widgetTitle:String = null,
+                                              fallbackTitle:String = null,
                                               titleField:String = null,
                                               linkField:String = null,
                                               linkAlias:String = null):ResultAttributes
@@ -71,15 +72,17 @@ public class ResultAttributes
                 }
             }
         }
+
         resultAttributes.attributes = graphic.attributes;
-        resultAttributes.title = title ? title : widgetTitle;
+        resultAttributes.title = title ? title : fallbackTitle;
         resultAttributes.content = content;
         resultAttributes.link = link ? link : null;
         resultAttributes.linkAlias = linkAlias;
 
         function displayFields(fieldName:String, fieldXML:XML, field:Field):void
         {
-            value = graphic.attributes[fieldName] ? String(graphic.attributes[fieldName]) : "";
+            var fieldNameTextValue:String = graphic.attributes[fieldName];
+            value = fieldNameTextValue ? fieldNameTextValue : "";
 
             if (value)
             {
@@ -151,7 +154,7 @@ public class ResultAttributes
                     fieldLabel = featureSet.fieldAliases[fieldName];
                 }
 
-                if (textDirection && textDirection == "rtl")
+                if (FlexGlobals.topLevelApplication.layoutDirection == LayoutDirection.RTL)
                 {
                     content += value + " :" + fieldLabel + "\n";
                 }
