@@ -10,6 +10,8 @@ import com.esri.ags.layers.supportClasses.FeatureType;
 import com.esri.ags.layers.supportClasses.Field;
 import com.esri.ags.layers.supportClasses.LayerDetails;
 
+import mx.core.FlexGlobals;
+import mx.core.LayoutDirection;
 import mx.formatters.DateFormatter;
 
 [Bindable]
@@ -22,7 +24,6 @@ public class ResultAttributes
     public var linkAlias:String;
 
     public static function toResultAttributes(fields:XMLList,
-                                              textDirection:String = null,
                                               graphic:Graphic = null,
                                               featureSet:FeatureSet = null,
                                               layer:FeatureLayer = null,
@@ -153,7 +154,7 @@ public class ResultAttributes
                     fieldLabel = featureSet.fieldAliases[fieldName];
                 }
 
-                if (textDirection && textDirection == "rtl")
+                if (FlexGlobals.topLevelApplication.layoutDirection == LayoutDirection.RTL)
                 {
                     content += value + " :" + fieldLabel + "\n";
                 }
