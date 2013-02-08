@@ -174,7 +174,7 @@
                 var chartLayerDefinitions:Array = getValidChartLayerDefinitions(configXML.layers.layer);
                 hasChartLayerDefinitions = (chartLayerDefinitions.length > 0);
                 layerSelection.dataProvider = new ArrayList(chartLayerDefinitions);
-                layerSelection.typicalItem = LabelUtil.findLongestItemLabel(chartLayerDefinitions, "label");
+                layerSelection.typicalItem = LabelUtil.findLongestLabel(chartLayerDefinitions, "label");
             }
 
             private function getValidChartLayerDefinitions(layers:XMLList):Array

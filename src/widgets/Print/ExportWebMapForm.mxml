@@ -383,7 +383,7 @@
                     layoutTemplatesDDL.selectedItem = printParameters.layoutTemplate;
                 }
 
-                layoutTemplatesDDL.typicalItem = LabelUtil.findLongestItemLabel(layoutTemplates.toArray());
+                layoutTemplatesDDL.typicalItem = LabelUtil.findLongestLabel(layoutTemplates.toArray());
             }
 
             private function isContained(item:*, list:IList):Boolean
@@ -443,7 +443,7 @@
                     formatsDDL.selectedItem = printParameters.format;
                 }
 
-                formatsDDL.typicalItem = LabelUtil.findLongestItemLabel(formats.toArray());
+                formatsDDL.typicalItem = LabelUtil.findLongestLabel(formats.toArray());
             }
 
             private function printTask_jobCompleteHandler(event:PrintEvent):void

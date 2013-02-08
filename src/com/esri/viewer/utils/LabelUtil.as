@@ -22,9 +22,9 @@ import spark.utils.LabelUtil;
 
 public final class LabelUtil
 {
-    public static function findLongestItemLabel(items:Array,
-                                                labelField:String = null,
-                                                labelFunction:Function = null):String
+    public static function findLongestLabel(items:Array,
+                                            labelField:String = null,
+                                            labelFunction:Function = null):String
     {
         var currentItemWidth:Number;
         var longestItemLabel:String = "";
@@ -49,4 +49,5 @@ public final class LabelUtil
         return longestItemLabel;
     }
 }
+
 }
