@@ -34,9 +34,11 @@
             import com.esri.ags.events.GeoprocessorEvent;
             import com.esri.ags.events.GraphicEvent;
             import com.esri.ags.events.GraphicsLayerEvent;
+            import com.esri.ags.events.LayerEvent;
             import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.Geometry;
             import com.esri.ags.geometry.MapPoint;
+            import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
             import com.esri.ags.layers.FeatureLayer;
             import com.esri.ags.layers.GPResultImageLayer;
             import com.esri.ags.layers.Layer;
@@ -52,6 +54,7 @@
             import com.esri.ags.tasks.supportClasses.JobInfo;
             import com.esri.ags.tasks.supportClasses.ParameterValue;
             import com.esri.ags.tasks.supportClasses.ProjectParameters;
+            import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.utils.ErrorMessageUtil;
 
             import flashx.textLayout.conversion.TextConverter;
@@ -103,6 +106,8 @@
             private var taskDescription:String;
             private var taskHelpURL:String;
             private var shareResults:Boolean;
+
+            private var version:Number;
 
             [Bindable]
             private var submitLabel:String;
@@ -222,6 +227,8 @@
                 executionType = gpServerDescription.executionType;
                 gp.useAMF = !hasUseAMFBeenSet && (gpServerDescription.currentVersion >= 10.1);
                 hasResultMapServer = useResultMapServer && gpServerDescription.resultMapServerName;
+
+                version = gpServerDescription.currentVersion;
 
                 gpServerDescription.url = gpServerURL;
                 gpServerDescription.proxyURL = gp.proxyURL;
@@ -439,7 +446,10 @@
                     const projectParameters:ProjectParameters = new ProjectParameters;
                     projectParameters.geometries = inputGeometryMap[key];
                     projectParameters.outSpatialReference = inputParam.spatialReference;
-                    GeometryServiceSingleton.instance.project(projectParameters, new AsyncResponder(projectionResultHandler, projectionFaultHandler, inputParam))
+                    GeometryServiceSingleton.instance.project(projectParameters,
+                                                              new AsyncResponder(projectionResultHandler,
+                                                                                 projectionFaultHandler,
+                                                                                 inputParam));
                 }
 
                 function projectionResultHandler(geometries:Array, inputParameter:IGPFeatureParameter):void
@@ -618,7 +628,14 @@
                         if (hasResultMapServer
                             && isResultMapServerOutputType(param.type))
                         {
-                            processResultImageLayer(paramName);
+                            if (version >= 10.1)
+                            {
+                                processResultMapServiceLayer(param as IGPFeatureParameter);
+                            }
+                            else
+                            {
+                                processResultImageLayer(paramName);
+                            }
                         }
                         else
                         {
@@ -998,40 +1015,126 @@
 
                 for each (var resultLayer:Layer in resultLayersOnMap)
                 {
-                    var resultImageLayer:GPResultImageLayer = resultLayer as GPResultImageLayer;
-                    gp.getResultImage(resultImageLayer.jobId, resultImageLayer.parameterName, imageParams, new AsyncResponder(resultImageSuccess, resultImageFailure));
-
-                    function resultImageSuccess(paramValue:ParameterValue, token:Object = null):void
+                    if (resultLayer is GPResultImageLayer)
                     {
-                        var resultImage:MapImage = paramValue.value as MapImage;
-                        aggregateExtent(resultImage.extent);
-                        updateProcessedResultLayers();
-                    }
+                        var resultImageLayer:GPResultImageLayer = resultLayer as GPResultImageLayer;
+                        gp.getResultImage(resultImageLayer.jobId, resultImageLayer.parameterName, imageParams, new AsyncResponder(resultImageSuccess, resultImageFailure));
 
-                    function aggregateExtent(extent:Extent):void
-                    {
-                        if (largestResultLayerExtent)
+                        function resultImageSuccess(paramValue:ParameterValue, token:Object = null):void
                         {
-                            largestResultLayerExtent = extent.union(largestResultLayerExtent);
+                            var resultImage:MapImage = paramValue.value as MapImage;
+                            aggregateExtent(resultImage.extent);
+                            updateProcessedResultLayers();
+                        }
+
+                        function resultImageFailure(fault:Fault, token:Object = null):void
+                        {
+                            updateProcessedResultLayers();
+                        }
+                    }
+                    else if (resultLayer is ArcGISDynamicMapServiceLayer)
+                    {
+                        var dynamicLayer:ArcGISDynamicMapServiceLayer = resultLayer as ArcGISDynamicMapServiceLayer;
+                        if (dynamicLayer.loaded)
+                        {
+                            aggregateExtent(dynamicLayer.initialExtent);
+                            updateProcessedResultLayers();
                         }
                         else
                         {
-                            largestResultLayerExtent = extent;
+                            dynamicLayer.addEventListener(LayerEvent.LOAD, dynamicLayer_loadHandler, false, 0, true);
+                            dynamicLayer.addEventListener(LayerEvent.LOAD_ERROR, dynamicLayer_loadErrorHandler, false, 0, true);
+
+                            function dynamicLayer_loadHandler(event:LayerEvent):void
+                            {
+                                dynamicLayer.removeEventListener(LayerEvent.LOAD, dynamicLayer_loadHandler);
+                                dynamicLayer.removeEventListener(LayerEvent.LOAD_ERROR, dynamicLayer_loadErrorHandler);
+
+                                if (map.spatialReference.equals(event.layer.spatialReference))
+                                {
+                                    aggregateExtent(dynamicLayer.initialExtent);
+                                    updateProcessedResultLayers();
+                                }
+                                else
+                                {
+                                    var layerExtent:Extent = event.layer.initialExtent;
+                                    if (!layerExtent)
+                                    {
+                                        updateProcessedResultLayers();
+                                        return;
+                                    }
+
+                                    if (map.spatialReference.isWebMercator()
+                                        && event.layer.spatialReference
+                                        && event.layer.spatialReference.wkid == 4326)
+                                    {
+                                        // clip the layer extent, so it's not going to Infinity; otherwise gives an error
+                                        layerExtent.xmin = Math.max(layerExtent.xmin, -180);
+                                        layerExtent.xmax = Math.min(layerExtent.xmax, 180);
+                                        layerExtent.ymin = Math.max(layerExtent.ymin, -89.99);
+                                        layerExtent.ymax = Math.min(layerExtent.ymax, 89.99);
+                                        layerExtent = WebMercatorUtil.geographicToWebMercator(layerExtent) as Extent;
+                                        aggregateExtent(layerExtent);
+                                    }
+                                    else if (event.layer.spatialReference
+                                        && event.layer.spatialReference.isWebMercator()
+                                        && map.spatialReference.wkid == 4326)
+                                    {
+                                        layerExtent = WebMercatorUtil.webMercatorToGeographic(layerExtent) as Extent;
+                                        aggregateExtent(layerExtent);
+                                    }
+                                    else
+                                    {
+                                        const projectParameters:ProjectParameters = new ProjectParameters;
+                                        projectParameters.geometries = [ layerExtent ];
+                                        projectParameters.outSpatialReference = map.spatialReference
+                                        GeometryServiceSingleton.instance.project(
+                                            projectParameters,
+                                            new AsyncResponder(projectionResult,
+                                                               projectionFault));
+
+                                        function projectionResult(geometries:Array, token:Object = null):void
+                                        {
+                                            aggregateExtent(geometries[0]);
+                                            updateProcessedResultLayers();
+                                        }
+
+                                        function projectionFault(fault:Fault, token:Object = null):void
+                                        {
+                                            updateProcessedResultLayers();
+                                        }
+                                    }
+                                }
+                            }
+
+                            function dynamicLayer_loadErrorHandler(event:LayerEvent):void
+                            {
+                                dynamicLayer.removeEventListener(LayerEvent.LOAD, dynamicLayer_loadHandler);
+                                dynamicLayer.removeEventListener(LayerEvent.LOAD_ERROR, dynamicLayer_loadErrorHandler);
+                                updateProcessedResultLayers();
+                            }
                         }
                     }
+                }
 
-                    function updateProcessedResultLayers():void
+                function updateProcessedResultLayers():void
+                {
+                    totalResultLayersToProcess--;
+                    if (totalResultLayersToProcess == 0)
                     {
-                        totalResultLayersToProcess--;
-                        if (totalResultLayersToProcess == 0)
-                        {
-                            zoomToResultLayers();
-                        }
+                        zoomToResultLayers();
                     }
+                }
 
-                    function resultImageFailure(fault:Fault, token:Object = null):void
+                function aggregateExtent(extent:Extent):void
+                {
+                    if (largestResultLayerExtent)
                     {
-                        updateProcessedResultLayers();
+                        largestResultLayerExtent = extent.union(largestResultLayerExtent);
+                    }
+                    else
+                    {
+                        largestResultLayerExtent = extent;
                     }
                 }
             }
@@ -1050,6 +1153,16 @@
             protected function paramDataGroup_errorHandler(event:ParamErrorEvent):void
             {
                 showError(event.message, event.title);
+            }
+
+            private function processResultMapServiceLayer(param:IGPFeatureParameter):void
+            {
+                var lastExecutedJob:JobInfo = gp.submitJobLastResult;
+                var resultMapServiceLayer:ArcGISDynamicMapServiceLayer = gp.getResultMapServiceLayer(lastExecutedJob.jobId);
+                resultMapServiceLayer.name = shareResults ? widgetTitle : "hiddenLayer_" + widgetTitle;
+                resultLayersOnMap.push(resultMapServiceLayer);
+                map.addLayer(resultMapServiceLayer);
+                layerOrderer.orderLayers();
             }
         ]]>
     </fx:Script>
