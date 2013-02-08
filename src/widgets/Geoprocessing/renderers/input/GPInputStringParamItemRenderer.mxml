@@ -72,10 +72,11 @@
                      toolTip="{data.toolTip}"
                      visible="{!hasChoiceList}"/>
 
-        <mx:ComboBox id="choiceSelection"
-                     width="100%"
-                     change="updateDefaultValueWithChoice()"
-                     includeInLayout="{hasChoiceList}"
-                     visible="{hasChoiceList}"/>
+        <s:DropDownList id="choiceSelection"
+                        width="100%"
+                        change="updateDefaultValueWithChoice()"
+                        includeInLayout="{hasChoiceList}"
+                        requireSelection="true"
+                        visible="{hasChoiceList}"/>
     </mx:FormItem>
 </s:ItemRenderer>
