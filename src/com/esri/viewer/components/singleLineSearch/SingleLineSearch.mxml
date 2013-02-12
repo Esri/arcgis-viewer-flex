@@ -240,11 +240,11 @@
 
                 if (mapServicesEnabled)
                 {
-
                     if (configXML.searchlayers.length() > 0)
                     {
                         var mapService:GeocoderMapService;
                         var mapServices:Array = [];
+                        var mapServiceProxyURL:String;
 
                         for each (var searchLayerXML:XML in configXML.searchlayers.searchlayer)
                         {
@@ -252,10 +252,12 @@
                             mapService.layerIds = searchLayerXML.layerids.toString().split(",");
                             mapService.url = searchLayerXML.url.toString();
                             mapService.searchFields = searchLayerXML.searchfields.toString().split(",");
+                            mapService.name = searchLayerXML.name.toString();
+                            mapServiceProxyURL = searchLayerXML.proxyurl.toString() || configData.proxyUrl;
 
-                            if (useProxy && configData.proxyUrl)
+                            if (useProxy && mapServiceProxyURL)
                             {
-                                mapService.proxyURL = configData.proxyUrl;
+                                mapService.proxyURL = mapServiceProxyURL;
                             }
 
                             mapServices.push(mapService);
