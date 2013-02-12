@@ -57,8 +57,8 @@
             private const SINGLE_LINE_SEARCH:String = "SingleLineSearch";
             private const DEFAULT_LOCATOR_URL:String = "http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 
-            private var searchLayersConfigured:Boolean;
-            private var locatorConfigured:Boolean;
+            private var mapServicesConfigured:Boolean;
+            private var locatorServicesConfigured:Boolean;
             private var zoomScale:Number = 10000;
             private var resultSimpleMarkerSymbol:SimpleMarkerSymbol;
             private var resultSimpleLineSymbol:SimpleLineSymbol;
@@ -120,16 +120,16 @@
                     configureResultGraphic();
 
                     configureLocatorServices();
-                    configureFindServices();
+                    configureMapServices();
                 }
             }
 
             private function configureLocatorServices():void
             {
-                var isGeocodeEnabled:Boolean = (configXML.geocoding.@enabled[0] != "false");
-                if (!isGeocodeEnabled)
+                var locatorServicesEnabled:Boolean = (configXML.geocoding.@enabled[0] != "false");
+                if (!locatorServicesEnabled)
                 {
-                    locatorConfigured = true;
+                    locatorServicesConfigured = true;
                     return;
                 }
 
@@ -157,11 +157,11 @@
                                                               locatorService));
             }
 
-            private function locatorInfoRequest_resultHandler(addressFieldData:Object, locatorService:GeocoderLocatorService):void
+            private function locatorInfoRequest_resultHandler(locatorInfo:Object, locatorService:GeocoderLocatorService):void
             {
-                if (addressFieldData.singleLineAddressField)
+                if (locatorInfo.singleLineAddressField)
                 {
-                    locatorService.singleLineAddressFieldName = addressFieldData.singleLineAddressField.name;
+                    locatorService.singleLineAddressFieldName = locatorInfo.singleLineAddressField.name;
                 }
                 else
                 {
@@ -169,7 +169,7 @@
                 }
 
                 geocoder.locatorServices = [ locatorService ];
-                locatorConfigured = true;
+                locatorServicesConfigured = true;
                 invalidateProperties();
             }
 
@@ -180,43 +180,43 @@
                                                                             ErrorMessageUtil.getKnownErrorCauseMessage(fault),
                                                                             ErrorMessageUtil.makeHTMLSafe(fault.toString()));
                 showError(errorMessage, SINGLE_LINE_SEARCH);
-                locatorConfigured = true;
+                locatorServicesConfigured = true;
                 invalidateProperties();
             }
 
-            private function configureFindServices():void
+            private function configureMapServices():void
             {
-                var isFindEnabled:Boolean =
+                var mapServicesEnabled:Boolean =
                     configXML.searchlayers.@enabled[0] != "false" && configXML.searchlayers[0] != null;
 
-                if (isFindEnabled)
+                if (mapServicesEnabled)
                 {
 
                     if (configXML.searchlayers.length() > 0)
                     {
-                        var findService:GeocoderMapService;
-                        var findServices:Array = [];
+                        var mapService:GeocoderMapService;
+                        var mapServices:Array = [];
 
-                        for each (var layerInfo:XML in configXML.searchlayers.searchlayer)
+                        for each (var searchLayerXML:XML in configXML.searchlayers.searchlayer)
                         {
-                            findService = new GeocoderMapService();
-                            findService.layerIds = layerInfo.layerids.toString().split(",");
-                            findService.url = layerInfo.url.toString();
-                            findService.searchFields = layerInfo.searchfields.toString().split(",");
+                            mapService = new GeocoderMapService();
+                            mapService.layerIds = searchLayerXML.layerids.toString().split(",");
+                            mapService.url = searchLayerXML.url.toString();
+                            mapService.searchFields = searchLayerXML.searchfields.toString().split(",");
 
                             if (useProxy && configData.proxyUrl)
                             {
-                                findService.proxyURL = configData.proxyUrl;
+                                mapService.proxyURL = configData.proxyUrl;
                             }
 
-                            findServices.push(findService);
+                            mapServices.push(mapService);
                         }
 
-                        geocoder.mapServices = findServices;
+                        geocoder.mapServices = mapServices;
                     }
                 }
 
-                searchLayersConfigured = true;
+                mapServicesConfigured = true;
                 invalidateProperties();
             }
 
@@ -282,7 +282,7 @@
             {
                 super.commitProperties();
 
-                if (locatorConfigured && searchLayersConfigured)
+                if (locatorServicesConfigured && mapServicesConfigured)
                 {
                     configureSearchInput();
                 }
@@ -290,17 +290,12 @@
 
             private function configureSearchInput():void
             {
-                const urlSearchTerm:String = getURLSearchTerm();
+                const urlSearchTerm:String = ViewerContainer.urlConfigParams.search;
                 if (urlSearchTerm)
                 {
                     geocoder.text = urlSearchTerm;
                     geocoder.search();
                 }
-            }
-
-            private function getURLSearchTerm():String
-            {
-                return ViewerContainer.urlConfigParams.search;
             }
 
             //assumes search result SR compatible with map's
