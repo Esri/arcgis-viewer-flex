@@ -380,7 +380,7 @@
                 {
                     mapManager.visible = true;
 
-                    // before loading controls position the "panel" containers          
+                    // before loading controls position the "panel" containers
                     positionPanelContainers();
                     startLoadControls();
                 }
@@ -388,7 +388,7 @@
 
             private function positionPanelContainers():void
             {
-                // before loading controls position the containers                  
+                // before loading controls position the containers
                 if (bottomContainer || leftContainer || rightContainer)
                 {
                     this.removeAllElements();
@@ -406,7 +406,7 @@
                     vPanelBox.setStyle("dividerThickness", 10);
                     vPanelBox.percentHeight = 100;
                     vPanelBox.percentWidth = 100;
-                    if (bottomContainer && leftContainer && rightContainer) // all three 
+                    if (bottomContainer && leftContainer && rightContainer) // all three
                     {
                         var lorder:int = Math.min(bcOrder, lcOrder, rcOrder);
                         if (bcOrder == lorder)
@@ -967,7 +967,7 @@
 
             //=====================================================================
             // Load widgets that are part of a panel
-            //=====================================================================         
+            //=====================================================================
             private function startLoadPanelWidgets():void
             {
                 for (var i:Number = 0; i < configData.widgets.length; i++)
