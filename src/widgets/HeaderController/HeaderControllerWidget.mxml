@@ -22,7 +22,6 @@
                    xmlns:viewer="com.esri.viewer.*"
                    xmlns:components="com.esri.viewer.components.*"
                    xmlns:HeaderController="widgets.HeaderController.*"
-                   xmlns:singleLineSearch="com.esri.viewer.components.singleLineSearch.*"
                    width="100%"
                    borderSkin="{null}"
                    creationComplete="creationCompleteHandler(event)"
@@ -477,10 +476,10 @@
                     </HeaderController:WidgetItemDataGroup>
                 </s:HGroup>
 
-                <singleLineSearch:SingleLineSearch id="singleLineSearch"
-                                                   width="230" height="28"
-                                                   includeInLayout="false"
-                                                   visible="false"/>
+                <components:SingleLineSearch id="singleLineSearch"
+                                             width="230" height="28"
+                                             includeInLayout="false"
+                                             visible="false"/>
 
                 <s:DataGroup id="linkGroup"
                              dataProvider="{linkList}"
