@@ -55,10 +55,7 @@
             import mx.rpc.events.FaultEvent;
 
             private const SINGLE_LINE_SEARCH:String = "SingleLineSearch";
-            private const DEFAULT_LOCATOR_URL:String = "http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 
-            private var mapServicesConfigured:Boolean;
-            private var locatorServicesConfigured:Boolean;
             private var zoomScale:Number = 10000;
             private var resultSimpleMarkerSymbol:SimpleMarkerSymbol;
             private var resultSimpleLineSymbol:SimpleLineSymbol;
@@ -74,6 +71,32 @@
 
             [Bindable]
             private var searchResultTitleLabel:String;
+
+            private var _mapServicesConfigured:Boolean;
+
+            public function get mapServicesConfigured():Boolean
+            {
+                return _mapServicesConfigured;
+            }
+
+            public function set mapServicesConfigured(value:Boolean):void
+            {
+                _mapServicesConfigured = value;
+                invalidateProperties();
+            }
+
+            private var _locatorServicesConfigured:Boolean;
+
+            public function get locatorServicesConfigured():Boolean
+            {
+                return _locatorServicesConfigured;
+            }
+
+            public function set locatorServicesConfigured(value:Boolean):void
+            {
+                _locatorServicesConfigured = value;
+                invalidateProperties();
+            }
 
             private var _hostBaseWidget:BaseWidget;
 
@@ -109,8 +132,29 @@
                         zoomScale = configZoomScale;
                     }
 
-                    const configMinScore:Number = parseFloat(configXML.geocoding.minscore[0]);
+                    //backwards compatibility
+                    const configMinScore:Number = parseFloat(configXML.minscore[0]) || parseFloat(configXML.geocoding.minscore[0]);
                     geocoder.minScore = (configMinScore > 0) ? configMinScore : 40;
+
+                    geocoder.autoComplete = configXML.autocomplete != "false";
+
+                    const configMaxLocations:int = parseInt(configXML.maxlocations[0])
+                    if (!isNaN(configMaxLocations) && configMaxLocations > 0)
+                    {
+                        geocoder.maxLocations = configMaxLocations;
+                    }
+
+                    const configMinChars:int = parseInt(configXML.minchars[0])
+                    if (configMinChars && configMinChars > 0)
+                    {
+                        geocoder.minCharacters = configMinChars;
+                    }
+
+                    const configSearchDelay:int = parseInt(configXML.searchdelay[0])
+                    if (configSearchDelay && configSearchDelay > 0)
+                    {
+                        geocoder.searchDelay = configSearchDelay;
+                    }
 
                     geocoder.prompt = configXML.labels.searchprompt[0] || hostBaseWidget.getDefaultString("searchPrompt");
                     geocoder.noResultsText = configXML.labels.noresults[0] || hostBaseWidget.getDefaultString("noResultsFoundLabel");
@@ -133,7 +177,14 @@
                     return;
                 }
 
-                const url:String = configXML.geocoding.locator[0] || DEFAULT_LOCATOR_URL;
+                const url:String = configXML.geocoding.locator[0];
+
+                if (!url)
+                {
+                    geocoder.useDefaultLocator = true;
+                    locatorServicesConfigured = true;
+                    return;
+                }
 
                 var locatorService:GeocoderLocatorService = new GeocoderLocatorService();
                 locatorService.url = url;
@@ -170,7 +221,6 @@
 
                 geocoder.locatorServices = [ locatorService ];
                 locatorServicesConfigured = true;
-                invalidateProperties();
             }
 
             private function locatorInfoRequest_faultHandler(fault:Fault, locatorService:GeocoderLocatorService):void
@@ -181,7 +231,6 @@
                                                                             ErrorMessageUtil.makeHTMLSafe(fault.toString()));
                 showError(errorMessage, SINGLE_LINE_SEARCH);
                 locatorServicesConfigured = true;
-                invalidateProperties();
             }
 
             private function configureMapServices():void
@@ -217,7 +266,6 @@
                 }
 
                 mapServicesConfigured = true;
-                invalidateProperties();
             }
 
             private function configureResultSymbols():void
@@ -629,7 +677,6 @@
 
     <components:Geocoder id="geocoder"
                          left="0" right="0" top="0" bottom="0"
-                         autoComplete="true"
                          fault="geocoder_faultHandler(event)"
                          map="{map}"
                          searchComplete="geocoder_searchCompleteHandler(event)"
