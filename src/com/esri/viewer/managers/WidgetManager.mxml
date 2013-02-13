@@ -169,7 +169,7 @@
              * @param widgetId The widget ID.
              * @param openWidgetIfNot Indicates whether to open the widget if it is not already in the open state.
              *
-             * @return The widget for the ID, null if the widget has not been loaded.
+             * @return The widget for the specified widget ID, null if the widget has not been loaded.
              *
              * @throws ArgumentError The widget ID does not exist.
              *
@@ -215,7 +215,10 @@
             }
 
             /**
-             * @return Returns an array of the widget IDs that have already been loaded.
+             * Returns an array of widget IDs for widgets that have already been loaded, whether or not they still are open.
+             * Note that closing a widget does not unload it, thus this method will return all widgets that are, or have been, opened.
+             *
+             * @return Array of widget IDs that have already been loaded.
              *
              */
             public function getAllLoadedWidgetIds():Array
@@ -224,7 +227,9 @@
             }
 
             /**
-             * @return Returns the total number of widgets.
+             * Returns the total number of widgets in application.
+             *
+             * @return Total number of widgets.
              *
              */
             public function getNumWidgets():Number
@@ -233,7 +238,9 @@
             }
 
             /**
-             * @return Returns the widget ID for a specific widget based on the widget label.
+             * Returns the widget ID for a specific widget based on the widget label.
+             *
+             * @return Widget ID for the specified widget.
              *
              */
             public function getWidgetId(widgetLabel:String):Number
@@ -373,7 +380,7 @@
                 {
                     mapManager.visible = true;
 
-                    // before loading controls position the "panel" containers          
+                    // before loading controls position the "panel" containers
                     positionPanelContainers();
                     startLoadControls();
                 }
@@ -381,7 +388,7 @@
 
             private function positionPanelContainers():void
             {
-                // before loading controls position the containers                  
+                // before loading controls position the containers
                 if (bottomContainer || leftContainer || rightContainer)
                 {
                     this.removeAllElements();
@@ -399,7 +406,7 @@
                     vPanelBox.setStyle("dividerThickness", 10);
                     vPanelBox.percentHeight = 100;
                     vPanelBox.percentWidth = 100;
-                    if (bottomContainer && leftContainer && rightContainer) // all three 
+                    if (bottomContainer && leftContainer && rightContainer) // all three
                     {
                         var lorder:int = Math.min(bcOrder, lcOrder, rcOrder);
                         if (bcOrder == lorder)
@@ -960,7 +967,7 @@
 
             //=====================================================================
             // Load widgets that are part of a panel
-            //=====================================================================         
+            //=====================================================================
             private function startLoadPanelWidgets():void
             {
                 for (var i:Number = 0; i < configData.widgets.length; i++)

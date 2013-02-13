@@ -58,6 +58,9 @@ public class BaseWidget extends Module implements IBaseWidget
     //
     //--------------------------------------------------------------------------
 
+    /**
+     * Creates a new BaseWidget component.
+     */
     public function BaseWidget()
     {
         this.autoLayout = true;
@@ -131,8 +134,9 @@ public class BaseWidget extends Module implements IBaseWidget
     private var _configXML:XML;
 
     /**
-     * The XML type of configuration data.
-     * @see configData
+     * The XML for the widget configuration.
+     *
+     * @see configData()
      */
     public function get configXML():XML
     {
@@ -608,11 +612,25 @@ public class BaseWidget extends Module implements IBaseWidget
         _initialHeight = value;
     }
 
+    /**
+     * Used by WidgetManager to place a widget at a specific location (as specified with x and y properties in the configuration file).
+     *
+     * @param x The x coordinate for the widget location.
+     * @param y The y coordinate for the widget location.
+     */
     public function setXYPosition(x:Number, y:Number):void
     {
         this.setLayoutBoundsPosition(x, y);
     }
 
+    /**
+     * Used by WidgetManager to place a widget at a specific location based on the left, right, top and bottom properties specified in the configuration file.
+     *
+     * @param left The left coordinate for the widget location.
+     * @param right The right coordinate for the widget location.
+     * @param top The top coordinate for the widget location.
+     * @param bottom The bottom coordinate for the widget location.
+     */
     public function setRelativePosition(left:String, right:String, top:String, bottom:String):void
     {
         if (left)
@@ -640,6 +658,15 @@ public class BaseWidget extends Module implements IBaseWidget
         isDraggable = true;
     }
 
+    /**
+     * Gets the localized String of a specified resource from the ViewerStrings resource bundle,
+     * after substituting specified values for placeholders.
+     *
+     * <p>If the specified resource is not found, this method returns null.</p>
+     *
+     * @param resourceName The name of a resource in the ViewerStrings resource bundle.
+     * @param params An Array of parameters that are substituted for the placeholders. Each parameter is converted to a String with the toString() method before being substituted.
+     */
     public function getDefaultString(resourceName:String, ... params):String
     {
         //use Function#apply to avoid passing rest argument as Array
