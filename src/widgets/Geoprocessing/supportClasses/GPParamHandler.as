@@ -25,8 +25,6 @@ import com.esri.ags.utils.GraphicUtil;
 
 import flash.utils.Dictionary;
 
-import mx.collections.ArrayCollection;
-
 import widgets.Geoprocessing.parameters.BaseParamParser;
 import widgets.Geoprocessing.parameters.FeatureLayerParameter;
 import widgets.Geoprocessing.parameters.GPParameterTypes;
@@ -297,20 +295,20 @@ public class GPParamHandler
     public function getOutputFeaturesExtent():Extent
     {
         var featureParam:IGPFeatureParameter;
-        var featureGraphicProvider:ArrayCollection;
-        var features:Array = [];
+        var features:Array;
+        var mergedFeatures:Array = [];
 
         for each (var param:IGPParameter in _outputParams)
         {
             if (param.type == GPParameterTypes.FEATURE_RECORD_SET_LAYER)
             {
                 featureParam = (param as IGPFeatureParameter);
-                featureGraphicProvider = featureParam.layer.graphicProvider as ArrayCollection;
-                features = features.concat(featureGraphicProvider.source);
+                features = featureParam.layer.featureCollection.featureSet.features;
+                mergedFeatures = mergedFeatures.concat(features);
             }
         }
 
-        return GraphicUtil.getGraphicsExtent(features);
+        return GraphicUtil.getGraphicsExtent(mergedFeatures);
     }
 
     public function graphicsLayerBelongsToFeatureParam(graphicsLayer:GraphicsLayer):Boolean
@@ -364,7 +362,7 @@ public class GPParamHandler
         {
             if (param.type == GPParameterTypes.FEATURE_RECORD_SET_LAYER)
             {
-                (param as IGPFeatureParameter).layer.clear();
+                FeatureLayerCollectionHandler.clear((param as IGPFeatureParameter).layer);
             }
         }
     }
@@ -402,8 +400,8 @@ public class GPParamHandler
             featureParam = param as IGPFeatureParameter;
             if (featureParam && featureParam.mode == FeatureLayerParameter.MAP_EXTENT_SOURCE)
             {
-                featureParam.layer.clear();
-                featureParam.layer.add(new Graphic(extentPolygon));
+                FeatureLayerCollectionHandler.clear(featureParam.layer);
+                FeatureLayerCollectionHandler.add(new Graphic(extentPolygon), featureParam.layer);
             }
         }
     }
