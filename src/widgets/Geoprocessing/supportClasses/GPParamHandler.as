@@ -277,19 +277,29 @@ public class GPParamHandler
         toggleFeatureParameterLayerVisibility(false);
     }
 
+    public function getInputFeatureParams():Array
+    {
+        return getFeatureParams(_inputParams);
+    }
+
     public function getOutputFeatureParams():Array
     {
-        var outputFeatureParams:Array = [];
+        return getFeatureParams(_outputParams);
+    }
 
-        for each (var param:IGPParameter in _outputParams)
+    private function getFeatureParams(params:Array):Array
+    {
+        var featureParams:Array = [];
+
+        for each (var param:IGPParameter in params)
         {
             if (param.type == GPParameterTypes.FEATURE_RECORD_SET_LAYER)
             {
-                outputFeatureParams.push(param);
+                featureParams.push(param);
             }
         }
 
-        return outputFeatureParams;
+        return featureParams;
     }
 
     public function getOutputFeaturesExtent():Extent

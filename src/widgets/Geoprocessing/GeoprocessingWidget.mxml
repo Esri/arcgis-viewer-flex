@@ -100,6 +100,7 @@
             private var outputLabel:String;
             private var taskDescription:String;
             private var taskHelpURL:String;
+            private var shareResults:Boolean;
 
             [Bindable]
             private var submitLabel:String;
@@ -131,6 +132,21 @@
                     try
                     {
                         gpParamHandler = new GPParamHandler(configXML);
+
+                        for each (var inputFeatureParam:IGPFeatureParameter in gpParamHandler.getInputFeatureParams())
+                        {
+                            inputFeatureParam.layerName = "hiddenLayer_" + inputFeatureParam.layerName;
+                        }
+
+                        shareResults = configXML.shareresults[0] == "true";
+                        if (!shareResults)
+                        {
+                            for each (var outputFeatureParam:IGPFeatureParameter in gpParamHandler.getOutputFeatureParams())
+                            {
+                                outputFeatureParam.layerName = "hiddenLayer_" + outputFeatureParam.layerName;
+                            }
+                        }
+
                         layerOrderer = new LayerOrderer();
                         if (configXML.layerorder[0])
                         {
@@ -624,7 +640,7 @@
                 var lastExecutedJob:JobInfo = gp.submitJobLastResult;
                 var resultImageLayer:GPResultImageLayer = gp.getResultImageLayer(lastExecutedJob.jobId, paramName);
                 resultImageLayer.id = paramName;
-                resultImageLayer.name = ("hiddenLayer_" + paramName);
+                resultImageLayer.name = shareResults ? paramName : "hiddenLayer_" + paramName;
                 resultImageLayersOnMap.push(resultImageLayer);
                 map.addLayer(resultImageLayer);
                 layerOrderer.orderLayers();
