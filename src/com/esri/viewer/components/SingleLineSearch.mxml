@@ -177,14 +177,14 @@
                     return;
                 }
 
-                if (!configXML.geocoding.locator[0])
+                if (configXML.geocoding.@usedefaultlocator[0] != "false")
                 {
                     geocoder.useDefaultLocator = true;
-                    locatorServicesConfigured = true;
-                    return;
                 }
+
                 //backwards compatibility
-                else if (configXML.geocoding.locator.hasSimpleContent())
+                if (configXML.geocoding.locator[0]
+                    && configXML.geocoding.locator.hasSimpleContent())
                 {
                     //convert URL to locator XML
                     var url:String = configXML.geocoding.locator[0];
@@ -193,6 +193,12 @@
                 }
 
                 var locatorsToConfigure:int = configXML.geocoding.locator.length();
+                if (locatorsToConfigure == 0)
+                {
+                    locatorServicesConfigured = true;
+                    return;
+                }
+
                 var locatorServices:Array = [];
                 var locatorService:GeocoderLocatorService;
 
