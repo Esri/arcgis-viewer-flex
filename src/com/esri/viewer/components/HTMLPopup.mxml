@@ -27,14 +27,6 @@
                    creationComplete="htmlPopup_creationCompleteHandler(event)"
                    show="showHandler(event)"
                    tabFocusEnabled="true">
-    <s:filters>
-        <s:GlowFilter alpha="0.8"
-                      blurX="50"
-                      blurY="50"
-                      color="0xFFFFFF"
-                      quality="{BitmapFilterQuality.MEDIUM}"
-                      strength="1"/>
-    </s:filters>
     <fx:Script>
         <![CDATA[
             import flash.filters.BitmapFilterQuality;
@@ -44,7 +36,6 @@
             import mx.core.FlexGlobals;
             import mx.events.CloseEvent;
             import mx.events.FlexEvent;
-            import mx.managers.IFocusManagerComponent;
 
             [Bindable]
             public var content:String;
@@ -57,7 +48,6 @@
 
             [Bindable]
             public var txtareaHeight:Number = 300;
-
 
             public static function show(content:String = "",
                                         btnLabel:String = "OK",
@@ -128,7 +118,16 @@
             }
         ]]>
     </fx:Script>
-    <!-- doc reference http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flashx/textLayout/conversion/TextConverter.html#TEXT_FIELD_HTML_FORMAT -->
+
+    <s:filters>
+        <s:GlowFilter alpha="0.8"
+                      blurX="50"
+                      blurY="50"
+                      color="0xFFFFFF"
+                      quality="{BitmapFilterQuality.MEDIUM}"
+                      strength="1"/>
+    </s:filters>
+
     <s:RectangularDropShadow id="dropShadow"
                              left="0" right="0" top="0" bottom="0"
                              alpha="0.32"
@@ -138,6 +137,7 @@
                              blurY="20"
                              brRadius="10"
                              distance="25"/>
+
     <s:VGroup hasFocusableChildren="true"
               horizontalAlign="center"
               paddingBottom="10">
@@ -154,6 +154,7 @@
                                 paddingTop="5"
                                 textFlow="{TextConverter.importToFlow(content, TextConverter.TEXT_FIELD_HTML_FORMAT)}"/>
         </s:Scroller>
+
         <s:Button id="closeButton"
                   click="close(event)"
                   label="{btnLabel}"
