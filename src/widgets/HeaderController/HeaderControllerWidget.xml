@@ -12,7 +12,8 @@
                      <p align='center'>
                          <img src='assets/images/globe.png'/>
                          <br/>
-                         <b><a href="http://links.esri.com/flexviewer" target='_blank'><font size="+2" color="#FFFF00">ArcGIS Viewer for Flex</font></a></b>
+                         <br/>
+                         <font size="+2"><b><a href="http://links.esri.com/flexviewer" target='_blank'>ArcGIS Viewer for Flex</a></b></font>
                      </p>
                 ]]>
             </content>
