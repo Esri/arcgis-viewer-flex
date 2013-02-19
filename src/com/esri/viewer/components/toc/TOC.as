@@ -472,7 +472,7 @@ public class TOC extends Tree
                 }
             }
         }
-        else if ((newLayerIds.length - _tocRoots.length) < index < newLayerIds.length)
+        else if ((newLayerIds.length - _tocRoots.length < index) && (index < newLayerIds.length))
         {
             // index of item to move
             currentTOCIndex = getCurrentTOCIndex();

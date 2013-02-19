@@ -835,7 +835,7 @@
                         }
                     }
                 }
-                else if (newLayerIds.length - arrFinalLayers.length < index < newLayerIds.length)
+                else if ((newLayerIds.length - arrFinalLayers.length < index) && (index < newLayerIds.length))
                 {
                     if (layer is FeatureLayer && featureLayers.indexOf(layer) != -1)
                     {
