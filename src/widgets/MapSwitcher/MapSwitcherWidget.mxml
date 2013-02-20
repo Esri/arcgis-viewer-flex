@@ -265,30 +265,30 @@
 
             private function updateContainerPosition(anchorComponent:UIComponent, container:UIComponent):void
             {
-                positionContainerHorizontally(anchorComponent, container);
-                positionContainerVertically(anchorComponent, container);
-            }
-
-            private function positionContainerHorizontally(anchorComponent:UIComponent, container:UIComponent):void
-            {
                 var app:UIComponent = FlexGlobals.topLevelApplication as UIComponent;
 
                 var appRect:Rectangle = app.screen;
                 var anchorRect:Rectangle = anchorComponent.getBounds(app as DisplayObject);
+                var containerRect:Rectangle = new Rectangle(0, 0, container.width, container.height);
 
                 var isLTR:Boolean = (layoutDirection == LayoutDirection.LTR);
                 var leftOffset:Number = isLTR ? anchorComponent.width - container.width : 0;
                 var rightOffset:Number = isLTR ? 0 : anchorComponent.width - container.width;
 
-                var leftContainerRect:Rectangle = container.getBounds(app as DisplayObject);
-                leftContainerRect.x = anchorRect.x + leftOffset;
-                leftContainerRect.y = 0;
+                var leftContainerRect:Rectangle = containerRect.clone();
+                var rightContainerRect:Rectangle = containerRect.clone();
+                var bottomContainerRect:Rectangle = containerRect.clone();
+                var topContainerRect:Rectangle = containerRect.clone();
 
-                var rightContainerRect:Rectangle = leftContainerRect.clone();
+                leftContainerRect.x = anchorRect.x + leftOffset;
                 rightContainerRect.x = anchorRect.x + rightOffset;
+                bottomContainerRect.y = anchorRect.y + anchorRect.height;
+                topContainerRect.y = anchorRect.y + 1 - container.height;
 
                 var leftIntersectionRect:Rectangle = appRect.intersection(leftContainerRect);
                 var rightIntersectionRect:Rectangle = appRect.intersection(rightContainerRect);
+                var bottomIntersectionRect:Rectangle = appRect.intersection(bottomContainerRect);
+                var topIntersectionRect:Rectangle = appRect.intersection(topContainerRect);
 
                 if (leftIntersectionRect.width > rightIntersectionRect.width)
                 {
@@ -298,24 +298,6 @@
                 {
                     container.x = anchorComponent.x + rightOffset;
                 }
-            }
-
-            private function positionContainerVertically(anchorComponent:UIComponent, container:UIComponent):void
-            {
-                var app:UIComponent = FlexGlobals.topLevelApplication as UIComponent;
-
-                var appRect:Rectangle = app.screen;
-                var anchorRect:Rectangle = anchorComponent.getBounds(app as DisplayObject);
-
-                var bottomContainerRect:Rectangle = container.getBounds(app as DisplayObject);
-                bottomContainerRect.x = 0;
-                bottomContainerRect.y = anchorRect.y + anchorRect.height;
-
-                var topContainerRect:Rectangle = bottomContainerRect.clone();
-                topContainerRect.y = anchorRect.y + 1 - container.height;
-
-                var bottomIntersectionRect:Rectangle = appRect.intersection(bottomContainerRect);
-                var topIntersectionRect:Rectangle = appRect.intersection(topContainerRect);
 
                 if (topIntersectionRect.height > bottomIntersectionRect.height)
                 {
