@@ -29,6 +29,7 @@
             import mx.collections.ArrayCollection;
             import mx.collections.ArrayList;
             import mx.core.FlexGlobals;
+            import mx.core.LayoutDirection;
             import mx.core.UIComponent;
             import mx.events.CollectionEvent;
             import mx.events.CollectionEventKind;
@@ -275,23 +276,27 @@
                 var appRect:Rectangle = app.screen;
                 var anchorRect:Rectangle = anchorComponent.getBounds(app as DisplayObject);
 
+                var isLTR:Boolean = (layoutDirection == LayoutDirection.LTR);
+                var leftOffset:Number = isLTR ? anchorComponent.width - container.width : 0;
+                var rightOffset:Number = isLTR ? 0 : anchorComponent.width - container.width;
+
                 var leftContainerRect:Rectangle = container.getBounds(app as DisplayObject);
-                leftContainerRect.x = anchorRect.x + anchorRect.width - container.width;
+                leftContainerRect.x = anchorRect.x + leftOffset;
                 leftContainerRect.y = 0;
 
                 var rightContainerRect:Rectangle = leftContainerRect.clone();
-                rightContainerRect.x = anchorRect.x;
+                rightContainerRect.x = anchorRect.x + rightOffset;
 
                 var leftIntersectionRect:Rectangle = appRect.intersection(leftContainerRect);
                 var rightIntersectionRect:Rectangle = appRect.intersection(rightContainerRect);
 
                 if (leftIntersectionRect.width > rightIntersectionRect.width)
                 {
-                    container.x = anchorComponent.x + anchorComponent.width - container.width;
+                    container.x = anchorComponent.x + leftOffset;
                 }
                 else
                 {
-                    container.x = anchorComponent.x;
+                    container.x = anchorComponent.x + rightOffset;
                 }
             }
 
