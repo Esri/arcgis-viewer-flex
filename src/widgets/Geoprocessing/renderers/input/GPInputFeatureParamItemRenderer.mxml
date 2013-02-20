@@ -38,13 +38,14 @@
             import widgets.Geoprocessing.parameters.FeatureLayerParameter;
             import widgets.Geoprocessing.parameters.IGPFeatureParameter;
             import widgets.Geoprocessing.supportClasses.FeatureInputParamEvent;
+            import widgets.Geoprocessing.supportClasses.FeatureLayerCollectionHandler;
             import widgets.Geoprocessing.supportClasses.InputParamDataGroup;
             import widgets.Geoprocessing.supportClasses.VisibleGraphicsLayersWatcher;
 
             [Bindable]
             private var visibleValidGraphicsLayers:ArrayList;
             [Bindable]
-            private var graphicsProvider:ArrayCollection;
+            private var hasFeatures:Boolean;
             [Bindable]
             private var singleGraphicsLayerSelectionName:String;
 
@@ -252,11 +253,12 @@
                     if (selectedGraphicsLayer)
                     {
                         var selectedLayerGraphicProvider:ArrayCollection = selectedGraphicsLayer.graphicProvider as ArrayCollection;
-                        featureParam.layer.graphicProvider = ObjectUtil.copy(selectedLayerGraphicProvider) as ArrayCollection;
+                        var graphicProvider:ArrayCollection = ObjectUtil.copy(selectedLayerGraphicProvider) as ArrayCollection;
+                        FeatureLayerCollectionHandler.updateFeatures(graphicProvider.source, featureParam.layer);
                     }
                     else
                     {
-                        featureParam.layer.graphicProvider = null;
+                        FeatureLayerCollectionHandler.clear(featureParam.layer);
                     }
                 }
             }
@@ -275,9 +277,27 @@
 
             private function initializeAndSetDrawSelectionMode():void
             {
-                graphicsProvider = featureParam.layer.graphicProvider as ArrayCollection;
+                featureParam.layer.addEventListener(GraphicEvent.GRAPHIC_ADD, outputLayer_graphicsRemoveHandler, false, 0, true);
+                featureParam.layer.addEventListener(GraphicEvent.GRAPHIC_REMOVE, outputLayer_graphicsRemoveHandler, false, 0, true);
+                featureParam.layer.addEventListener(GraphicsLayerEvent.GRAPHICS_CLEAR, ouputLayer_graphicsClearHandler, false, 0, true);
+                updateFeatureCount();
                 inputParamDataGroup.addEventListener(DrawEvent.DRAW_END, map_drawEndHandler, false, 0, true);
                 setDrawSelectionMode();
+            }
+
+            private function updateFeatureCount():void
+            {
+                hasFeatures = featureParam.layer.featureCollection.featureSet.features.length > 0;
+            }
+
+            protected function ouputLayer_graphicsClearHandler(event:GraphicsLayerEvent):void
+            {
+                updateFeatureCount();
+            }
+
+            protected function outputLayer_graphicsRemoveHandler(event:GraphicEvent):void
+            {
+                updateFeatureCount();
             }
 
             private function map_drawEndHandler(event:DrawEvent):void
@@ -481,6 +501,6 @@
                  text="{LocalizationUtil.getDefaultString('clearLabel')}"
                  textDecoration="underline"
                  toolTip="{LocalizationUtil.getDefaultString('drawClearLabel')}"
-                 visible="{graphicsProvider.length &gt; 0}"/>
+                 visible="{hasFeatures}"/>
     </mx:FormItem>
 </s:ItemRenderer>

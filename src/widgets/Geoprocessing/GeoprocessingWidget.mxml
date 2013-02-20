@@ -37,8 +37,8 @@
             import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.Geometry;
             import com.esri.ags.geometry.MapPoint;
+            import com.esri.ags.layers.FeatureLayer;
             import com.esri.ags.layers.GPResultImageLayer;
-            import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.layers.supportClasses.ImageParameters;
             import com.esri.ags.layers.supportClasses.MapImage;
             import com.esri.ags.renderers.SimpleRenderer;
@@ -56,7 +56,6 @@
             import flashx.textLayout.conversion.TextConverter;
 
             import mx.collections.ArrayList;
-            import mx.collections.IList;
             import mx.controls.Alert;
             import mx.events.CloseEvent;
             import mx.rpc.AsyncResponder;
@@ -67,6 +66,7 @@
             import widgets.Geoprocessing.parameters.IGPFeatureParameter;
             import widgets.Geoprocessing.parameters.IGPParameter;
             import widgets.Geoprocessing.supportClasses.FeatureInputParamEvent;
+            import widgets.Geoprocessing.supportClasses.FeatureLayerCollectionHandler;
             import widgets.Geoprocessing.supportClasses.FileDownloader;
             import widgets.Geoprocessing.supportClasses.GPParamHandler;
             import widgets.Geoprocessing.supportClasses.GraphicEditor;
@@ -79,7 +79,7 @@
 
             private var executionType:String;
             private var autoSubmit:Boolean;
-            private var currentGraphicsLayer:GraphicsLayer;
+            private var currentLayer:FeatureLayer;
             private var visibleGraphicsLayersWatcher:VisibleGraphicsLayersWatcher = new VisibleGraphicsLayersWatcher();
             private var layerOrderer:LayerOrderer;
             private var gpParamHandler:GPParamHandler;
@@ -90,7 +90,7 @@
             private var totalProcessedAsyncResults:int;
             private var totalProjectedFeatures:int
             private var asyncResultMap:Dictionary;
-            private var outputGraphicsLayers:Array;
+            private var outputLayers:Array;
             private var resultImageLayersOnMap:Array;
             private var hasResultMapServer:Boolean;
             private var hasUseAMFBeenSet:Boolean;
@@ -100,6 +100,7 @@
             private var outputLabel:String;
             private var taskDescription:String;
             private var taskHelpURL:String;
+            private var shareResults:Boolean;
 
             [Bindable]
             private var submitLabel:String;
@@ -131,6 +132,21 @@
                     try
                     {
                         gpParamHandler = new GPParamHandler(configXML);
+
+                        for each (var inputFeatureParam:IGPFeatureParameter in gpParamHandler.getInputFeatureParams())
+                        {
+                            inputFeatureParam.layerName = "hiddenLayer_" + inputFeatureParam.layerName;
+                        }
+
+                        shareResults = configXML.shareresults[0] == "true";
+                        if (!shareResults)
+                        {
+                            for each (var outputFeatureParam:IGPFeatureParameter in gpParamHandler.getOutputFeatureParams())
+                            {
+                                outputFeatureParam.layerName = "hiddenLayer_" + outputFeatureParam.layerName;
+                            }
+                        }
+
                         layerOrderer = new LayerOrderer();
                         if (configXML.layerorder[0])
                         {
@@ -310,13 +326,13 @@
             private function inputParamsDataGroup_drawFeatureHandler(event:FeatureInputParamEvent):void
             {
                 var featureParam:IGPFeatureParameter = event.featureParam;
-                currentGraphicsLayer = featureParam.layer;
+                currentLayer = featureParam.layer;
                 setMapAction(event.drawType, null, featureParam.defaultSymbol, map_drawEndHandler);
             }
 
             private function inputParamsDataGroup_clearFeatureHandler(event:FeatureInputParamEvent):void
             {
-                event.featureParam.layer.clear();
+                FeatureLayerCollectionHandler.clear(event.featureParam.layer);
             }
 
             protected function map_extentChangeHandler(event:ExtentEvent):void
@@ -339,10 +355,10 @@
                     drawnGraphic.geometry = extent.toPolygon();
                 }
 
-                currentGraphicsLayer.add(drawnGraphic);
-                if (!currentGraphicsLayer.map)
+                FeatureLayerCollectionHandler.add(drawnGraphic, currentLayer);
+                if (!currentLayer.map)
                 {
-                    map.addLayer(currentGraphicsLayer);
+                    map.addLayer(currentLayer);
                 }
 
                 inputParamsDataGroup.dispatchEvent(event);
@@ -624,7 +640,7 @@
                 var lastExecutedJob:JobInfo = gp.submitJobLastResult;
                 var resultImageLayer:GPResultImageLayer = gp.getResultImageLayer(lastExecutedJob.jobId, paramName);
                 resultImageLayer.id = paramName;
-                resultImageLayer.name = ("hiddenLayer_" + paramName);
+                resultImageLayer.name = shareResults ? paramName : "hiddenLayer_" + paramName;
                 resultImageLayersOnMap.push(resultImageLayer);
                 map.addLayer(resultImageLayer);
                 layerOrderer.orderLayers();
@@ -658,21 +674,21 @@
                 {
                     if (totalProcessedOutputFeatures == 0)
                     {
-                        outputGraphicsLayers = [];
+                        outputLayers = [];
                         hideOutputFeaturesClearButton();
                     }
 
                     var featureParam:IGPFeatureParameter = (outputParam as IGPFeatureParameter);
-                    var graphicsLayer:GraphicsLayer = featureParam.layer;
-                    graphicsLayer.infoWindowRenderer = featureParam.popUpRenderer;
-                    graphicsLayer.addEventListener(GraphicsLayerEvent.GRAPHICS_CLEAR, ouputGraphicsLayer_graphicsClearHandler, false, 0, true);
-                    graphicsLayer.addEventListener(GraphicEvent.GRAPHIC_REMOVE, ouputGraphicsLayer_graphicsRemoveHandler, false, 0, true);
-                    outputGraphicsLayers.push(graphicsLayer);
+                    var featureLayer:FeatureLayer = featureParam.layer;
+                    featureLayer.infoWindowRenderer = featureParam.popUpRenderer;
+                    featureLayer.addEventListener(GraphicsLayerEvent.GRAPHICS_CLEAR, ouputGraphicsLayer_graphicsClearHandler, false, 0, true);
+                    featureLayer.addEventListener(GraphicEvent.GRAPHIC_REMOVE, ouputGraphicsLayer_graphicsRemoveHandler, false, 0, true);
+                    outputLayers.push(featureLayer);
 
                     var resultFeatures:Array = (parameterValue.value as FeatureSet).features;
-                    graphicsLayer.graphicProvider = resultFeatures;
+                    FeatureLayerCollectionHandler.updateFeatures(resultFeatures, featureLayer);
                     // if renderer is null, set the renderer based on result geometry
-                    if (!graphicsLayer.renderer && resultFeatures && resultFeatures.length)
+                    if (!featureLayer.renderer && resultFeatures && resultFeatures.length)
                     {
                         var geometryType:String = Graphic(resultFeatures[0]).geometry.type;
                         var renderer:SimpleRenderer = new SimpleRenderer;
@@ -694,13 +710,13 @@
                                 break;
                             }
                         }
-                        graphicsLayer.renderer = renderer;
+                        featureLayer.renderer = renderer;
                     }
                     addContextMenuToGraphics(resultFeatures);
 
-                    if (!graphicsLayer.map)
+                    if (!featureLayer.map)
                     {
-                        map.addLayer(graphicsLayer);
+                        map.addLayer(featureLayer);
                         layerOrderer.orderLayers();
                     }
 
@@ -734,7 +750,8 @@
                 var outputFeatureParams:Array = gpParamHandler.getOutputFeatureParams();
                 for each (var featureParam:IGPFeatureParameter in outputFeatureParams)
                 {
-                    if (featureParam.popUpInfo)
+                    if (featureParam.popUpInfo
+                        && FeatureLayerCollectionHandler.hasFeatures(featureParam.layer))
                     {
                         featureParamPopUpToDisplay = featureParam;
                         break;
@@ -753,7 +770,8 @@
                     map.infoWindow.content = contentNavigator;
                 }
 
-                var graphic:Graphic = (featureParam.layer.graphicProvider as IList).getItemAt(0) as Graphic;
+                var graphic:Graphic = featureParam.layer.featureCollection.featureSet.features[0];
+                graphic.infoWindowRenderer = featureParam.popUpRenderer;
                 contentNavigator.dataProvider = new ArrayList([ graphic ]);
                 map.infoWindow.show(graphic.geometry is MapPoint ? graphic.geometry as MapPoint : graphic.geometry.extent.center);
             }
@@ -780,9 +798,9 @@
             private function showInputViewIfAllOutputFeaturesCleared():void
             {
                 var allGraphicsLayersCleared:Boolean = true;
-                for each (var graphicsLayer:GraphicsLayer in outputGraphicsLayers)
+                for each (var featureLayer:FeatureLayer in outputLayers)
                 {
-                    if (graphicsLayer.numGraphics > 0)
+                    if (featureLayer.featureCollection.featureSet.features.length > 0)
                     {
                         allGraphicsLayersCleared = false;
                         break;
@@ -820,8 +838,8 @@
             protected function menuItem_contextMenuDeleteHandler(event:ContextMenuEvent):void
             {
                 var graphic:Graphic = event.contextMenuOwner as Graphic;
-                var graphicsLayer:GraphicsLayer = graphic.graphicsLayer;
-                graphicsLayer.remove(graphic);
+                var featureLayer:FeatureLayer = graphic.graphicsLayer as FeatureLayer;
+                FeatureLayerCollectionHandler.remove(graphic, featureLayer);
             }
 
             private function gp_jobCompleteHandler(event:GeoprocessorEvent):void

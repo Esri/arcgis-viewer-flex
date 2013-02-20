@@ -17,10 +17,10 @@ package widgets.Geoprocessing.parameters
 {
 
 import com.esri.ags.SpatialReference;
-import com.esri.ags.layers.GraphicsLayer;
+import com.esri.ags.layers.FeatureLayer;
+import com.esri.ags.portal.supportClasses.PopUpInfo;
 import com.esri.ags.renderers.IRenderer;
 import com.esri.ags.symbols.Symbol;
-import com.esri.ags.portal.supportClasses.PopUpInfo;
 
 import mx.core.ClassFactory;
 
@@ -30,7 +30,7 @@ public interface IGPFeatureParameter extends IGPParameter
     function get mode():String;
     function get layerNames():Array;
     function get popUpInfo():PopUpInfo;
-    function get layer():GraphicsLayer;
+    function get layer():FeatureLayer;
     function get renderer():IRenderer;
     function get defaultSymbol():Symbol;
     function get layerName():String;
