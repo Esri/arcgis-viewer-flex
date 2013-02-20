@@ -647,7 +647,7 @@
                 var lastExecutedJob:JobInfo = gp.submitJobLastResult;
                 var resultImageLayer:GPResultImageLayer = gp.getResultImageLayer(lastExecutedJob.jobId, paramName);
                 resultImageLayer.id = paramName;
-                resultImageLayer.name = shareResults ? paramName : "hiddenLayer_" + paramName;
+                resultImageLayer.name = shareResults ? outputParam.label : "hiddenLayer_" + paramName;
                 resultImageLayersOnMap.push(resultImageLayer);
                 map.addLayer(resultImageLayer);
                 layerOrderer.orderLayers();
