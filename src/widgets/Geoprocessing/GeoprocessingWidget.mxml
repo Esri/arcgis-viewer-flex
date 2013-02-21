@@ -92,6 +92,7 @@
             private var asyncResultMap:Dictionary;
             private var outputLayers:Array;
             private var resultImageLayersOnMap:Array;
+            private var useResultMapServer:Boolean;
             private var hasResultMapServer:Boolean;
             private var hasUseAMFBeenSet:Boolean;
             private var largestResultImageLayerExtent:Extent;
@@ -177,6 +178,8 @@
                             hasUseAMFBeenSet = true;
                         }
 
+                        useResultMapServer = configXML.useresultmapserver[0] != "false";
+
                         taskDescription = configXML.description[0];
                         taskHelpURL = configXML.helpurl[0];
 
@@ -217,7 +220,7 @@
             {
                 executionType = gpServerDescription.executionType;
                 gp.useAMF = !hasUseAMFBeenSet && (gpServerDescription.currentVersion >= 10.1);
-                hasResultMapServer = Boolean(gpServerDescription.resultMapServerName);
+                hasResultMapServer = useResultMapServer && Boolean(gpServerDescription.resultMapServerName);
 
                 gpServerDescription.url = gpServerURL;
                 gpServerDescription.proxyURL = gp.proxyURL;
