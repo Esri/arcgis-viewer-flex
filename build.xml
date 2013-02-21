@@ -99,6 +99,9 @@
             <param name="LOCALE" value="es_ES"/>
         </antcall>
         <antcall target="build-resoure-module">
+            <param name="LOCALE" value="et_EE"/>
+        </antcall>
+        <antcall target="build-resoure-module">
             <param name="LOCALE" value="fr_FR"/>
         </antcall>
         <antcall target="build-resoure-module">
@@ -115,6 +118,9 @@
         </antcall>
         <antcall target="build-resoure-module">
             <param name="LOCALE" value="lt_LT"/>
+        </antcall>
+        <antcall target="build-resoure-module">
+            <param name="LOCALE" value="lv_LV"/>
         </antcall>
         <antcall target="build-resoure-module">
             <param name="LOCALE" value="nb_NO"/>
@@ -196,6 +202,8 @@
             //flashvars.resourceModuleURLs = "assets/locale/de_DE.swf";
             //flashvars.localeChain = "es_ES";
             //flashvars.resourceModuleURLs = "assets/locale/es_ES.swf";
+            //flashvars.localeChain = "et_EE";
+            //flashvars.resourceModuleURLs = "assets/locale/et_EE.swf";
             //flashvars.localeChain = "fr_FR";
             //flashvars.resourceModuleURLs = "assets/locale/fr_FR.swf";
             //flashvars.localeChain = "he_IL";
@@ -208,6 +216,8 @@
             //flashvars.resourceModuleURLs = "assets/locale/ko_KR.swf";
             //flashvars.localeChain = "lt_LT";
             //flashvars.resourceModuleURLs = "assets/locale/lt_LT.swf";
+            //flashvars.localeChain = "lv_LV";
+            //flashvars.resourceModuleURLs = "assets/locale/lv_LV.swf";
             //flashvars.localeChain = "nb_NO";
             //flashvars.resourceModuleURLs = "assets/locale/nb_NO.swf";
             //flashvars.localeChain = "nl_NL";
