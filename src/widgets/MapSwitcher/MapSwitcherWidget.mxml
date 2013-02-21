@@ -29,6 +29,7 @@
             import mx.collections.ArrayCollection;
             import mx.collections.ArrayList;
             import mx.core.FlexGlobals;
+            import mx.core.LayoutDirection;
             import mx.core.UIComponent;
             import mx.events.CollectionEvent;
             import mx.events.CollectionEventKind;
@@ -262,30 +263,43 @@
                 }
             }
 
-            private function updateContainerPosition(anchorComponent:DisplayObject, container:UIComponent):void
+            private function updateContainerPosition(anchorComponent:UIComponent, container:UIComponent):void
             {
-                var containerGlobalBottomRightPoint:Point = anchorComponent.localToGlobal(new Point(container.width, container.height));
-                positionContainerHorizontally(containerGlobalBottomRightPoint.x, anchorComponent, container);
-                positionContainerVertically(containerGlobalBottomRightPoint.y, anchorComponent, container);
-            }
+                var app:UIComponent = FlexGlobals.topLevelApplication as UIComponent;
 
-            private function positionContainerHorizontally(x:Number, anchorComponent:DisplayObject, container:UIComponent):void
-            {
-                var appWidth:Number = FlexGlobals.topLevelApplication.width;
-                if (x > appWidth)
+                var appRect:Rectangle = app.screen;
+                var anchorRect:Rectangle = anchorComponent.getBounds(app as DisplayObject);
+                var containerRect:Rectangle = new Rectangle(0, 0, container.width, container.height);
+
+                var isLTR:Boolean = (layoutDirection == LayoutDirection.LTR);
+                var leftOffset:Number = isLTR ? anchorComponent.width - container.width : 0;
+                var rightOffset:Number = isLTR ? 0 : anchorComponent.width - container.width;
+
+                var leftContainerRect:Rectangle = containerRect.clone();
+                var rightContainerRect:Rectangle = containerRect.clone();
+                var bottomContainerRect:Rectangle = containerRect.clone();
+                var topContainerRect:Rectangle = containerRect.clone();
+
+                leftContainerRect.x = anchorRect.x + leftOffset;
+                rightContainerRect.x = anchorRect.x + rightOffset;
+                bottomContainerRect.y = anchorRect.y + anchorRect.height;
+                topContainerRect.y = anchorRect.y + 1 - container.height;
+
+                var leftIntersectionRect:Rectangle = appRect.intersection(leftContainerRect);
+                var rightIntersectionRect:Rectangle = appRect.intersection(rightContainerRect);
+                var bottomIntersectionRect:Rectangle = appRect.intersection(bottomContainerRect);
+                var topIntersectionRect:Rectangle = appRect.intersection(topContainerRect);
+
+                if (leftIntersectionRect.width > rightIntersectionRect.width)
                 {
-                    container.x = anchorComponent.x - container.width + anchorComponent.width;
+                    container.x = anchorComponent.x + leftOffset;
                 }
                 else
                 {
-                    container.x = anchorComponent.x;
+                    container.x = anchorComponent.x + rightOffset;
                 }
-            }
 
-            private function positionContainerVertically(y:Number, anchorComponent:DisplayObject, container:UIComponent):void
-            {
-                var appHeight:Number = FlexGlobals.topLevelApplication.height;
-                if (y > appHeight)
+                if (topIntersectionRect.height > bottomIntersectionRect.height)
                 {
                     container.y = anchorComponent.y + 1 - container.height;
                 }
