@@ -423,9 +423,18 @@ public class TocMapLayerItem extends TocItem
         else if (layer is ArcGISDynamicMapServiceLayer)
         {
             var arcGISDynamicMapServiceLayer:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(layer);
-            arcGISDynamicMapServiceLayer.visibleLayers.addEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);
+            if (arcGISDynamicMapServiceLayer.visibleLayers)
+            {
+                arcGISDynamicMapServiceLayer.visibleLayers.addEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);
+            }
+            else
+            {
+                var visLayers:Array = getActualVisibleLayers(MapServiceUtil.getVisibleSubLayers(_dynamicMapServiceLayerInfos), _dynamicMapServiceLayerInfos);
+                ArcGISDynamicMapServiceLayer(layer).visibleLayers = new ArrayCollection(visLayers);
+                ArcGISDynamicMapServiceLayer(layer).visibleLayers.addEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);
+            }          
+            
             _visibleLayersChangeWatcher = ChangeWatcher.watch(arcGISDynamicMapServiceLayer, "visibleLayers", visibleLayersChange);
-
             _dynamicMapServiceLayerInfos = arcGISDynamicMapServiceLayer.dynamicLayerInfos ? arcGISDynamicMapServiceLayer.dynamicLayerInfos : arcGISDynamicMapServiceLayer.layerInfos;
             if (_isVisibleLayersSet)
             {
