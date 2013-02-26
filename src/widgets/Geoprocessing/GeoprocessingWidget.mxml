@@ -220,7 +220,7 @@
             {
                 executionType = gpServerDescription.executionType;
                 gp.useAMF = !hasUseAMFBeenSet && (gpServerDescription.currentVersion >= 10.1);
-                hasResultMapServer = useResultMapServer && Boolean(gpServerDescription.resultMapServerName);
+                hasResultMapServer = useResultMapServer && gpServerDescription.resultMapServerName;
 
                 gpServerDescription.url = gpServerURL;
                 gpServerDescription.proxyURL = gp.proxyURL;
