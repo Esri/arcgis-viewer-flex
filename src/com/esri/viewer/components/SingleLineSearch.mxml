@@ -501,9 +501,9 @@
                 map.infoWindow.show(point);
             }
 
-            protected function geocoder_searchCompleteHandler(event:GeocoderEvent):void
+            protected function geocoder_resultSelectedHandler(event:GeocoderEvent):void
             {
-                projectToMapSpatialReferenceAndShowResultOnMap(event.searchResult);
+                projectToMapSpatialReferenceAndShowResultOnMap(event.result);
             }
 
             private function projectToMapSpatialReferenceAndShowResultOnMap(searchResult:GeocoderSearchResult):void
@@ -733,7 +733,8 @@
                          left="0" right="0" top="0" bottom="0"
                          fault="geocoder_faultHandler(event)"
                          map="{map}"
-                         searchComplete="geocoder_searchCompleteHandler(event)"
+                         resultAutoSelected="geocoder_resultSelectedHandler(event)"
+                         resultSelected="geocoder_resultSelectedHandler(event)"
                          skinClass="com.esri.ags.skins.GeocoderSkin"
                          useDefaultLocator="false"/>
 </s:Group>
