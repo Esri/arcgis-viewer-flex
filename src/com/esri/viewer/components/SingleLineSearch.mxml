@@ -19,12 +19,11 @@
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
          xmlns:s="library://ns.adobe.com/flex/spark"
          xmlns:mx="library://ns.adobe.com/flex/mx"
-         xmlns:components="com.esri.ags.components.*">
+         xmlns:esri="http://www.esri.com/2008/ags">
     <fx:Script>
         <![CDATA[
             import com.esri.ags.Graphic;
             import com.esri.ags.Map;
-            import com.esri.ags.components.Geocoder;
             import com.esri.ags.components.supportClasses.GeocoderLocatorService;
             import com.esri.ags.components.supportClasses.GeocoderMapService;
             import com.esri.ags.components.supportClasses.GeocoderSearchResult;
@@ -729,12 +728,11 @@
         ]]>
     </fx:Script>
 
-    <components:Geocoder id="geocoder"
-                         left="0" right="0" top="0" bottom="0"
-                         fault="geocoder_faultHandler(event)"
-                         map="{map}"
-                         resultAutoSelected="geocoder_resultSelectedHandler(event)"
-                         resultSelected="geocoder_resultSelectedHandler(event)"
-                         skinClass="com.esri.ags.skins.GeocoderSkin"
-                         useDefaultLocator="false"/>
+    <esri:Geocoder id="geocoder"
+                   left="0" right="0" top="0" bottom="0"
+                   fault="geocoder_faultHandler(event)"
+                   map="{map}"
+                   resultAutoSelected="geocoder_resultSelectedHandler(event)"
+                   resultSelected="geocoder_resultSelectedHandler(event)"
+                   useDefaultLocator="false"/>
 </s:Group>
