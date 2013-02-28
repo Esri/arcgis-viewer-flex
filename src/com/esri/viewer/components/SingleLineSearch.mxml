@@ -179,6 +179,11 @@
                 if (configXML.geocoding.@usedefaultlocator[0] != "false")
                 {
                     geocoder.useDefaultLocator = true;
+
+                    if (useProxy && configData.proxyUrl)
+                    {
+                        geocoder.defaultLocatorProxyURL = configData.proxyUrl;
+                    }
                 }
 
                 //backwards compatibility
