@@ -120,10 +120,7 @@
             {
                 if (configXML)
                 {
-                    if (configXML.useproxy.length() > 0)
-                    {
-                        useProxy = configXML.useproxy == "true";
-                    }
+                    useProxy = configXML.useproxy[0] == "true";
 
                     const configZoomScale:Number = parseFloat(configXML.zoomscale[0]);
                     if (configZoomScale > 0)
@@ -179,6 +176,11 @@
                 if (configXML.geocoding.@usedefaultlocator[0] != "false")
                 {
                     geocoder.useDefaultLocator = true;
+
+                    if (useProxy && configData.proxyUrl)
+                    {
+                        geocoder.defaultLocatorProxyURL = configData.proxyUrl;
+                    }
                 }
 
                 //backwards compatibility
