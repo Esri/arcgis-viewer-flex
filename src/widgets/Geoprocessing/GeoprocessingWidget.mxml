@@ -991,7 +991,7 @@
             private function extractLargestResultLayerExtent():void
             {
                 largestResultLayerExtent = null;
-                var remainingResultLayers:int = resultLayersOnMap.length;
+                var totalResultLayersToProcess:int = resultLayersOnMap.length;
 
                 var imageParams:ImageParameters = new ImageParameters();
                 imageParams.imageSpatialReference = map.spatialReference;
@@ -999,17 +999,13 @@
                 for each (var resultLayer:Layer in resultLayersOnMap)
                 {
                     var resultImageLayer:GPResultImageLayer = resultLayer as GPResultImageLayer;
-                    gp.getResultImage(resultImageLayer.jobId, resultImageLayer.parameterName, imageParams, new AsyncResponder(resultImageSuccess, resultImageFailure, resultImageLayer));
+                    gp.getResultImage(resultImageLayer.jobId, resultImageLayer.parameterName, imageParams, new AsyncResponder(resultImageSuccess, resultImageFailure));
 
-                    function resultImageSuccess(paramValue:ParameterValue, resultImageLayer:GPResultImageLayer):void
+                    function resultImageSuccess(paramValue:ParameterValue, token:Object = null):void
                     {
                         var resultImage:MapImage = paramValue.value as MapImage;
                         aggregateExtent(resultImage.extent);
-                        remainingResultLayers--;
-                        if (remainingResultLayers == 0)
-                        {
-                            zoomToResultLayers();
-                        }
+                        updateProcessedResultLayers();
                     }
 
                     function aggregateExtent(extent:Extent):void
@@ -1024,9 +1020,18 @@
                         }
                     }
 
-                    function resultImageFailure(fault:Fault, token:Object):void
+                    function updateProcessedResultLayers():void
                     {
-                        //Swallow error
+                        totalResultLayersToProcess--;
+                        if (totalResultLayersToProcess == 0)
+                        {
+                            zoomToResultLayers();
+                        }
+                    }
+
+                    function resultImageFailure(fault:Fault, token:Object = null):void
+                    {
+                        updateProcessedResultLayers();
                     }
                 }
             }
