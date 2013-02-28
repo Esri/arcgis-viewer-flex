@@ -1018,7 +1018,8 @@
                     if (resultLayer is GPResultImageLayer)
                     {
                         var resultImageLayer:GPResultImageLayer = resultLayer as GPResultImageLayer;
-                        gp.getResultImage(resultImageLayer.jobId, resultImageLayer.parameterName, imageParams, new AsyncResponder(resultImageSuccess, resultImageFailure));
+                        gp.getResultImage(resultImageLayer.jobId, resultImageLayer.parameterName, imageParams,
+                                          new AsyncResponder(resultImageSuccess, resultImageFailure));
 
                         function resultImageSuccess(paramValue:ParameterValue, token:Object = null):void
                         {
@@ -1089,9 +1090,7 @@
                                         projectParameters.geometries = [ layerExtent ];
                                         projectParameters.outSpatialReference = map.spatialReference
                                         GeometryServiceSingleton.instance.project(
-                                            projectParameters,
-                                            new AsyncResponder(projectionResult,
-                                                               projectionFault));
+                                            projectParameters, new AsyncResponder(projectionResult, projectionFault));
 
                                         function projectionResult(geometries:Array, token:Object = null):void
                                         {
