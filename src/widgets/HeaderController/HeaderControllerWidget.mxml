@@ -119,8 +119,10 @@
             {
                 if (configXML)
                 {
-                    const shouldEnableSearch:Boolean = (configXML.search.@visible[0] == "true")
-                        || (configXML.search[0] && !configXML.search.@visible[0]);
+                    var searchConfig:XML = configXML.geocoder[0] || configXML.search[0];
+
+                    const shouldEnableSearch:Boolean = (searchConfig.@visible[0] == "true")
+                        || (searchConfig[0] && !searchConfig.@visible[0]);
                     if (shouldEnableSearch)
                     {
                         singleLineSearch.hostBaseWidget = this;
@@ -476,10 +478,10 @@
                     </HeaderController:WidgetItemDataGroup>
                 </s:HGroup>
 
-                <components:SingleLineSearch id="singleLineSearch"
-                                             width="230" height="28"
-                                             includeInLayout="false"
-                                             visible="false"/>
+                <components:GeocoderComponent id="singleLineSearch"
+                                              width="230" height="28"
+                                              includeInLayout="false"
+                                              visible="false"/>
 
                 <s:DataGroup id="linkGroup"
                              dataProvider="{linkList}"
