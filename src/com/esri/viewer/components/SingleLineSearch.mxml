@@ -24,7 +24,7 @@
         <![CDATA[
             import com.esri.ags.Graphic;
             import com.esri.ags.Map;
-            import com.esri.ags.components.supportClasses.GeocoderLocatorService;
+            import com.esri.ags.components.supportClasses.GeocoderLocatorOptions;
             import com.esri.ags.components.supportClasses.GeocoderMapService;
             import com.esri.ags.components.supportClasses.GeocoderSearchResult;
             import com.esri.ags.events.GeocoderEvent;
@@ -59,7 +59,6 @@
             private var resultSimpleMarkerSymbol:SimpleMarkerSymbol;
             private var resultSimpleLineSymbol:SimpleLineSymbol;
             private var resultSimpleFillSymbol:SimpleFillSymbol;
-            private var useProxy:Boolean;
             private var configXML:XML;
             private var configData:ConfigData;
             private var popUpRenderer:PopUpRenderer = new PopUpRenderer();
@@ -120,16 +119,13 @@
             {
                 if (configXML)
                 {
-                    useProxy = configXML.useproxy[0] == "true";
-
                     const configZoomScale:Number = parseFloat(configXML.zoomscale[0]);
                     if (configZoomScale > 0)
                     {
                         zoomScale = configZoomScale;
                     }
 
-                    //backwards compatibility
-                    const configMinScore:Number = parseFloat(configXML.minscore[0]) || parseFloat(configXML.geocoding.minscore[0]);
+                    const configMinScore:Number = parseFloat(configXML.minscore[0]);
                     geocoder.minScore = (configMinScore > 0) ? configMinScore : 40;
 
                     geocoder.autoComplete = configXML.autocomplete != "false";
@@ -159,166 +155,138 @@
                     configureResultSymbols();
                     configureResultGraphic();
 
-                    configureLocatorServices();
+                    configureLocator();
                     configureMapServices();
                 }
             }
 
-            private function configureLocatorServices():void
+            private function configureLocator():void
             {
-                var locatorServicesEnabled:Boolean = (configXML.geocoding.@enabled[0] != "false");
-                if (!locatorServicesEnabled)
+                var locatorDisabled:Boolean = (configXML.usemapservicesonly[0] == "true");
+                if (locatorDisabled)
                 {
+                    geocoder.url = null;
                     locatorServicesConfigured = true;
                     return;
                 }
 
-                if (configXML.geocoding.@usedefaultlocator[0] != "false")
+                var locatorURL:String = configXML.url.toString();
+                if (locatorURL)
                 {
-                    geocoder.useDefaultLocator = true;
+                    geocoder.url = locatorURL;
+                }
 
+                var useProxy:Boolean = configXML.useproxy[0] == "true";
+                if (useProxy && configData.proxyUrl)
+                {
+                    geocoder.proxyURL = configData.proxyUrl;
+                }
+
+                geocoder.locatorOptions = parseLocatorOptions(configXML.locatoroptions[0]);
+
+                var hasUserDefinedLocatorWithMissingSingleLineAddressField:Boolean =
+                    locatorURL && !geocoder.locatorOptions.singleLineAddressFieldName;
+
+                if (hasUserDefinedLocatorWithMissingSingleLineAddressField)
+                {
+                    const locatorInfoRequest:JSONTask = new JSONTask();
+                    locatorInfoRequest.url = locatorURL;
                     if (useProxy && configData.proxyUrl)
                     {
-                        geocoder.defaultLocatorProxyURL = configData.proxyUrl;
+                        locatorInfoRequest.proxyURL = configData.proxyUrl;
+                    }
+
+                    var urlVars:URLVariables = new URLVariables();
+                    urlVars.f = "json";
+
+                    locatorInfoRequest.execute(urlVars,
+                                               new AsyncResponder(locatorInfoRequest_resultHandler,
+                                                                  locatorInfoRequest_faultHandler));
+
+                    function locatorInfoRequest_resultHandler(locatorInfo:Object, token:Object = null):void
+                    {
+                        if (locatorInfo.singleLineAddressField)
+                        {
+                            geocoder.locatorOptions.singleLineAddressFieldName = locatorInfo.singleLineAddressField.name;
+                        }
+                        else
+                        {
+                            showError(hostBaseWidget.getDefaultString("singleLineGeocodingNotSupportedError"), SINGLE_LINE_SEARCH);
+                        }
+
+                        locatorServicesConfigured = true;
+                    }
+
+                    function locatorInfoRequest_faultHandler(fault:Fault, token:Object = null):void
+                    {
+                        const errorMessage:String = hostBaseWidget.getDefaultString("locatorServiceConnectionError",
+                                                                                    locatorInfoRequest.url,
+                                                                                    ErrorMessageUtil.getKnownErrorCauseMessage(fault),
+                                                                                    ErrorMessageUtil.makeHTMLSafe(fault.toString()));
+                        showError(errorMessage, SINGLE_LINE_SEARCH);
+                        locatorServicesConfigured = true;
                     }
                 }
-
-                //backwards compatibility
-                if (configXML.geocoding.locator[0]
-                    && configXML.geocoding.locator.hasSimpleContent())
-                {
-                    //convert URL to locator XML
-                    var url:String = configXML.geocoding.locator[0];
-                    delete configXML.geocoding.locator[0];
-                    configXML.geocoding.appendChild(<locator><url>{url}</url></locator>);
-                }
-
-                var locatorsToConfigure:int = configXML.geocoding.locator.length();
-                if (locatorsToConfigure == 0)
+                else
                 {
                     locatorServicesConfigured = true;
-                    return;
                 }
+            }
 
-                var locatorServices:Array = [];
-                var locatorService:GeocoderLocatorService;
+            private function parseLocatorOptions(locatorOptionsXML:XML):GeocoderLocatorOptions
+            {
+                var locatorOptions:GeocoderLocatorOptions = new GeocoderLocatorOptions();
 
-                for each (var locatorXML:XML in configXML.geocoding.locator)
+                if (locatorOptionsXML)
                 {
-                    locatorService = new GeocoderLocatorService();
-                    locatorService.url = locatorXML.url.toString();
-                    locatorService.name = locatorXML.name.toString();
-                    locatorService.sourceCountry = locatorXML.sourcecountry.toString();
-                    locatorService.prefix = locatorXML.prefix.toString();
-                    locatorService.suffix = locatorXML.suffix.toString();
+                    locatorOptions.name = locatorOptionsXML.name.toString();
+                    locatorOptions.sourceCountry = locatorOptionsXML.sourcecountry.toString();
+                    locatorOptions.prefix = locatorOptionsXML.prefix.toString();
+                    locatorOptions.suffix = locatorOptionsXML.suffix.toString();
 
-                    var configOutFields:String = locatorXML.outfields.toString();
+                    var configOutFields:String = locatorOptionsXML.outfields.toString();
                     if (configOutFields)
                     {
-                        locatorService.outFields = configOutFields.split(',');
+                        locatorOptions.outFields = configOutFields.split(',');
                     }
 
-                    var useLocatorProxy:Boolean = locatorXML.useproxy[0] == "true";
-                    if (useLocatorProxy && configData.proxyUrl)
-                    {
-                        locatorService.proxyURL = configData.proxyUrl;
-                    }
-
-                    var singleLineAddressField:String = locatorXML.singlelineaddressfield.toString();
+                    var singleLineAddressField:String = locatorOptionsXML.singlelineaddressfield.toString();
                     if (singleLineAddressField)
                     {
-                        locatorService.singleLineAddressFieldName = singleLineAddressField;
-                        locatorServices.push(locatorService);
-                        locatorProcessed();
-                    }
-                    else
-                    {
-                        const locatorInfoRequest:JSONTask = new JSONTask();
-                        locatorInfoRequest.url = locatorService.url;
-                        if (useLocatorProxy && configData.proxyUrl)
-                        {
-                            locatorInfoRequest.proxyURL = locatorService.proxyURL;
-                        }
-
-                        var urlVars:URLVariables = new URLVariables();
-                        urlVars.f = "json";
-
-                        locatorInfoRequest.execute(urlVars,
-                                                   new AsyncResponder(locatorInfoRequest_resultHandler,
-                                                                      locatorInfoRequest_faultHandler,
-                                                                      locatorService));
-
-                        function locatorInfoRequest_resultHandler(locatorInfo:Object, locatorService:GeocoderLocatorService):void
-                        {
-                            if (locatorInfo.singleLineAddressField)
-                            {
-                                locatorService.singleLineAddressFieldName = locatorInfo.singleLineAddressField.name;
-                            }
-                            else
-                            {
-                                showError(hostBaseWidget.getDefaultString("singleLineGeocodingNotSupportedError"), SINGLE_LINE_SEARCH);
-                            }
-
-                            locatorServices.push(locatorService);
-                            locatorProcessed();
-                        }
-
-                        function locatorInfoRequest_faultHandler(fault:Fault, locatorService:GeocoderLocatorService):void
-                        {
-                            const errorMessage:String = hostBaseWidget.getDefaultString("locatorServiceConnectionError",
-                                                                                        locatorService.url,
-                                                                                        ErrorMessageUtil.getKnownErrorCauseMessage(fault),
-                                                                                        ErrorMessageUtil.makeHTMLSafe(fault.toString()));
-                            showError(errorMessage, SINGLE_LINE_SEARCH);
-                            locatorProcessed();
-                        }
-                    }
-
-                    function locatorProcessed():void
-                    {
-                        locatorsToConfigure--;
-                        if (locatorsToConfigure == 0)
-                        {
-                            geocoder.locatorServices = locatorServices;
-                            locatorServicesConfigured = true;
-                        }
+                        locatorOptions.singleLineAddressFieldName = singleLineAddressField;
                     }
                 }
+
+                return locatorOptions;
             }
 
             private function configureMapServices():void
             {
-                var mapServicesEnabled:Boolean =
-                    configXML.searchlayers.@enabled[0] != "false" && configXML.searchlayers[0] != null;
-
-                if (mapServicesEnabled)
+                if (configXML.mapservices.length() > 0)
                 {
-                    if (configXML.searchlayers.length() > 0)
+                    var mapService:GeocoderMapService;
+                    var mapServices:Array = [];
+                    var useMapServiceProxy:Boolean;
+                    var mapServiceProxyURL:String;
+
+                    for each (var mapServiceXML:XML in configXML.mapservices.mapservice)
                     {
-                        var mapService:GeocoderMapService;
-                        var mapServices:Array = [];
-                        var useMapServiceProxy:Boolean;
-                        var mapServiceProxyURL:String;
+                        mapService = new GeocoderMapService();
+                        mapService.layerIds = mapServiceXML.layerids.toString().split(",");
+                        mapService.url = mapServiceXML.url.toString();
+                        mapService.searchFields = mapServiceXML.searchfields.toString().split(",");
+                        mapService.name = mapServiceXML.name.toString();
+                        useMapServiceProxy = mapServiceXML.useproxy[0] == "true";
 
-                        for each (var searchLayerXML:XML in configXML.searchlayers.searchlayer)
+                        if (useMapServiceProxy && configData.proxyUrl)
                         {
-                            mapService = new GeocoderMapService();
-                            mapService.layerIds = searchLayerXML.layerids.toString().split(",");
-                            mapService.url = searchLayerXML.url.toString();
-                            mapService.searchFields = searchLayerXML.searchfields.toString().split(",");
-                            mapService.name = searchLayerXML.name.toString();
-                            useMapServiceProxy = searchLayerXML.useproxy[0] == "true";
-
-                            if (useMapServiceProxy && configData.proxyUrl)
-                            {
-                                mapService.proxyURL = configData.proxyUrl;
-                            }
-
-                            mapServices.push(mapService);
+                            mapService.proxyURL = configData.proxyUrl;
                         }
 
-                        geocoder.mapServices = mapServices;
+                        mapServices.push(mapService);
                     }
+
+                    geocoder.mapServices = mapServices;
                 }
 
                 mapServicesConfigured = true;
@@ -736,6 +704,5 @@
                    fault="geocoder_faultHandler(event)"
                    map="{map}"
                    resultAutoSelected="geocoder_resultSelectedHandler(event)"
-                   resultSelected="geocoder_resultSelectedHandler(event)"
-                   useDefaultLocator="false"/>
+                   resultSelected="geocoder_resultSelectedHandler(event)"/>
 </s:Group>
