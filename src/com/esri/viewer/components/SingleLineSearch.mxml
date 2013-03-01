@@ -218,10 +218,10 @@
                         locatorService.outFields = configOutFields.split(',');
                     }
 
-                    var locatorServiceProxyURL:String = locatorXML.proxyurl.toString() || configData.proxyUrl;
-                    if (useProxy && locatorServiceProxyURL)
+                    var useLocatorProxy:Boolean = locatorXML.useproxy[0] == "true";
+                    if (useLocatorProxy && configData.proxyUrl)
                     {
-                        locatorService.proxyURL = locatorServiceProxyURL;
+                        locatorService.proxyURL = configData.proxyUrl;
                     }
 
                     var singleLineAddressField:String = locatorXML.singlelineaddressfield.toString();
@@ -235,7 +235,7 @@
                     {
                         const locatorInfoRequest:JSONTask = new JSONTask();
                         locatorInfoRequest.url = locatorService.url;
-                        if (useProxy && locatorServiceProxyURL)
+                        if (useLocatorProxy && configData.proxyUrl)
                         {
                             locatorInfoRequest.proxyURL = locatorService.proxyURL;
                         }
@@ -297,6 +297,7 @@
                     {
                         var mapService:GeocoderMapService;
                         var mapServices:Array = [];
+                        var useMapServiceProxy:Boolean;
                         var mapServiceProxyURL:String;
 
                         for each (var searchLayerXML:XML in configXML.searchlayers.searchlayer)
@@ -306,11 +307,11 @@
                             mapService.url = searchLayerXML.url.toString();
                             mapService.searchFields = searchLayerXML.searchfields.toString().split(",");
                             mapService.name = searchLayerXML.name.toString();
-                            mapServiceProxyURL = searchLayerXML.proxyurl.toString() || configData.proxyUrl;
+                            useMapServiceProxy = searchLayerXML.useproxy[0] == "true";
 
-                            if (useProxy && mapServiceProxyURL)
+                            if (useMapServiceProxy && configData.proxyUrl)
                             {
-                                mapService.proxyURL = mapServiceProxyURL;
+                                mapService.proxyURL = configData.proxyUrl;
                             }
 
                             mapServices.push(mapService);
