@@ -108,11 +108,70 @@
                 _hostBaseWidget = value;
                 if (_hostBaseWidget)
                 {
-                    configXML = _hostBaseWidget.configXML.search[0];
+                    configXML = ensureLatestConfig(_hostBaseWidget.configXML.search[0]
+                                                   || _hostBaseWidget.configXML.geocoder[0]);
                     configData = _hostBaseWidget.configData;
                     map = _hostBaseWidget.map;
                     init();
                 }
+            }
+
+            private function ensureLatestConfig(configXML:XML):XML
+            {
+                if (configXML.name() == "search")
+                {
+                    configXML.setName("geocoder");
+
+                    var geocodingXML:XML = configXML.geocoding[0];
+                    if (geocodingXML)
+                    {
+                        var geocoderEnabled:Boolean = geocodingXML.@enabled != "false";
+                        if (geocoderEnabled)
+                        {
+                            var locatorURL:String = geocodingXML.locator[0];
+                            if (locatorURL)
+                            {
+                                configXML.appendChild(<url>{locatorURL}</url>);
+                            }
+                        }
+                        else
+                        {
+                            configXML.appendChild(<usemapservicesonly>true</usemapservicesonly>);
+                        }
+
+                        var minScore:Number = parseFloat(geocodingXML.minscore[0]);
+                        if (!isNaN(minScore))
+                        {
+                            configXML.appendChild(<minscore>{minScore}</minscore>);
+                        }
+
+                        delete configXML.geocoding[0];
+                    }
+
+                    var searchLayersXML:XML = configXML.searchlayers[0];
+                    if (searchLayersXML)
+                    {
+                        var searchLayersEnabled:Boolean = searchLayersXML.@enabled != "false";
+
+                        if (searchLayersEnabled)
+                        {
+                            searchLayersXML.setName("mapservices");
+
+                            for each (var searchLayerXML:XML in searchLayersXML.searchlayer)
+                            {
+                                searchLayerXML.setName("mapservice");
+                            }
+
+                            delete searchLayersXML.@enabled;
+                        }
+                        else
+                        {
+                            delete configXML.searchlayers;
+                        }
+                    }
+                }
+
+                return configXML;
             }
 
             private function init():void
