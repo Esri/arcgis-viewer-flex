@@ -478,10 +478,10 @@
                     </HeaderController:WidgetItemDataGroup>
                 </s:HGroup>
 
-                <components:SingleLineSearch id="singleLineSearch"
-                                             width="230" height="28"
-                                             includeInLayout="false"
-                                             visible="false"/>
+                <components:GeocoderComponent id="singleLineSearch"
+                                              width="230" height="28"
+                                              includeInLayout="false"
+                                              visible="false"/>
 
                 <s:DataGroup id="linkGroup"
                              dataProvider="{linkList}"
