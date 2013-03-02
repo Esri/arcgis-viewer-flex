@@ -228,7 +228,7 @@
                     initializeFontList();
 
                     //setting typical text since using typicalItem will set TextInput#widthInChars, which produces extra long width 
-                    fontNameSelection.textInput.typicalText = LabelUtil.findLongestLabel(fontList.source);
+                    fontNameSelection.textInput.typicalText = LabelUtil.findLongestLabelItem(fontList.source) as String;
 
                     defaultDrawColor = configXML.defaultdrawcolor || 0x3FAFDC;
                     defaultTextFontSize = configXML.defaulttextfontsize || 20;
@@ -353,7 +353,7 @@
                             configDistance.addItem(dUnit);
                         }
                         cboDistance.dataProvider = configDistance;
-                        cboDistance.typicalItem = LabelUtil.findLongestLabel(configDistance.source, 'name');
+                        cboDistance.typicalItem = LabelUtil.findLongestLabelItem(configDistance.source, 'name');
                     }
 
                     // area units
@@ -437,13 +437,13 @@
                             configArea.addItem(aUnit);
                         }
                         cboArea.dataProvider = configArea;
-                        cboArea.typicalItem = LabelUtil.findLongestLabel(configArea.source, 'name');
+                        cboArea.typicalItem = LabelUtil.findLongestLabelItem(configArea.source, 'name');
                     }
                 }
 
-                markerStyle.typicalItem = LabelUtil.findLongestLabel(markerStyle.dataProvider.toArray(), 'name');
-                lineStyle.typicalItem = LabelUtil.findLongestLabel(lineStyle.dataProvider.toArray(), 'name');
-                fillStyle.typicalItem = LabelUtil.findLongestLabel(fillStyle.dataProvider.toArray(), 'name');
+                markerStyle.typicalItem = LabelUtil.findLongestLabelItem(markerStyle.dataProvider.toArray(), 'name');
+                lineStyle.typicalItem = LabelUtil.findLongestLabelItem(lineStyle.dataProvider.toArray(), 'name');
+                fillStyle.typicalItem = LabelUtil.findLongestLabelItem(fillStyle.dataProvider.toArray(), 'name');
 
 
                 AppEvent.addListener(AppEvent.DATA_PUBLISH, sharedDataUpdated);

@@ -71,7 +71,7 @@
 
                 widgetLabels.dataProvider = widgetItems;
                 widgetLabels.labelField = "label";
-                widgetLabels.typicalItem = LabelUtil.findLongestLabel(widgetItems.source, 'label');
+                widgetLabels.typicalItem = LabelUtil.findLongestLabelItem(widgetItems.source, 'label');
             }
 
             protected function button1_clickHandler(event:MouseEvent):void

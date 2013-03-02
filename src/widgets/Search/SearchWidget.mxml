@@ -380,7 +380,7 @@
                     }
                     else
                     {
-                        cboLayerText.typicalItem = LabelUtil.findLongestLabel(configSearchText, "label");
+                        cboLayerText.typicalItem = LabelUtil.findLongestLabelItem(configSearchText, "label");
                     }
                 }
                 else
@@ -403,7 +403,7 @@
                     }
                     else
                     {
-                        cboLayerGraphical.typicalItem = LabelUtil.findLongestLabel(configSearchGraphical, "label");
+                        cboLayerGraphical.typicalItem = LabelUtil.findLongestLabelItem(configSearchGraphical, "label");
                     }
                 }
                 else

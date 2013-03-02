@@ -22,19 +22,19 @@ import spark.utils.LabelUtil;
 
 public final class LabelUtil
 {
-    public static function findLongestLabel(items:Array,
-                                            labelField:String = null,
-                                            labelFunction:Function = null):String
+    public static function findLongestLabelItem(items:Array,
+                                                labelField:String = null,
+                                                labelFunction:Function = null):Object
     {
+        var longestItem:Object;
+
         var currentItemWidth:Number;
-        var longestItemLabel:String = "";
         var longestItemLabelWidth:Number = 0;
         var currentItemLabel:String;
 
         for each (var item:Object in items)
         {
-            currentItemLabel =
-                spark.utils.LabelUtil.itemToLabel(item, labelField, labelFunction);
+            currentItemLabel = itemToLabel(item, labelField, labelFunction);
 
             currentItemWidth =
                 FlexGlobals.topLevelApplication.measureText(currentItemLabel).width;
@@ -42,12 +42,18 @@ public final class LabelUtil
             if (currentItemWidth > longestItemLabelWidth)
             {
                 longestItemLabelWidth = currentItemWidth;
-                longestItemLabel = currentItemLabel;
+                longestItem = item;
             }
         }
 
-        return longestItemLabel;
+        return longestItem;
+    }
+
+    private static function itemToLabel(item:Object,
+                                        labelField:String = null,
+                                        labelFunction:Function = null):String
+    {
+        return spark.utils.LabelUtil.itemToLabel(item, labelField, labelFunction);
     }
 }
-
 }
