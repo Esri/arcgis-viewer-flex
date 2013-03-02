@@ -119,10 +119,10 @@
             {
                 if (configXML)
                 {
-                    var searchConfig:XML = configXML.geocoder[0] || configXML.search[0];
+                    var geocoderXML:XML = configXML.geocoder[0] || configXML.search[0];
 
-                    const shouldEnableSearch:Boolean = searchConfig && (searchConfig.@visible[0] != "false");
-                    if (shouldEnableSearch)
+                    const shouldEnableGeocoder:Boolean = geocoderXML && (geocoderXML.@visible[0] != "false");
+                    if (shouldEnableGeocoder)
                     {
                         singleLineSearch.hostBaseWidget = this;
                         singleLineSearch.includeInLayout = true;
