@@ -578,6 +578,8 @@ public class LayerCreator
         geoRSSLayer.id = layerCreationProperties.label;
         geoRSSLayer.name = layerCreationProperties.label;
         geoRSSLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
+        geoRSSLayer.visible = layerCreationProperties.visible;
+
         if (layerCreationProperties.serviceURL)
         {
             geoRSSLayer.serviceURL = layerCreationProperties.serviceURL;
@@ -590,7 +592,19 @@ public class LayerCreator
         {
             geoRSSLayer.maxScale = layerCreationProperties.maxScale;
         }
-        geoRSSLayer.visible = layerCreationProperties.visible;
+        if (layerCreationProperties.markerSymbol)
+        {
+            geoRSSLayer.pointSymbol = layerCreationProperties.markerSymbol;
+        }
+        if (layerCreationProperties.lineSymbol)
+        {
+            geoRSSLayer.polylineSymbol = layerCreationProperties.lineSymbol;
+        }
+        if (layerCreationProperties.fillSymbol)
+        {
+            geoRSSLayer.polygonSymbol = layerCreationProperties.fillSymbol;
+        }
+
         return geoRSSLayer;
     }
 

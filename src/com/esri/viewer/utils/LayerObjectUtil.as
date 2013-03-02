@@ -19,6 +19,7 @@ package com.esri.viewer.utils
 import com.esri.ags.clusterers.ESRIClusterer;
 import com.esri.ags.layers.Layer;
 import com.esri.ags.renderers.IRenderer;
+import com.esri.ags.symbols.Symbol;
 
 public class LayerObjectUtil
 {
@@ -194,6 +195,30 @@ public class LayerObjectUtil
         //web tiled layer
         var subDomains:String = obj.@subdomains[0];
 
+        var symbolParser:SymbolParser = new SymbolParser();
+
+        var markerSymbol:Symbol;
+        if (obj.simplemarkersymbol[0])
+        {
+            markerSymbol = symbolParser.parseSimpleMarkerSymbol(obj.simplemarkersymbol[0]);
+        }
+        else if (obj.simplemarkersymbol[0])
+        {
+            markerSymbol = symbolParser.parsePictureMarkerSymbol(obj.picturemarkersymbol[0]);
+        }
+
+        var lineSymbol:Symbol;
+        if (obj.simplelinesymbol[0])
+        {
+            lineSymbol = symbolParser.parseSimpleLineSymbol(obj.simplelinesymbol[0]);
+        }
+
+        var fillSymbol:Symbol;
+        if (obj.simplefillsymbol[0])
+        {
+            fillSymbol = symbolParser.parseSimpleFillSymbol(obj.simplefillsymbol[0]);
+        }
+
         var resultObject:Object =
             {
                 id: String(num),
@@ -207,6 +232,7 @@ public class LayerObjectUtil
                 definitionExpression: definitionExpression,
                 disableClientCaching: disableClientCaching,
                 displayLevels: displayLevels,
+                fillSymbol: fillSymbol,
                 gdbVersion: gdbVersion,
                 icon: icon,
                 imageFormat: imageFormat,
@@ -215,7 +241,9 @@ public class LayerObjectUtil
                 label: label,
                 layerId: layerId,
                 latitudeFieldName: latitudeFieldName,
+                lineSymbol: lineSymbol,
                 longitudeFieldName: longitudeFieldName,
+                markerSymbol: markerSymbol,
                 maxAllowableOffset: maxAllowableOffset,
                 maxImageHeight: maxImageHeight,
                 maxImageWidth: maxImageWidth,
