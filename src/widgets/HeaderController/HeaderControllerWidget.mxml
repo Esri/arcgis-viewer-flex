@@ -121,8 +121,7 @@
                 {
                     var searchConfig:XML = configXML.geocoder[0] || configXML.search[0];
 
-                    const shouldEnableSearch:Boolean = (searchConfig.@visible[0] == "true")
-                        || (searchConfig[0] && !searchConfig.@visible[0]);
+                    const shouldEnableSearch:Boolean = searchConfig && (searchConfig.@visible[0] != "false");
                     if (shouldEnableSearch)
                     {
                         singleLineSearch.hostBaseWidget = this;
