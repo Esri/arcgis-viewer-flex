@@ -1,10 +1,7 @@
 <?xml version="1.0"?>
 <configuration>
-    <search>
-        <geocoding>
-            <locator>http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer</locator>
-        </geocoding>
-    </search>
+    <geocoder/>
+
     <links>
         <link>
             <content>
