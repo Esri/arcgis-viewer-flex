@@ -23,10 +23,12 @@ import com.esri.ags.layers.ArcGISImageServiceLayer;
 import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
 import com.esri.ags.layers.CSVLayer;
 import com.esri.ags.layers.FeatureLayer;
+import com.esri.ags.layers.GeoRSSLayer;
 import com.esri.ags.layers.KMLLayer;
 import com.esri.ags.layers.Layer;
 import com.esri.ags.layers.OpenStreetMapLayer;
 import com.esri.ags.layers.WMSLayer;
+import com.esri.ags.layers.WebTiledLayer;
 import com.esri.ags.layers.supportClasses.Field;
 import com.esri.ags.layers.supportClasses.LOD;
 import com.esri.ags.portal.WebMapUtil;
@@ -1187,6 +1189,41 @@ public class ConfigManager extends EventDispatcher
                 lyrXML.@sourcefields = fields.join();
             }
         }
+        else if (layer is WebTiledLayer)
+        {
+            var webTiledLayer:WebTiledLayer = layer as WebTiledLayer;
+            lyrXML = <layer label={label}
+                    type="webtiled"
+                    visible={webTiledLayer.visible}
+                    alpha={webTiledLayer.alpha}
+                    url={webTiledLayer.urlTemplate}/>;
+            if (webTiledLayer.copyright)
+            {
+                lyrXML.@copyright = webTiledLayer.copyright;
+            }
+            if (webTiledLayer.displayLevels)
+            {
+                lyrXML.@displaylevels = webTiledLayer.displayLevels.join();
+            }
+            if (webTiledLayer.subDomains)
+            {
+                lyrXML.@subdomains = webTiledLayer.displayLevels.join();
+            }
+        }
+        else if (layer is GeoRSSLayer)
+        {
+            var geoRSSLayer:GeoRSSLayer = layer as GeoRSSLayer;
+            lyrXML = <layer label={label}
+                    type="georss"
+                    visible={geoRSSLayer.visible}
+                    alpha={geoRSSLayer.alpha}
+                    url={geoRSSLayer.url}/>;
+            if (geoRSSLayer.serviceURL)
+            {
+                lyrXML.@serviceurl = geoRSSLayer.serviceURL;
+            }
+        }
+
         return lyrXML;
     }
 
