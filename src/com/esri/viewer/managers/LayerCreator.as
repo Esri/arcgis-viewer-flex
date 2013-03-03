@@ -107,6 +107,7 @@ public class LayerCreator
     {
         var tiledLayer:ArcGISTiledMapServiceLayer = new ArcGISTiledMapServiceLayer(layerCreationProperties.url);
         tiledLayer.alpha = layerCreationProperties.alpha;
+        tiledLayer.copyright = layerCreationProperties.copyright;
         tiledLayer.id = layerCreationProperties.label;
         tiledLayer.name = layerCreationProperties.label;
         tiledLayer.token = layerCreationProperties.token;
@@ -138,6 +139,7 @@ public class LayerCreator
     {
         var dynLayer:ArcGISDynamicMapServiceLayer = new ArcGISDynamicMapServiceLayer(layerCreationProperties.url);
         dynLayer.alpha = layerCreationProperties.alpha;
+        dynLayer.copyright = layerCreationProperties.copyright;
         dynLayer.id = layerCreationProperties.label;
         dynLayer.gdbVersion = layerCreationProperties.gdbVersion;
         dynLayer.name = layerCreationProperties.label;
@@ -190,6 +192,7 @@ public class LayerCreator
         var featureLayer:FeatureLayer = new FeatureLayer(layerCreationProperties.url);
 
         featureLayer.alpha = layerCreationProperties.alpha;
+        featureLayer.copyright = layerCreationProperties.copyright;
         featureLayer.id = layerCreationProperties.label;
         featureLayer.gdbVersion = layerCreationProperties.gdbVersion;
         featureLayer.name = layerCreationProperties.label;
@@ -249,6 +252,7 @@ public class LayerCreator
     private static function createBingLayer(layerCreationProperties:LayerCreationProperties):VETiledLayer
     {
         var veTiledLayer:VETiledLayer = new VETiledLayer();
+        veTiledLayer.copyright = layerCreationProperties.copyright;
         veTiledLayer.id = layerCreationProperties.label;
         veTiledLayer.name = layerCreationProperties.label;
         veTiledLayer.key = layerCreationProperties.bingMapKey;
@@ -284,6 +288,7 @@ public class LayerCreator
     private static function createImageLayer(layerCreationProperties:LayerCreationProperties):ArcGISImageServiceLayer
     {
         var imgLayer:ArcGISImageServiceLayer = new ArcGISImageServiceLayer(layerCreationProperties.url);
+        imgLayer.copyright = layerCreationProperties.copyright;
         imgLayer.id = layerCreationProperties.label;
         imgLayer.name = layerCreationProperties.label;
         imgLayer.alpha = layerCreationProperties.alpha;
@@ -323,6 +328,7 @@ public class LayerCreator
     {
         var arcimsLayer:ArcIMSMapServiceLayer = new ArcIMSMapServiceLayer();
         arcimsLayer.alpha = layerCreationProperties.alpha;
+        arcimsLayer.copyright = layerCreationProperties.copyright;
         arcimsLayer.id = layerCreationProperties.label;
         arcimsLayer.name = layerCreationProperties.label;
         arcimsLayer.visible = layerCreationProperties.visible;
@@ -365,6 +371,7 @@ public class LayerCreator
     {
         var wmsLayer:WMSLayer = new WMSLayer(layerCreationProperties.url);
         wmsLayer.alpha = layerCreationProperties.alpha;
+        wmsLayer.copyright = layerCreationProperties.copyright;
         wmsLayer.id = layerCreationProperties.label;
         wmsLayer.name = layerCreationProperties.label;
         wmsLayer.visible = layerCreationProperties.visible;
@@ -426,6 +433,7 @@ public class LayerCreator
     {
         var wmtsLayer:WMTSLayer = new WMTSLayer(layerCreationProperties.url);
         wmtsLayer.alpha = layerCreationProperties.alpha;
+        wmtsLayer.copyright = layerCreationProperties.copyright;
         wmtsLayer.id = layerCreationProperties.label;
         wmtsLayer.name = layerCreationProperties.label;
         wmtsLayer.visible = layerCreationProperties.visible;
@@ -467,6 +475,7 @@ public class LayerCreator
     private static function createOSMLayer(layerCreationProperties:LayerCreationProperties):OpenStreetMapLayer
     {
         var osmLayer:OpenStreetMapLayer = new OpenStreetMapLayer();
+        osmLayer.copyright = layerCreationProperties.copyright;
         osmLayer.alpha = layerCreationProperties.alpha;
         osmLayer.id = layerCreationProperties.label;
         osmLayer.name = layerCreationProperties.label;
@@ -487,6 +496,7 @@ public class LayerCreator
         var kmlLayer:KMLLayer = new KMLLayer(layerCreationProperties.url);
 
         kmlLayer.alpha = layerCreationProperties.alpha;
+        kmlLayer.copyright = layerCreationProperties.copyright;
         kmlLayer.id = layerCreationProperties.label;
         kmlLayer.name = layerCreationProperties.label;
         kmlLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
@@ -511,6 +521,7 @@ public class LayerCreator
         var csvLayer:CSVLayer = new CSVLayer(layerCreationProperties.url);
 
         csvLayer.alpha = layerCreationProperties.alpha;
+        csvLayer.copyright = layerCreationProperties.copyright;
         csvLayer.id = layerCreationProperties.label;
         csvLayer.name = layerCreationProperties.label;
         csvLayer.latitudeFieldName = layerCreationProperties.latitudeFieldName;
@@ -558,6 +569,7 @@ public class LayerCreator
         var geoRSSLayer:GeoRSSLayer = new GeoRSSLayer(layerCreationProperties.url);
 
         geoRSSLayer.alpha = layerCreationProperties.alpha;
+        geoRSSLayer.copyright = layerCreationProperties.copyright;
         geoRSSLayer.id = layerCreationProperties.label;
         geoRSSLayer.name = layerCreationProperties.label;
         geoRSSLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
