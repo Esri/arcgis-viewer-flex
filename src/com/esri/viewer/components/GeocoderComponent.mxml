@@ -83,16 +83,16 @@
                 invalidateProperties();
             }
 
-            private var _locatorServicesConfigured:Boolean;
+            private var _locatorServiceConfigured:Boolean;
 
-            public function get locatorServicesConfigured():Boolean
+            public function get locatorServiceConfigured():Boolean
             {
-                return _locatorServicesConfigured;
+                return _locatorServiceConfigured;
             }
 
-            public function set locatorServicesConfigured(value:Boolean):void
+            public function set locatorServiceConfigured(value:Boolean):void
             {
-                _locatorServicesConfigured = value;
+                _locatorServiceConfigured = value;
                 invalidateProperties();
             }
 
@@ -225,7 +225,7 @@
                 if (locatorDisabled)
                 {
                     geocoder.url = null;
-                    locatorServicesConfigured = true;
+                    locatorServiceConfigured = true;
                     return;
                 }
 
@@ -273,7 +273,7 @@
                             showError(hostBaseWidget.getDefaultString("singleLineGeocodingNotSupportedError"), SINGLE_LINE_SEARCH);
                         }
 
-                        locatorServicesConfigured = true;
+                        locatorServiceConfigured = true;
                     }
 
                     function locatorInfoRequest_faultHandler(fault:Fault, token:Object = null):void
@@ -283,12 +283,12 @@
                                                                                     ErrorMessageUtil.getKnownErrorCauseMessage(fault),
                                                                                     ErrorMessageUtil.makeHTMLSafe(fault.toString()));
                         showError(errorMessage, SINGLE_LINE_SEARCH);
-                        locatorServicesConfigured = true;
+                        locatorServiceConfigured = true;
                     }
                 }
                 else
                 {
-                    locatorServicesConfigured = true;
+                    locatorServiceConfigured = true;
                 }
             }
 
@@ -413,7 +413,7 @@
             {
                 super.commitProperties();
 
-                if (locatorServicesConfigured && mapServicesConfigured)
+                if (locatorServiceConfigured && mapServicesConfigured)
                 {
                     configureSearchInput();
                 }
