@@ -68,6 +68,7 @@ public class LayerCreationProperties
     public var visible:Boolean;
     public var visibleLayers:String;
     public var wkid:Number;
+    public var subDomains:String;
 
     public static function fromLayerObject(layerObject:Object):LayerCreationProperties
     {
@@ -107,6 +108,7 @@ public class LayerCreationProperties
         creationProps.serviceURL = layerObject.serviceURL;
         creationProps.skipGetCapabilities = layerObject.skipGetCapabilities;
         creationProps.sourceFields = layerObject.sourceFields;
+        creationProps.subDomains = layerObject.subDomains;
         creationProps.style = layerObject.style;
         creationProps.tileMatrixSetId = layerObject.tileMatrixSetId;
         creationProps.token = layerObject.token;

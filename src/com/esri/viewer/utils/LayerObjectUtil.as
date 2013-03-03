@@ -191,6 +191,9 @@ public class LayerObjectUtil
         var sourceFields:String = obj.@sourcefields;
         var columnDelimiter:String = obj.@columndelimiter;
 
+        //web tiled layer
+        var subDomains:String = obj.@subdomains[0];
+
         var resultObject:Object =
             {
                 id: String(num),
@@ -230,6 +233,7 @@ public class LayerObjectUtil
                 skipGetCapabilities: skipGetCapabilities,
                 sourceFields: sourceFields,
                 style: style,
+                subDomains: subDomains,
                 subLayers: subLayers,
                 tileMatrixSetId: tileMatrixSetId,
                 token: token,

@@ -29,6 +29,7 @@ import com.esri.ags.layers.Layer;
 import com.esri.ags.layers.OpenStreetMapLayer;
 import com.esri.ags.layers.WMSLayer;
 import com.esri.ags.layers.WMTSLayer;
+import com.esri.ags.layers.WebTiledLayer;
 import com.esri.ags.layers.supportClasses.Field;
 import com.esri.ags.virtualearth.VETiledLayer;
 
@@ -95,6 +96,10 @@ public class LayerCreator
         else if (layerType == "georss")
         {
             return createGeoRSSLayer(layerCreationProperties);
+        }
+        else if (layerType == "webtiled")
+        {
+            return createWebTiledLayer(layerCreationProperties);
         }
         else
         {
@@ -587,6 +592,40 @@ public class LayerCreator
         }
         geoRSSLayer.visible = layerCreationProperties.visible;
         return geoRSSLayer;
+    }
+
+    private static function createWebTiledLayer(layerCreationProperties:LayerCreationProperties):Layer
+    {
+        var webTiledLayer:WebTiledLayer = new WebTiledLayer(layerCreationProperties.url);
+
+        webTiledLayer.alpha = layerCreationProperties.alpha;
+        webTiledLayer.id = layerCreationProperties.label;
+        webTiledLayer.name = layerCreationProperties.label;
+        webTiledLayer.visible = layerCreationProperties.visible;
+        webTiledLayer.copyright = layerCreationProperties.copyright;
+
+        if (layerCreationProperties.displayLevels)
+        {
+            webTiledLayer.displayLevels = layerCreationProperties.displayLevels.split(",");
+            for (var i:int = 0; i < webTiledLayer.displayLevels.length; i++)
+            {
+                webTiledLayer.displayLevels[i] = Number(webTiledLayer.displayLevels[i]); // convert to Numbers
+            }
+        }
+        if (!isNaN(layerCreationProperties.minScale))
+        {
+            webTiledLayer.minScale = layerCreationProperties.minScale;
+        }
+        if (!isNaN(layerCreationProperties.maxScale))
+        {
+            webTiledLayer.maxScale = layerCreationProperties.maxScale;
+        }
+        if (layerCreationProperties.subDomains)
+        {
+            webTiledLayer.subDomains = layerCreationProperties.subDomains.split(",");
+        }
+
+        return webTiledLayer;
     }
 }
 
