@@ -121,6 +121,7 @@ public class LayerObjectUtil
             }
         }
 
+        var copyright:String = obj.@copyright[0];
         var clustererParser:ClustererParser = new ClustererParser();
         var clusterer:ESRIClusterer = clustererParser.parseClusterer(obj.clustering[0]);
         var rendererParser:RendererParser = new RendererParser();
@@ -197,6 +198,7 @@ public class LayerObjectUtil
                 bandIds: bandIds,
                 autoRefresh: autoRefresh,
                 columnDelimiter: columnDelimiter,
+                copyright: copyright,
                 culture: culture,
                 clusterer: clusterer,
                 definitionExpression: definitionExpression,

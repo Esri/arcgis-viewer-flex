@@ -27,6 +27,7 @@ public class LayerCreationProperties
     public var bingMapKey:String;
     public var clusterer:ESRIClusterer;
     public var columnDelimiter:String;
+    public var copyright:String;
     public var culture:String;
     public var definitionExpression:String;
     public var disableClientCaching:Boolean;
@@ -76,6 +77,7 @@ public class LayerCreationProperties
         creationProps.autoRefresh = Number(layerObject.autoRefresh);
         creationProps.bandIds = layerObject.bandIds;
         creationProps.bingMapKey = layerObject.key;
+        creationProps.copyright = layerObject.copyright;
         creationProps.clusterer = layerObject.clusterer;
         creationProps.columnDelimiter = layerObject.columnDelimiter;
         creationProps.culture = layerObject.culture;
