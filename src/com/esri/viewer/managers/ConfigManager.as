@@ -1146,6 +1146,10 @@ public class ConfigManager extends EventDispatcher
                     skipgetcapabilities={wmsLayer.skipGetCapabilities}
                     imageformat={wmsLayer.imageFormat}
                     url={wmsLayer.url}/>;
+            if (wmsLayer.copyright)
+            {
+                lyrXML.@copyright = wmsLayer.copyright;
+            }
             if (wmsLayer.maxImageHeight > 0)
             {
                 lyrXML.@maximageheight = wmsLayer.maxImageHeight;
