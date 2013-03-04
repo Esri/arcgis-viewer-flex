@@ -202,7 +202,7 @@ public class LayerObjectUtil
         {
             markerSymbol = symbolParser.parseSimpleMarkerSymbol(obj.simplemarkersymbol[0]);
         }
-        else if (obj.simplemarkersymbol[0])
+        else if (obj.picturemarkersymbol[0])
         {
             markerSymbol = symbolParser.parsePictureMarkerSymbol(obj.picturemarkersymbol[0]);
         }
