@@ -1209,7 +1209,7 @@ public class ConfigManager extends EventDispatcher
             }
             if (webTiledLayer.subDomains)
             {
-                lyrXML.@subdomains = webTiledLayer.displayLevels.join();
+                lyrXML.@subdomains = webTiledLayer.subDomains.join();
             }
         }
         else if (layer is WMSLayer)
