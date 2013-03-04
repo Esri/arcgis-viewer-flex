@@ -22,6 +22,10 @@ import com.esri.ags.symbols.SimpleLineSymbol;
 import com.esri.ags.symbols.SimpleMarkerSymbol;
 import com.esri.ags.symbols.Symbol;
 
+import flash.utils.ByteArray;
+
+import mx.utils.Base64Decoder;
+
 public class SymbolParser
 {
     public function parseSymbol(symbolXML:XML):Symbol
@@ -138,7 +142,18 @@ public class SymbolParser
 
     public function parsePictureMarkerSymbol(pmsXML:XML):PictureMarkerSymbol
     {
-        const url:String = pmsXML.@url;
+        const url:String = pmsXML.@url[0];
+        const source:String = pmsXML.@source[0];
+
+        var sourceData:ByteArray;
+        if (source)
+        {
+            var decoder:Base64Decoder = new Base64Decoder();
+            decoder.decode(source);
+            sourceData = decoder.toByteArray();
+        }
+
+        const pictureSource:Object = sourceData ? sourceData : url;
 
         const parsedHeight:Number = parseFloat(pmsXML.@height[0]);
         const parsedWidth:Number = parseFloat(pmsXML.@width[0]);
@@ -152,7 +167,7 @@ public class SymbolParser
         const yOffset:Number = !isNaN(parsedYOffset) ? parsedYOffset : 0;
         const angle:Number = !isNaN(parsedAngle) ? parsedAngle : 0;
 
-        return new PictureMarkerSymbol(url, width, height, xOffset, yOffset, angle);
+        return new PictureMarkerSymbol(pictureSource, width, height, xOffset, yOffset, angle);
     }
 
     public function parseSimpleLineSymbol(slsXML:XML):SimpleLineSymbol
