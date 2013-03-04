@@ -23,6 +23,7 @@
     <module application="src/index.mxml" destPath="widgets/Chart/ChartWidget.swf" optimize="true" sourcePath="src/widgets/Chart/ChartWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/DataExtract/DataExtractWidget.swf" optimize="true" sourcePath="src/widgets/DataExtract/DataExtractWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/Draw/DrawWidget.swf" optimize="true" sourcePath="src/widgets/Draw/DrawWidget.mxml"/>
+	<module application="src/index.mxml" destPath="widgets/Directions/DirectionsWidget.swf" optimize="true" sourcePath="src/widgets/Directions/DirectionsWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/Edit/EditWidget.swf" optimize="true" sourcePath="src/widgets/Edit/EditWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/Geoprocessing/GeoprocessingWidget.swf" optimize="true" sourcePath="src/widgets/Geoprocessing/GeoprocessingWidget.mxml"/>
     <module application="src/index.mxml" destPath="widgets/GeoRSS/GeoRSSWidget.swf" optimize="true" sourcePath="src/widgets/GeoRSS/GeoRSSWidget.mxml"/>
