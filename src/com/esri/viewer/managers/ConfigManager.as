@@ -32,11 +32,6 @@ import com.esri.ags.layers.WebTiledLayer;
 import com.esri.ags.layers.supportClasses.Field;
 import com.esri.ags.layers.supportClasses.LOD;
 import com.esri.ags.portal.WebMapUtil;
-import com.esri.ags.symbols.PictureMarkerSymbol;
-import com.esri.ags.symbols.SimpleFillSymbol;
-import com.esri.ags.symbols.SimpleLineSymbol;
-import com.esri.ags.symbols.SimpleMarkerSymbol;
-import com.esri.ags.symbols.Symbol;
 import com.esri.ags.tasks.GeometryServiceSingleton;
 import com.esri.ags.virtualearth.VETiledLayer;
 import com.esri.viewer.AppEvent;
@@ -1148,18 +1143,6 @@ public class ConfigManager extends EventDispatcher
             {
                 lyrXML.@serviceurl = geoRSSLayer.serviceURL;
             }
-            if (geoRSSLayer.pointSymbol)
-            {
-                lyrXML.appendChild(getPointSymbolXML(geoRSSLayer.pointSymbol));
-            }
-            if (geoRSSLayer.polylineSymbol)
-            {
-                lyrXML.appendChild(getLineSymbolXML(geoRSSLayer.polylineSymbol));
-            }
-            if (geoRSSLayer.polygonSymbol)
-            {
-                lyrXML.appendChild(getPolygonSymbolXML(geoRSSLayer.polygonSymbol));
-            }
         }
         else if (layer is KMLLayer)
         {
@@ -1234,90 +1217,6 @@ public class ConfigManager extends EventDispatcher
         }
 
         return lyrXML;
-    }
-
-    private function getPointSymbolXML(pointSymbol:Symbol):XML
-    {
-        var pointSymbolXML:XML;
-
-        if (pointSymbol)
-        {
-            if (pointSymbol is SimpleMarkerSymbol)
-            {
-                var sms:SimpleMarkerSymbol = pointSymbol as SimpleMarkerSymbol;
-
-                pointSymbolXML = <simplemarkersymbol
-                        alpha={sms.alpha}
-                        color={sms.color}
-                        size={sms.size}
-                        style={sms.style}/>;
-
-                if (sms.outline)
-                {
-                    pointSymbolXML.appendChild(<outline
-                                                   color={sms.outline.color}
-                                                   width={sms.outline.width}
-                                                   style={sms.outline.style}/>);
-                }
-            }
-            else if (pointSymbol is PictureMarkerSymbol)
-            {
-                var pms:PictureMarkerSymbol = pointSymbol as PictureMarkerSymbol;
-
-                pointSymbolXML = <picturemarkersymbol
-                        url={pms.source}
-                        height={pms.height}
-                        width={pms.width}
-                        xoffset={pms.xoffset}
-                        yoffset={pms.yoffset}
-                        angle={pms.angle}/>;
-            }
-        }
-
-        return pointSymbolXML;
-    }
-
-    private function getLineSymbolXML(polylineSymbol:Symbol):XML
-    {
-        var polylineSymbolXML:XML;
-
-        if (polylineSymbol)
-        {
-            var sls:SimpleLineSymbol = polylineSymbol as SimpleLineSymbol;
-
-            polylineSymbolXML = <simplelinesymbol
-                    alpha={sls.alpha}
-                    color={sls.color}
-                    width={sls.width}
-                    style={sls.style}/>;
-        }
-
-        return polylineSymbolXML;
-    }
-
-    private function getPolygonSymbolXML(polygonSymbol:Symbol):XML
-    {
-        var polygonSymbolXML:XML;
-
-        if (polygonSymbol)
-        {
-            var sfs:SimpleFillSymbol = polygonSymbol as SimpleFillSymbol;
-
-            polygonSymbolXML = <simplefillsymbol
-                    alpha={sfs.alpha}
-                    color={sfs.color}
-                    style={sfs.style}/>;
-
-            if (sfs.outline)
-            {
-                polygonSymbolXML.appendChild(<outline
-                                                 color={sfs.outline.color}
-                                                 width={sfs.outline.width}
-                                                 style={sfs.outline.style}/>);
-            }
-        }
-
-        return polygonSymbolXML;
     }
 
     private function appendPortalBasemaps(portalURL:String):void
