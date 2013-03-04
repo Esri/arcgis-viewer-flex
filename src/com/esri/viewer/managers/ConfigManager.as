@@ -1089,6 +1089,30 @@ public class ConfigManager extends EventDispatcher
                 lyrXML.@displaylevels = tiledLyr.displayLevels.join();
             }
         }
+        else if (layer is CSVLayer)
+        {
+            var csvLyr:CSVLayer = layer as CSVLayer;
+            lyrXML = <layer label={label}
+                    type="csv"
+                    visible={csvLyr.visible}
+                    alpha={csvLyr.alpha}
+                    url={csvLyr.url}
+                    longitudefieldname={csvLyr.longitudeFieldName}
+                    latitudefieldname={csvLyr.latitudeFieldName}/>;
+            if (csvLyr.columnDelimiter != ",")
+            {
+                lyrXML.@columndelimiter = csvLyr.columnDelimiter;
+            }
+            if (csvLyr.sourceFields)
+            {
+                var fields:Array = [];
+                for each (var field:Field in csvLyr.sourceFields)
+                {
+                    fields.push(field.name + "|" + field.alias + "|" + field.type);
+                }
+                lyrXML.@sourcefields = fields.join();
+            }
+        }
         else if (layer is FeatureLayer && !(layer is CSVLayer))
         {
             var feaLyr:FeatureLayer = layer as FeatureLayer;
@@ -1112,6 +1136,40 @@ public class ConfigManager extends EventDispatcher
                         iseditable={feaLyr.isEditable}/>;
             }
         }
+        else if (layer is GeoRSSLayer)
+        {
+            var geoRSSLayer:GeoRSSLayer = layer as GeoRSSLayer;
+            lyrXML = <layer label={label}
+                    type="georss"
+                    visible={geoRSSLayer.visible}
+                    alpha={geoRSSLayer.alpha}
+                    url={geoRSSLayer.url}/>;
+            if (geoRSSLayer.serviceURL)
+            {
+                lyrXML.@serviceurl = geoRSSLayer.serviceURL;
+            }
+            if (geoRSSLayer.pointSymbol)
+            {
+                lyrXML.appendChild(getPointSymbolXML(geoRSSLayer.pointSymbol));
+            }
+            if (geoRSSLayer.polylineSymbol)
+            {
+                lyrXML.appendChild(getLineSymbolXML(geoRSSLayer.polylineSymbol));
+            }
+            if (geoRSSLayer.polygonSymbol)
+            {
+                lyrXML.appendChild(getPolygonSymbolXML(geoRSSLayer.polygonSymbol));
+            }
+        }
+        else if (layer is KMLLayer)
+        {
+            var kmlLayer:KMLLayer = layer as KMLLayer;
+            lyrXML = <layer label={label}
+                    type="kml"
+                    visible={kmlLayer.visible}
+                    alpha={kmlLayer.alpha}
+                    url={kmlLayer.url}/>;
+        }
         else if (layer is OpenStreetMapLayer)
         {
             var osmLyr:OpenStreetMapLayer = layer as OpenStreetMapLayer;
@@ -1133,14 +1191,26 @@ public class ConfigManager extends EventDispatcher
                 lyrXML.@displaylevels = veLyr.displayLevels.join();
             }
         }
-        else if (layer is KMLLayer)
+        else if (layer is WebTiledLayer)
         {
-            var kmlLayer:KMLLayer = layer as KMLLayer;
+            var webTiledLayer:WebTiledLayer = layer as WebTiledLayer;
             lyrXML = <layer label={label}
-                    type="kml"
-                    visible={kmlLayer.visible}
-                    alpha={kmlLayer.alpha}
-                    url={kmlLayer.url}/>;
+                    type="webtiled"
+                    visible={webTiledLayer.visible}
+                    alpha={webTiledLayer.alpha}
+                    url={webTiledLayer.urlTemplate}/>;
+            if (webTiledLayer.copyright)
+            {
+                lyrXML.@copyright = webTiledLayer.copyright;
+            }
+            if (webTiledLayer.displayLevels)
+            {
+                lyrXML.@displaylevels = webTiledLayer.displayLevels.join();
+            }
+            if (webTiledLayer.subDomains)
+            {
+                lyrXML.@subdomains = webTiledLayer.displayLevels.join();
+            }
         }
         else if (layer is WMSLayer)
         {
@@ -1168,76 +1238,6 @@ public class ConfigManager extends EventDispatcher
             if (wmsLayer.visibleLayers)
             {
                 lyrXML.@visiblelayers = wmsLayer.visibleLayers.toArray().join();
-            }
-        }
-        else if (layer is CSVLayer)
-        {
-            var csvLyr:CSVLayer = layer as CSVLayer;
-            lyrXML = <layer label={label}
-                    type="csv"
-                    visible={csvLyr.visible}
-                    alpha={csvLyr.alpha}
-                    url={csvLyr.url}
-                    longitudefieldname={csvLyr.longitudeFieldName}
-                    latitudefieldname={csvLyr.latitudeFieldName}/>;
-            if (csvLyr.columnDelimiter != ",")
-            {
-                lyrXML.@columndelimiter = csvLyr.columnDelimiter;
-            }
-            if (csvLyr.sourceFields)
-            {
-                var fields:Array = [];
-                for each (var field:Field in csvLyr.sourceFields)
-                {
-                    fields.push(field.name + "|" + field.alias + "|" + field.type);
-                }
-                lyrXML.@sourcefields = fields.join();
-            }
-        }
-        else if (layer is WebTiledLayer)
-        {
-            var webTiledLayer:WebTiledLayer = layer as WebTiledLayer;
-            lyrXML = <layer label={label}
-                    type="webtiled"
-                    visible={webTiledLayer.visible}
-                    alpha={webTiledLayer.alpha}
-                    url={webTiledLayer.urlTemplate}/>;
-            if (webTiledLayer.copyright)
-            {
-                lyrXML.@copyright = webTiledLayer.copyright;
-            }
-            if (webTiledLayer.displayLevels)
-            {
-                lyrXML.@displaylevels = webTiledLayer.displayLevels.join();
-            }
-            if (webTiledLayer.subDomains)
-            {
-                lyrXML.@subdomains = webTiledLayer.displayLevels.join();
-            }
-        }
-        else if (layer is GeoRSSLayer)
-        {
-            var geoRSSLayer:GeoRSSLayer = layer as GeoRSSLayer;
-            lyrXML = <layer label={label}
-                    type="georss"
-                    visible={geoRSSLayer.visible}
-                    alpha={geoRSSLayer.alpha}
-                    url={geoRSSLayer.url}/>;
-            if (geoRSSLayer.serviceURL)
-            {
-                lyrXML.@serviceurl = geoRSSLayer.serviceURL;
-            }
-            if (geoRSSLayer.pointSymbol)
-            {
-                lyrXML.appendChild(getPointSymbolXML(geoRSSLayer.pointSymbol));
-            }
-            if (geoRSSLayer.polylineSymbol)
-            {
-                lyrXML.appendChild(getLineSymbolXML(geoRSSLayer.polylineSymbol));
-            }
-            if (geoRSSLayer.polygonSymbol)
-            {
-                lyrXML.appendChild(getPolygonSymbolXML(geoRSSLayer.polygonSymbol));
             }
         }
 
