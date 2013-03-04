@@ -1186,10 +1186,6 @@ public class ConfigManager extends EventDispatcher
                     visible={veLyr.visible}
                     alpha={veLyr.alpha}
                     style={veLyr.mapStyle}/>;
-            if (veLyr.displayLevels)
-            {
-                lyrXML.@displaylevels = veLyr.displayLevels.join();
-            }
         }
         else if (layer is WebTiledLayer)
         {
@@ -1202,10 +1198,6 @@ public class ConfigManager extends EventDispatcher
             if (webTiledLayer.copyright)
             {
                 lyrXML.@copyright = webTiledLayer.copyright;
-            }
-            if (webTiledLayer.displayLevels)
-            {
-                lyrXML.@displaylevels = webTiledLayer.displayLevels.join();
             }
             if (webTiledLayer.subDomains)
             {
