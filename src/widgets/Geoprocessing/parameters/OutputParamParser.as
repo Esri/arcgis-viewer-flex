@@ -16,10 +16,20 @@
 package widgets.Geoprocessing.parameters
 {
 
+import com.esri.ags.symbols.SimpleLineSymbol;
 import com.esri.viewer.utils.PopUpInfoParser;
+import com.esri.viewer.utils.RendererParser;
+import com.esri.viewer.utils.SymbolParser;
 
 public class OutputParamParser extends BaseParamParser
 {
+    public function OutputParamParser()
+    {
+        var outputParamSymbolParser:SymbolParser = new SymbolParser();
+        outputParamSymbolParser.defaultPolylineSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, 0, 1, 1);
+        rendererParser = new RendererParser(outputParamSymbolParser);
+    }
+
     override public function parseParameters(paramsXML:XMLList):Array
     {
         var params:Array = [];

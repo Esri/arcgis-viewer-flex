@@ -17,12 +17,21 @@ package widgets.Geoprocessing.parameters
 {
 
 import com.esri.ags.SpatialReference;
+import com.esri.ags.symbols.SimpleFillSymbol;
+import com.esri.ags.symbols.SimpleLineSymbol;
+import com.esri.ags.symbols.SimpleMarkerSymbol;
+import com.esri.viewer.utils.RendererParser;
+import com.esri.viewer.utils.SymbolParser;
 
 public class InputParamParser extends BaseParamParser
 {
     public function InputParamParser()
     {
-        rendererParser = new InputParamRendererParser();
+        var inputParamSymbolParser:SymbolParser = new SymbolParser();
+        inputParamSymbolParser.defaultPointSymbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, 15, 0x3FAFDC, 1, 0, 0, 0);
+        inputParamSymbolParser.defaultPolylineSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, 0x3FAFDC, 1, 5);
+        inputParamSymbolParser.defaultPolygonSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, 0x3FAFDC, 1);
+        rendererParser = new RendererParser(inputParamSymbolParser);
     }
 
     override public function parseParameters(paramsXML:XMLList):Array
