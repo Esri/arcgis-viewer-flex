@@ -124,9 +124,14 @@
                 url="widgets/Time/TimeWidget.swf"/>
         </widgetgroup>
     </widgetcontainer>
-    <widgetcontainer paneltype="bottom" initialstate="collapsed" height="250">
+    <widgetcontainer paneltype="bottom" initialstate="collapsed" size="250">
             <widget label="Attribute Table"
                 config="widgets/AttributeTable/AttributeTableWidget.xml"
                 url="widgets/AttributeTable/AttributeTableWidget.swf"/>
+    </widgetcontainer>
+    <widgetcontainer paneltype="left" initialstate="collapsed" size="300">
+            <widget label="Directions"
+                config="widgets/Directions/DirectionsWidget.xml"
+                url="widgets/Directions/DirectionsWidget.swf"/>
     </widgetcontainer>
 </configuration>
