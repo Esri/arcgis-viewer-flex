@@ -115,8 +115,15 @@ public class LayerCreator
         tiledLayer.copyright = layerCreationProperties.copyright;
         tiledLayer.id = layerCreationProperties.label;
         tiledLayer.name = layerCreationProperties.label;
+        tiledLayer.showInLegend = layerCreationProperties.showInLegend;
         tiledLayer.token = layerCreationProperties.token;
         tiledLayer.visible = layerCreationProperties.visible;
+
+        if (layerCreationProperties.showInLegend
+            && layerCreationProperties.showInLegendHiddenLayers)
+        {
+            tiledLayer.showInLegendHiddenLayers = layerCreationProperties.showInLegendHiddenLayers.split(",");
+        }
         if (layerCreationProperties.displayLevels)
         {
             tiledLayer.displayLevels = layerCreationProperties.displayLevels.split(",");
@@ -148,10 +155,17 @@ public class LayerCreator
         dynLayer.id = layerCreationProperties.label;
         dynLayer.gdbVersion = layerCreationProperties.gdbVersion;
         dynLayer.name = layerCreationProperties.label;
+        dynLayer.showInLegend = layerCreationProperties.showInLegend;
         dynLayer.token = layerCreationProperties.token;
         dynLayer.visible = layerCreationProperties.visible;
         dynLayer.useMapTime = layerCreationProperties.useMapTime;
         dynLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
+
+        if (layerCreationProperties.showInLegend
+            && layerCreationProperties.showInLegendHiddenLayers)
+        {
+            dynLayer.showInLegendHiddenLayers = layerCreationProperties.showInLegendHiddenLayers.split(",");
+        }
         if (layerCreationProperties.autoRefresh > 0)
         {
             setInterval(dynLayer.refresh, layerCreationProperties.autoRefresh * 1000);
@@ -208,6 +222,7 @@ public class LayerCreator
         featureLayer.useMapTime = layerCreationProperties.useMapTime;
         featureLayer.clusterer = layerCreationProperties.clusterer;
         featureLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
+        featureLayer.showInLegend = layerCreationProperties.showInLegend;
         if (layerCreationProperties.renderer)
         {
             featureLayer.renderer = layerCreationProperties.renderer;
@@ -263,6 +278,7 @@ public class LayerCreator
         veTiledLayer.key = layerCreationProperties.bingMapKey;
         veTiledLayer.visible = layerCreationProperties.visible;
         veTiledLayer.alpha = layerCreationProperties.alpha;
+        veTiledLayer.showInLegend = layerCreationProperties.showInLegend;
         if (layerCreationProperties.style)
         {
             veTiledLayer.mapStyle = layerCreationProperties.style;
@@ -302,6 +318,7 @@ public class LayerCreator
         imgLayer.noData = layerCreationProperties.noData;
         imgLayer.useMapTime = layerCreationProperties.useMapTime;
         imgLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
+        imgLayer.showInLegend = layerCreationProperties.showInLegend;
         if (layerCreationProperties.imageFormat)
         {
             imgLayer.imageFormat = layerCreationProperties.imageFormat;
@@ -339,6 +356,7 @@ public class LayerCreator
         arcimsLayer.visible = layerCreationProperties.visible;
         arcimsLayer.serviceHost = layerCreationProperties.serviceHost;
         arcimsLayer.serviceName = layerCreationProperties.serviceName;
+        arcimsLayer.showInLegend = layerCreationProperties.showInLegend;
         if (layerCreationProperties.autoRefresh > 0)
         {
             setInterval(arcimsLayer.refresh, layerCreationProperties.autoRefresh * 1000);
@@ -381,6 +399,7 @@ public class LayerCreator
         wmsLayer.name = layerCreationProperties.label;
         wmsLayer.visible = layerCreationProperties.visible;
         wmsLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
+        wmsLayer.showInLegend = layerCreationProperties.showInLegend;
         if (layerCreationProperties.wkid)
         {
             wmsLayer.spatialReference = new SpatialReference(layerCreationProperties.wkid);
@@ -442,6 +461,7 @@ public class LayerCreator
         wmtsLayer.id = layerCreationProperties.label;
         wmtsLayer.name = layerCreationProperties.label;
         wmtsLayer.visible = layerCreationProperties.visible;
+        wmtsLayer.showInLegend = layerCreationProperties.showInLegend;
         if (layerCreationProperties.imageFormat)
         {
             wmtsLayer.imageFormat = layerCreationProperties.imageFormat;
@@ -485,6 +505,7 @@ public class LayerCreator
         osmLayer.id = layerCreationProperties.label;
         osmLayer.name = layerCreationProperties.label;
         osmLayer.visible = layerCreationProperties.visible;
+        osmLayer.showInLegend = layerCreationProperties.showInLegend;
         if (!isNaN(layerCreationProperties.minScale))
         {
             osmLayer.minScale = layerCreationProperties.minScale;
@@ -505,6 +526,7 @@ public class LayerCreator
         kmlLayer.id = layerCreationProperties.label;
         kmlLayer.name = layerCreationProperties.label;
         kmlLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
+        kmlLayer.showInLegend = layerCreationProperties.showInLegend;
         if (layerCreationProperties.serviceURL)
         {
             kmlLayer.serviceURL = layerCreationProperties.serviceURL;
@@ -531,6 +553,7 @@ public class LayerCreator
         csvLayer.name = layerCreationProperties.label;
         csvLayer.latitudeFieldName = layerCreationProperties.latitudeFieldName;
         csvLayer.longitudeFieldName = layerCreationProperties.longitudeFieldName;
+        csvLayer.showInLegend = layerCreationProperties.showInLegend;
         if (layerCreationProperties.renderer)
         {
             csvLayer.renderer = layerCreationProperties.renderer;
@@ -578,6 +601,7 @@ public class LayerCreator
         geoRSSLayer.id = layerCreationProperties.label;
         geoRSSLayer.name = layerCreationProperties.label;
         geoRSSLayer.disableClientCaching = layerCreationProperties.disableClientCaching;
+        geoRSSLayer.showInLegend = layerCreationProperties.showInLegend;
         geoRSSLayer.visible = layerCreationProperties.visible;
 
         if (layerCreationProperties.serviceURL)
@@ -617,6 +641,7 @@ public class LayerCreator
         webTiledLayer.name = layerCreationProperties.label;
         webTiledLayer.visible = layerCreationProperties.visible;
         webTiledLayer.copyright = layerCreationProperties.copyright;
+        webTiledLayer.showInLegend = layerCreationProperties.showInLegend;
 
         if (layerCreationProperties.displayLevels)
         {

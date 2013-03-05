@@ -57,6 +57,8 @@ public class LayerCreationProperties
     public var serviceName:String;
     public var serviceMode:String;
     public var serviceURL:String;
+    public var showInLegend:Boolean;
+    public var showInLegendHiddenLayers:String;
     public var skipGetCapabilities:String;
     public var sourceFields:String;
     public var style:String;
@@ -113,6 +115,8 @@ public class LayerCreationProperties
         creationProps.serviceName = layerObject.serviceName;
         creationProps.serviceMode = layerObject.serviceMode;
         creationProps.serviceURL = layerObject.serviceURL;
+        creationProps.showInLegend = layerObject.showInLegend;
+        creationProps.showInLegendHiddenLayers = layerObject.showInLegendHiddenLayers;
         creationProps.skipGetCapabilities = layerObject.skipGetCapabilities;
         creationProps.sourceFields = layerObject.sourceFields;
         creationProps.subDomains = layerObject.subDomains;

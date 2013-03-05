@@ -1049,8 +1049,13 @@ public class ConfigManager extends EventDispatcher
                     type="dynamic"
                     visible={dynLyr.visible}
                     alpha={dynLyr.alpha}
+                    showinlegend={dynLyr.showInLegend}
                     useproxy={dynLyr.proxyURL != null}
                     url={dynLyr.url}/>;
+            if (dynLyr.showInLegend && dynLyr.showInLegendHiddenLayers)
+            {
+                lyrXML.@showinlegendhiddenlayers = dynLyr.showInLegendHiddenLayers.join();
+            }
             if (dynLyr.visibleLayers)
             {
                 lyrXML.@visiblelayers = dynLyr.visibleLayers.toArray().join();
@@ -1063,6 +1068,7 @@ public class ConfigManager extends EventDispatcher
                     type="image"
                     visible={imgLyr.visible}
                     alpha={imgLyr.alpha}
+                    showinlegend={imgLyr.showInLegend}
                     useproxy={imgLyr.proxyURL != null}
                     url={imgLyr.url}/>;
             if (imgLyr.bandIds)
@@ -1076,12 +1082,21 @@ public class ConfigManager extends EventDispatcher
             lyrXML = <layer label={label}
                     type="tiled"
                     visible={tiledLyr.visible}
+                    showinlegend={tiledLyr.showInLegend}
                     alpha={tiledLyr.alpha}
                     useproxy={tiledLyr.proxyURL != null}
                     url={tiledLyr.url}/>;
             if (tiledLyr.displayLevels)
             {
                 lyrXML.@displaylevels = tiledLyr.displayLevels.join();
+            }
+            if (tiledLyr.showInLegend && tiledLyr.showInLegendHiddenLayers)
+            {
+                lyrXML.@showinlegendhiddenlayers = tiledLyr.showInLegendHiddenLayers.join();
+            }
+            else
+            {
+                lyrXML.@showinlegend = tiledLyr.showInLegend;
             }
         }
         else if (layer is CSVLayer)
@@ -1090,6 +1105,7 @@ public class ConfigManager extends EventDispatcher
             lyrXML = <layer label={label}
                     type="csv"
                     visible={csvLyr.visible}
+                    showinlegend={csvLyr.showInLegend}
                     alpha={csvLyr.alpha}
                     url={csvLyr.url}
                     longitudefieldname={csvLyr.longitudeFieldName}
@@ -1115,6 +1131,7 @@ public class ConfigManager extends EventDispatcher
             {
                 lyrXML = <layer label={label}
                         type="feature"
+                        showinlegend={feaLyr.showInLegend}
                         visible={feaLyr.visible}
                         alpha={feaLyr.alpha}
                         iseditable={feaLyr.isEditable}/>
@@ -1123,6 +1140,7 @@ public class ConfigManager extends EventDispatcher
             {
                 lyrXML = <layer label={label}
                         type="feature"
+                        showinlegend={feaLyr.showInLegend}
                         visible={feaLyr.visible}
                         alpha={feaLyr.alpha}
                         mode={feaLyr.mode}
@@ -1136,6 +1154,7 @@ public class ConfigManager extends EventDispatcher
             var geoRSSLayer:GeoRSSLayer = layer as GeoRSSLayer;
             lyrXML = <layer label={label}
                     type="georss"
+                    showinlegend={geoRSSLayer.showInLegend}
                     visible={geoRSSLayer.visible}
                     alpha={geoRSSLayer.alpha}
                     url={geoRSSLayer.url}/>;
@@ -1145,6 +1164,7 @@ public class ConfigManager extends EventDispatcher
             var kmlLayer:KMLLayer = layer as KMLLayer;
             lyrXML = <layer label={label}
                     type="kml"
+                    showinlegend={kmlLayer.showInLegend}
                     visible={kmlLayer.visible}
                     alpha={kmlLayer.alpha}
                     url={kmlLayer.url}/>;
@@ -1155,6 +1175,7 @@ public class ConfigManager extends EventDispatcher
             lyrXML = <layer label={label}
                     type="osm"
                     visible={osmLyr.visible}
+                    showinlegend={osmLyr.showInLegend}
                     alpha={osmLyr.alpha}/>;
         }
         else if (layer is VETiledLayer)
@@ -1162,6 +1183,7 @@ public class ConfigManager extends EventDispatcher
             var veLyr:VETiledLayer = layer as VETiledLayer;
             lyrXML = <layer label={label}
                     type="bing"
+                    showinlegend={veLyr.showInLegend}
                     visible={veLyr.visible}
                     alpha={veLyr.alpha}
                     style={veLyr.mapStyle}/>;
@@ -1171,6 +1193,7 @@ public class ConfigManager extends EventDispatcher
             var webTiledLayer:WebTiledLayer = layer as WebTiledLayer;
             lyrXML = <layer label={label}
                     type="webtiled"
+                    showinlegend={webTiledLayer.showInLegend}
                     visible={webTiledLayer.visible}
                     alpha={webTiledLayer.alpha}
                     url={webTiledLayer.urlTemplate}/>;
@@ -1188,6 +1211,7 @@ public class ConfigManager extends EventDispatcher
             var wmsLayer:WMSLayer = layer as WMSLayer;
             lyrXML = <layer label={label}
                     type="wms"
+                    showinlegend={wmsLayer.showInLegend}
                     visible={wmsLayer.visible}
                     alpha={wmsLayer.alpha}
                     version={wmsLayer.version}

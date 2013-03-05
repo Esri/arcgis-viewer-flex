@@ -161,6 +161,14 @@ public class LayerObjectUtil
         }
         var culture:String = obj.@culture[0] ? obj.@culture : "";
 
+        var showInLegend:Boolean = true;
+        if (obj.@showinlegend[0])
+        {
+            showInLegend = obj.showinlegend == "true";
+        }
+
+        var showInLegendHiddenLayers:String = obj.@showinlegendhiddenlayers;
+
         // arcims layer
         var serviceHost:String = obj.@servicehost[0] ? obj.@servicehost : "";
         var serviceName:String = obj.@servicename[0] ? obj.@servicename : "";
@@ -258,6 +266,8 @@ public class LayerObjectUtil
                 serviceName: serviceName,
                 serviceMode: serviceMode,
                 serviceURL: serviceURL,
+                showInLegend: showInLegend,
+                showInLegendHiddenLayers: showInLegendHiddenLayers,
                 skipGetCapabilities: skipGetCapabilities,
                 sourceFields: sourceFields,
                 style: style,
