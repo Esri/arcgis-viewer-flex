@@ -18,6 +18,7 @@ package com.esri.viewer.managers
 
 import com.esri.ags.clusterers.ESRIClusterer;
 import com.esri.ags.renderers.IRenderer;
+import com.esri.ags.symbols.Symbol;
 
 public class LayerCreationProperties
 {
@@ -32,13 +33,16 @@ public class LayerCreationProperties
     public var definitionExpression:String;
     public var disableClientCaching:Boolean;
     public var displayLevels:String;
+    public var fillSymbol:Symbol;
     public var gdbVersion:String;
     public var imageFormat:String;
     public var isEditable:Boolean;
     public var label:String;
     public var layerId:String;
     public var latitudeFieldName:String;
+    public var lineSymbol:Symbol;
     public var longitudeFieldName:String;
+    public var markerSymbol:Symbol;
     public var maxAllowableOffset:Number;
     public var maxImageHeight:Number;
     public var maxImageWidth:Number;
@@ -85,13 +89,16 @@ public class LayerCreationProperties
         creationProps.definitionExpression = layerObject.definitionExpression;
         creationProps.disableClientCaching = layerObject.disableClientCaching;
         creationProps.displayLevels = layerObject.displayLevels;
+        creationProps.fillSymbol = layerObject.fillSymbol;
         creationProps.gdbVersion = layerObject.gdbVersion;
         creationProps.imageFormat = layerObject.imageFormat;
         creationProps.isEditable = layerObject.isEditable;
         creationProps.latitudeFieldName = layerObject.latitudeFieldName;
         creationProps.label = layerObject.label;
         creationProps.layerId = layerObject.layerId;
+        creationProps.lineSymbol = layerObject.lineSymbol;
         creationProps.longitudeFieldName = layerObject.longitudeFieldName;
+        creationProps.markerSymbol = layerObject.markerSymbol;
         creationProps.maxAllowableOffset = layerObject.maxAllowableOffset;
         creationProps.maxImageHeight = layerObject.maxImageHeight;
         creationProps.maxImageWidth = layerObject.maxImageWidth;
