@@ -1139,10 +1139,6 @@ public class ConfigManager extends EventDispatcher
                     visible={geoRSSLayer.visible}
                     alpha={geoRSSLayer.alpha}
                     url={geoRSSLayer.url}/>;
-            if (geoRSSLayer.serviceURL)
-            {
-                lyrXML.@serviceurl = geoRSSLayer.serviceURL;
-            }
         }
         else if (layer is KMLLayer)
         {
