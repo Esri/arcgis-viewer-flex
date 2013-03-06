@@ -1136,7 +1136,7 @@
                  visible="false"
                  visible.resultsList="true">
             <s:layout>
-                <s:VerticalLayout gap="1"/>
+                <s:VerticalLayout gap="1" paddingTop="4"/>
             </s:layout>
             <s:HGroup id="boxMessage"
                       width="100%"
