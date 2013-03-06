@@ -118,7 +118,7 @@
 
             private function ensureLatestConfig(configXML:XML):XML
             {
-                if (configXML.name() == "search")
+                if (configXML && configXML.name() == "search")
                 {
                     configXML.setName("geocoder");
 
@@ -208,7 +208,6 @@
                     }
 
                     geocoder.prompt = configXML.labels.searchprompt[0] || hostBaseWidget.getDefaultString("searchPrompt");
-                    geocoder.noResultsText = configXML.labels.noresults[0] || hostBaseWidget.getDefaultString("noResultsFoundLabel");
                     searchResultTitleLabel = configXML.labels.searchresulttitle[0] || hostBaseWidget.getDefaultString("searchResultTitleLabel");
 
                     configureResultSymbols();
@@ -321,7 +320,8 @@
 
             private function configureMapServices():void
             {
-                if (configXML.mapservices.length() > 0)
+                if (configXML.mapservices.length() > 0
+                    && configXML.mapservices.@enabled != "false")
                 {
                     var mapService:GeocoderMapService;
                     var mapServices:Array = [];
@@ -762,6 +762,5 @@
                    left="0" right="0" top="0" bottom="0"
                    fault="geocoder_faultHandler(event)"
                    map="{map}"
-                   resultAutoSelected="geocoder_resultSelectedHandler(event)"
                    resultSelected="geocoder_resultSelectedHandler(event)"/>
 </s:Group>
