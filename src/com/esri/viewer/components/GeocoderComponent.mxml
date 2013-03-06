@@ -320,7 +320,8 @@
 
             private function configureMapServices():void
             {
-                if (configXML.mapservices.length() > 0)
+                if (configXML.mapservices.length() > 0
+                    && configXML.mapservices.@enabled != "false")
                 {
                     var mapService:GeocoderMapService;
                     var mapServices:Array = [];
