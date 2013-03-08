@@ -117,7 +117,7 @@
                         {
                             directionsGeocoderOptions.locatorOptions = parseLocatorOptions(configXML.locatoroptions[0]);
                         }
-                        if (geocoderOptionsXML.mapservices.length() > 0)
+                        if (geocoderOptionsXML.mapservices.length() > 0 && geocoderOptionsXML.mapservices.@enabled != "false")
                         {
                             directionsGeocoderOptions.mapServices = configureMapServices(geocoderOptionsXML.mapservices);
                         }
