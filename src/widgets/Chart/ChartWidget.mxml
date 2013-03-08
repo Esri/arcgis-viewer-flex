@@ -731,7 +731,9 @@
                  left="10"
                  includeIn="chart"
                  itemCreationPolicy="immediate">
-            <s:Label includeInLayout="{!doesChartHaveData}"
+            <s:Label width="100%"
+                     includeInLayout="{!doesChartHaveData}"
+                     maxDisplayedLines="-1"
                      text="{noChartDataToDisplayLabel}"
                      visible="{!doesChartHaveData}"/>
             <Chart:ChartBrowser id="chartBrowser"
