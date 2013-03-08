@@ -1049,6 +1049,8 @@ public class ConfigManager extends EventDispatcher
                     type="dynamic"
                     visible={dynLyr.visible}
                     alpha={dynLyr.alpha}
+                    minscale={dynLyr.minScale}
+                    maxscale={dynLyr.maxScale}
                     showinlegend={dynLyr.showInLegend}
                     useproxy={dynLyr.proxyURL != null}
                     url={dynLyr.url}/>;
@@ -1068,6 +1070,8 @@ public class ConfigManager extends EventDispatcher
                     type="image"
                     visible={imgLyr.visible}
                     alpha={imgLyr.alpha}
+                    minscale={imgLyr.minScale}
+                    maxscale={imgLyr.maxScale}
                     showinlegend={imgLyr.showInLegend}
                     useproxy={imgLyr.proxyURL != null}
                     url={imgLyr.url}/>;
@@ -1082,6 +1086,8 @@ public class ConfigManager extends EventDispatcher
             lyrXML = <layer label={label}
                     type="tiled"
                     visible={tiledLyr.visible}
+                    minscale={tiledLyr.minScale}
+                    maxscale={tiledLyr.maxScale}
                     showinlegend={tiledLyr.showInLegend}
                     alpha={tiledLyr.alpha}
                     useproxy={tiledLyr.proxyURL != null}
@@ -1105,6 +1111,8 @@ public class ConfigManager extends EventDispatcher
             lyrXML = <layer label={label}
                     type="csv"
                     visible={csvLyr.visible}
+                    minscale={csvLyr.minScale}
+                    maxscale={csvLyr.maxScale}
                     showinlegend={csvLyr.showInLegend}
                     alpha={csvLyr.alpha}
                     url={csvLyr.url}
@@ -1133,6 +1141,8 @@ public class ConfigManager extends EventDispatcher
                         type="feature"
                         showinlegend={feaLyr.showInLegend}
                         visible={feaLyr.visible}
+                        minscale={feaLyr.minScale}
+                        maxscale={feaLyr.maxScale}
                         alpha={feaLyr.alpha}
                         iseditable={feaLyr.isEditable}/>
             }
@@ -1142,6 +1152,8 @@ public class ConfigManager extends EventDispatcher
                         type="feature"
                         showinlegend={feaLyr.showInLegend}
                         visible={feaLyr.visible}
+                        minscale={feaLyr.minScale}
+                        maxscale={feaLyr.maxScale}
                         alpha={feaLyr.alpha}
                         mode={feaLyr.mode}
                         useproxy={feaLyr.proxyURL != null}
@@ -1156,6 +1168,8 @@ public class ConfigManager extends EventDispatcher
                     type="georss"
                     showinlegend={geoRSSLayer.showInLegend}
                     visible={geoRSSLayer.visible}
+                    minscale={geoRSSLayer.minScale}
+                    maxscale={geoRSSLayer.maxScale}
                     alpha={geoRSSLayer.alpha}
                     url={geoRSSLayer.url}/>;
         }
@@ -1166,6 +1180,8 @@ public class ConfigManager extends EventDispatcher
                     type="kml"
                     showinlegend={kmlLayer.showInLegend}
                     visible={kmlLayer.visible}
+                    minscale={kmlLayer.minScale}
+                    maxscale={kmlLayer.maxScale}
                     alpha={kmlLayer.alpha}
                     url={kmlLayer.url}/>;
         }
@@ -1175,6 +1191,8 @@ public class ConfigManager extends EventDispatcher
             lyrXML = <layer label={label}
                     type="osm"
                     visible={osmLyr.visible}
+                    minscale={osmLyr.minScale}
+                    maxscale={osmLyr.maxScale}
                     showinlegend={osmLyr.showInLegend}
                     alpha={osmLyr.alpha}/>;
         }
@@ -1185,6 +1203,8 @@ public class ConfigManager extends EventDispatcher
                     type="bing"
                     showinlegend={veLyr.showInLegend}
                     visible={veLyr.visible}
+                    minscale={veLyr.minScale}
+                    maxscale={veLyr.maxScale}
                     alpha={veLyr.alpha}
                     style={veLyr.mapStyle}/>;
         }
@@ -1195,6 +1215,8 @@ public class ConfigManager extends EventDispatcher
                     type="webtiled"
                     showinlegend={webTiledLayer.showInLegend}
                     visible={webTiledLayer.visible}
+                    minscale={webTiledLayer.minScale}
+                    maxscale={webTiledLayer.maxScale}
                     alpha={webTiledLayer.alpha}
                     url={webTiledLayer.urlTemplate}/>;
             if (webTiledLayer.copyright)
@@ -1213,6 +1235,8 @@ public class ConfigManager extends EventDispatcher
                     type="wms"
                     showinlegend={wmsLayer.showInLegend}
                     visible={wmsLayer.visible}
+                    minscale={wmsLayer.minScale}
+                    maxscale={wmsLayer.maxScale}
                     alpha={wmsLayer.alpha}
                     version={wmsLayer.version}
                     skipgetcapabilities={wmsLayer.skipGetCapabilities}
