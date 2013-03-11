@@ -116,7 +116,8 @@
     </fx:Script>
     <viewer:WidgetTemplate id="wTemplate"
                            closed="AppEvent.dispatch(AppEvent.TOC_HIDDEN)"
-                           minimized="AppEvent.dispatch(AppEvent.TOC_HIDDEN)">
+                           minimized="AppEvent.dispatch(AppEvent.TOC_HIDDEN)"
+                           startDrag="AppEvent.dispatch(AppEvent.TOC_HIDDEN)">
         <viewer:layout>
             <s:VerticalLayout gap="8" paddingTop="4"/>
         </viewer:layout>
