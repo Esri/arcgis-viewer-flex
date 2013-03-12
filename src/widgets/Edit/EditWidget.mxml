@@ -43,6 +43,7 @@
             import com.esri.ags.events.FeatureLayerEvent;
             import com.esri.ags.events.LayerEvent;
             import com.esri.ags.events.MapEvent;
+            import com.esri.ags.geometry.Geometry;
             import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
             import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
             import com.esri.ags.layers.FeatureLayer;
@@ -1213,7 +1214,7 @@
                 }
                 else if (featureLayer.tableDetails is FeatureTableDetails)
                 {
-                    result = (featureLayer.layerDetails as FeatureTableDetails).isCreateAllowed;
+                    result = (featureLayer.tableDetails as FeatureTableDetails).isCreateAllowed;
                 }
 
                 return result;
@@ -1381,9 +1382,11 @@
                 if (!editor.toolbarVisible)
                 {
                     for each (var featureLayer:FeatureLayer in featureLayers)
-                    {
-                        if (!featureLayerToSelectionColor[featureLayer])
-                        {
+                    {   
+                        if (!featureLayerToSelectionColor[featureLayer] && 
+                            featureLayer.layerDetails &&
+                            (featureLayer.layerDetails.geometryType == Geometry.POLYGON || featureLayer.layerDetails.geometryType == Geometry.POLYLINE))
+                        {   
                             featureLayerToSelectionColor[featureLayer] = featureLayer.selectionColor;
                             featureLayer.selectionColor = NaN;
                         }
