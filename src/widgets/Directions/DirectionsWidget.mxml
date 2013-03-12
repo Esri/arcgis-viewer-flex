@@ -126,15 +126,19 @@
 
                         directions.geocoderOptions = directionsGeocoderOptions;
                     }
-
-                    // route options
+                    
+                    var directionsRouteOptions:DirectionsRouteOptions = new DirectionsRouteOptions;                   
+                    directionsRouteOptions.directionsLanguage = resourceManager.localeChain[0]; // always set directionsLanguage     
+                    //route options
                     if (configXML.routeoptions.length() > 0)
-                    {
-                        var directionsRouteOptions:DirectionsRouteOptions = new DirectionsRouteOptions;
+                    {                        
                         var routeOptionsXML:XMLList = configXML.routeoptions;
 
                         var directionsLanguage:String = routeOptionsXML.directionslanguage.toString();
-                        directionsRouteOptions.directionsLanguage = directionsLanguage || resourceManager.localeChain[0];
+                        if (directionsLanguage)
+                        {
+                            directionsRouteOptions.directionsLanguage = directionsLanguage;
+                        }
 
                         var directionsLengthUnits:String = routeOptionsXML.directionslengthunits.toString();
                         if (directionsLengthUnits)
@@ -147,9 +151,8 @@
                         {
                             directionsRouteOptions.directionsOutputType = toDirectionsOutputType(directionsOutputType);
                         }
-
-                        directions.routeOptions = directionsRouteOptions;
                     }
+                    directions.routeOptions = directionsRouteOptions;
                 }
                 AppEvent.addListener(AppEvent.DATA_PUBLISH, sharedDataUpdated);
             }
