@@ -75,7 +75,7 @@ public class ResultAttributes
 
         resultAttributes.attributes = graphic.attributes;
         resultAttributes.title = title ? title : fallbackTitle;
-        resultAttributes.content = content;
+        resultAttributes.content = content.replace(/\n$/, '');
         resultAttributes.link = link ? link : null;
         resultAttributes.linkAlias = linkAlias;
 
