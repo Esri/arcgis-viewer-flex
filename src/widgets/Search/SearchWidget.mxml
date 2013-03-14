@@ -422,14 +422,12 @@
 
             private function searchLayerChangedText():void
             {
-                var i:int = cboLayerText.selectedIndex;
-                txtLabelText.text = configSearchText[i].textlabel;
+                txtLabelText.text = cboLayerText.selectedItem.textlabel;
             }
 
             private function searchLayerChangedGraphical():void
             {
-                var i:int = cboLayerGraphical.selectedIndex;
-                txtLabelGraphical.text = configSearchGraphical[i].graphicallabel;
+                txtLabelGraphical.text = cboLayerGraphical.selectedItem.graphicallabel;
             }
 
             private function activateDrawTool(event:MouseEvent):void
@@ -519,8 +517,9 @@
             {
                 hideInfoWindow();
 
-                var i:int = cboLayerText.selectedIndex;
-                queryLayer = configSearchText[i].layer;
+                var searchLayer:Object = cboLayerText.selectedItem;
+
+                queryLayer = searchLayer.layer;
 
                 if (queryLayer && !queryLayer.loaded)
                 {
@@ -545,11 +544,11 @@
                     return;
                 }
 
-                queryExpr = configSearchText[i].expr;
-                queryFields = configSearchText[i].fields;
-                queryTitleField = configSearchText[i].titlefield;
-                queryLinkField = configSearchText[i].linkfield;
-                queryLinkAlias = configSearchText[i].linkalias;
+                queryExpr = searchLayer.expr;
+                queryFields = searchLayer.fields;
+                queryTitleField = searchLayer.titlefield;
+                queryLinkField = searchLayer.linkfield;
+                queryLinkAlias = searchLayer.linkalias;
 
                 if (queryLayer && txtSearch.text)
                 {
@@ -562,7 +561,7 @@
                     const supportsServerSideSorting:Boolean = queryLayer.layerDetails
                         && queryLayer.layerDetails.version >= 10.1
                         && queryLayer.layerDetails.supportsAdvancedQueries;
-                    const orderByFields:Array = configSearchText[i].orderbyfields;
+                    const orderByFields:Array = searchLayer.orderbyfields;
                     if (supportsServerSideSorting && orderByFields)
                     {
                         query.orderByFields = orderByFields;
@@ -610,8 +609,9 @@
             {
                 hideInfoWindow();
 
-                var i:int = cboLayerGraphical.selectedIndex;
-                queryLayer = configSearchGraphical[i].layer;
+                var searchLayer:Object = cboLayerGraphical.selectedItem;
+
+                queryLayer = searchLayer.layer;
 
                 if (queryLayer && !queryLayer.loaded)
                 {
@@ -637,10 +637,10 @@
                 }
 
                 queryGeom = geom;
-                queryFields = configSearchGraphical[i].fields;
-                queryTitleField = configSearchGraphical[i].titlefield;
-                queryLinkField = configSearchGraphical[i].linkfield;
-                queryLinkAlias = configSearchGraphical[i].linkalias;
+                queryFields = searchLayer.fields;
+                queryTitleField = searchLayer.titlefield;
+                queryLinkField = searchLayer.linkfield;
+                queryLinkAlias = searchLayer.linkalias;
 
                 if (queryLayer)
                 {
@@ -652,7 +652,7 @@
                     const supportsServerSideSorting:Boolean = queryLayer.layerDetails
                         && queryLayer.layerDetails.version >= 10.1
                         && queryLayer.layerDetails.supportsAdvancedQueries;
-                    const orderByFields:Array = configSearchText[i].orderbyfields;
+                    const orderByFields:Array = searchLayer.orderbyfields;
                     if (supportsServerSideSorting && orderByFields)
                     {
                         query.orderByFields = orderByFields;
