@@ -125,7 +125,12 @@ public class LayerCreator
         if (layerCreationProperties.showInLegend
             && layerCreationProperties.showInLegendHiddenLayers)
         {
-            tiledLayer.showInLegendHiddenLayers = layerCreationProperties.showInLegendHiddenLayers.split(",");
+            var hiddenLayers:Array = layerCreationProperties.showInLegendHiddenLayers.split(",");
+            for (var i:int = 0; i < hiddenLayers.length; i++)
+            {
+                hiddenLayers[i] = Number(hiddenLayers[i]); // convert to Numbers
+            }
+            tiledLayer.showInLegendHiddenLayers = hiddenLayers;
         }
         if (layerCreationProperties.displayLevels)
         {
@@ -170,7 +175,12 @@ public class LayerCreator
         if (layerCreationProperties.showInLegend
             && layerCreationProperties.showInLegendHiddenLayers)
         {
-            dynLayer.showInLegendHiddenLayers = layerCreationProperties.showInLegendHiddenLayers.split(",");
+            var hiddenLayers:Array = layerCreationProperties.showInLegendHiddenLayers.split(",");
+            for (var i:int = 0; i < hiddenLayers.length; i++)
+            {
+                hiddenLayers[i] = Number(hiddenLayers[i]); // convert to Numbers
+            }
+            dynLayer.showInLegendHiddenLayers = hiddenLayers;
         }
         if (layerCreationProperties.autoRefresh > 0)
         {
