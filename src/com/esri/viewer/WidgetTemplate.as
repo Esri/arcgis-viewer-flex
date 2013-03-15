@@ -96,9 +96,9 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
     private static const WIDGET_MINIMIZED:String = "minimized";
 
     private static const WIDGET_CLOSED:String = "closed";
-    
+
     private static const WIDGET_START_DRAG:String = "startDrag";
-    
+
     private static const WIDGET_STOP_DRAG:String = "stopDrag";
 
     private var _widgetId:Number;

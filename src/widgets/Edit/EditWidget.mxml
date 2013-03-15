@@ -1382,11 +1382,11 @@
                 if (!editor.toolbarVisible)
                 {
                     for each (var featureLayer:FeatureLayer in featureLayers)
-                    {   
-                        if (!featureLayerToSelectionColor[featureLayer] && 
+                    {
+                        if (!featureLayerToSelectionColor[featureLayer] &&
                             featureLayer.layerDetails &&
                             (featureLayer.layerDetails.geometryType == Geometry.POLYGON || featureLayer.layerDetails.geometryType == Geometry.POLYLINE))
-                        {   
+                        {
                             featureLayerToSelectionColor[featureLayer] = featureLayer.selectionColor;
                             featureLayer.selectionColor = NaN;
                         }
@@ -1403,7 +1403,7 @@
 
                 // clear feature layer selection
                 for each (var featureLayer:FeatureLayer in featureLayers)
-                {   
+                {
                     if (featureLayerToSelectionColor[featureLayer]) // restore selection color
                     {
                         featureLayer.selectionColor = featureLayerToSelectionColor[featureLayer];
@@ -1415,7 +1415,7 @@
                     if (featureLayer.name.indexOf("hiddenLayer_") != -1)
                     {
                         map.removeLayer(featureLayer);
-                    }                                      
+                    }
                 }
                 // assign back the renderer info
                 for (var layer:Object in dictionary)
