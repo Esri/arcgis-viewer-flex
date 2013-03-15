@@ -151,6 +151,12 @@
                         {
                             directionsRouteOptions.directionsOutputType = toDirectionsOutputType(directionsOutputType);
                         }
+                        
+                        var impedanceAttribute:String = routeOptionsXML.impedanceattribute.toString();
+                        if (impedanceAttribute)
+                        {
+                            directionsRouteOptions.impedanceAttribute = impedanceAttribute;
+                        }
                     }
                     directions.routeOptions = directionsRouteOptions;
                 }
