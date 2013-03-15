@@ -161,11 +161,7 @@ public class LayerObjectUtil
         }
         var culture:String = obj.@culture[0] ? obj.@culture : "";
 
-        var showInLegend:Boolean = true;
-        if (obj.@showinlegend[0])
-        {
-            showInLegend = obj.showinlegend == "true";
-        }
+        var showInLegend:Boolean = obj.@showinlegend[0] != "false";
 
         var showInLegendHiddenLayers:String = obj.@showinlegendhiddenlayers;
 
