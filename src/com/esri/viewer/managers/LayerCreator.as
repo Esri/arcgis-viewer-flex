@@ -125,15 +125,11 @@ public class LayerCreator
         if (layerCreationProperties.showInLegend
             && layerCreationProperties.showInLegendHiddenLayers)
         {
-            tiledLayer.showInLegendHiddenLayers = layerCreationProperties.showInLegendHiddenLayers.split(",");
+            tiledLayer.showInLegendHiddenLayers = toNumericArray(layerCreationProperties.showInLegendHiddenLayers.split(","));
         }
         if (layerCreationProperties.displayLevels)
         {
-            tiledLayer.displayLevels = layerCreationProperties.displayLevels.split(",");
-            for (var i:int = 0; i < tiledLayer.displayLevels.length; i++)
-            {
-                tiledLayer.displayLevels[i] = Number(tiledLayer.displayLevels[i]); // convert to Numbers
-            }
+            tiledLayer.displayLevels = toNumericArray(layerCreationProperties.displayLevels.split(","));
         }
         if (layerCreationProperties.proxyUrl && layerCreationProperties.useProxy)
         {
@@ -148,6 +144,16 @@ public class LayerCreator
             tiledLayer.maxScale = layerCreationProperties.maxScale;
         }
         return tiledLayer;
+    }
+
+    private static function toNumericArray(textualNumberArray:Array):Array
+    {
+        var numericArray:Array = [];
+        for (var i:int = 0; i < textualNumberArray.length; i++)
+        {
+            numericArray.push(Number(textualNumberArray[i]));
+        }
+        return numericArray;
     }
 
     private static function createDynamicLayer(layerCreationProperties:LayerCreationProperties):ArcGISDynamicMapServiceLayer
@@ -170,7 +176,7 @@ public class LayerCreator
         if (layerCreationProperties.showInLegend
             && layerCreationProperties.showInLegendHiddenLayers)
         {
-            dynLayer.showInLegendHiddenLayers = layerCreationProperties.showInLegendHiddenLayers.split(",");
+            dynLayer.showInLegendHiddenLayers = toNumericArray(layerCreationProperties.showInLegendHiddenLayers.split(","));
         }
         if (layerCreationProperties.autoRefresh > 0)
         {
@@ -182,12 +188,7 @@ public class LayerCreator
         }
         if (layerCreationProperties.visibleLayers)
         {
-            var vizLayers:Array = layerCreationProperties.visibleLayers.split(",");
-            for (var i:int = 0; i < vizLayers.length; i++)
-            {
-                vizLayers[i] = Number(vizLayers[i]); // convert to Numbers
-            }
-            dynLayer.visibleLayers = new ArrayCollection(vizLayers);
+            dynLayer.visibleLayers = new ArrayCollection(toNumericArray(layerCreationProperties.visibleLayers.split(",")));
         }
         if (layerCreationProperties.proxyUrl && layerCreationProperties.useProxy)
         {
@@ -301,11 +302,7 @@ public class LayerCreator
         }
         if (layerCreationProperties.displayLevels)
         {
-            veTiledLayer.displayLevels = layerCreationProperties.displayLevels.split(",");
-            for (var i:int = 0; i < veTiledLayer.displayLevels.length; i++)
-            {
-                veTiledLayer.displayLevels[i] = Number(veTiledLayer.displayLevels[i]); // convert to Numbers
-            }
+            veTiledLayer.displayLevels = toNumericArray(layerCreationProperties.displayLevels.split(","));
         }
         if (!isNaN(layerCreationProperties.minScale))
         {
@@ -340,11 +337,7 @@ public class LayerCreator
         }
         if (layerCreationProperties.bandIds)
         {
-            imgLayer.bandIds = layerCreationProperties.bandIds.split(",");
-            for (var i:int = 0; i < imgLayer.bandIds.length; i++)
-            {
-                imgLayer.bandIds[i] = Number(imgLayer.bandIds[i]); // convert to Numbers
-            }
+            imgLayer.bandIds = toNumericArray(layerCreationProperties.bandIds.split(","));
         }
         if (layerCreationProperties.proxyUrl && layerCreationProperties.useProxy)
         {
@@ -684,11 +677,7 @@ public class LayerCreator
         }
         if (layerCreationProperties.displayLevels)
         {
-            webTiledLayer.displayLevels = layerCreationProperties.displayLevels.split(",");
-            for (var i:int = 0; i < webTiledLayer.displayLevels.length; i++)
-            {
-                webTiledLayer.displayLevels[i] = Number(webTiledLayer.displayLevels[i]); // convert to Numbers
-            }
+            webTiledLayer.displayLevels = toNumericArray(layerCreationProperties.displayLevels.split(","));
         }
         if (!isNaN(layerCreationProperties.minScale))
         {
