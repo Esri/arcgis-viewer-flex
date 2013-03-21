@@ -51,6 +51,7 @@
             import com.esri.ags.utils.GeometryUtil;
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.AppEvent;
+            import com.esri.viewer.utils.LabelUtil;
 
             import mx.managers.CursorManager;
             import mx.managers.CursorManagerPriority;
@@ -194,6 +195,7 @@
             [Embed(source="/assets/images/move_cursor.png")]
             private var moveCursorIcon:Class;
 
+            private var moveCursorIconId:int;
             private var graphicToMeasurementGraphic:Dictionary = new Dictionary(true);
 
             private function basewidget_initializeHandler():void
@@ -224,6 +226,9 @@
                     graphicsLayer.name = configXML.layername || widgetTitle;
 
                     initializeFontList();
+
+                    //setting typical text since using typicalItem will set TextInput#widthInChars, which produces extra long width 
+                    fontNameSelection.textInput.typicalText = LabelUtil.findLongestLabelItem(fontList.source) as String;
 
                     defaultDrawColor = configXML.defaultdrawcolor || 0x3FAFDC;
                     defaultTextFontSize = configXML.defaulttextfontsize || 20;
@@ -348,6 +353,7 @@
                             configDistance.addItem(dUnit);
                         }
                         cboDistance.dataProvider = configDistance;
+                        cboDistance.typicalItem = LabelUtil.findLongestLabelItem(configDistance.source, 'name');
                     }
 
                     // area units
@@ -431,8 +437,15 @@
                             configArea.addItem(aUnit);
                         }
                         cboArea.dataProvider = configArea;
+                        cboArea.typicalItem = LabelUtil.findLongestLabelItem(configArea.source, 'name');
                     }
                 }
+
+                markerStyle.typicalItem = LabelUtil.findLongestLabelItem(markerStyle.dataProvider.toArray(), 'name');
+                lineStyle.typicalItem = LabelUtil.findLongestLabelItem(lineStyle.dataProvider.toArray(), 'name');
+                fillStyle.typicalItem = LabelUtil.findLongestLabelItem(fillStyle.dataProvider.toArray(), 'name');
+
+
                 AppEvent.addListener(AppEvent.DATA_PUBLISH, sharedDataUpdated);
             }
 
@@ -500,7 +513,7 @@
                 if (data.key == "Deactivate_DrawTool")
                 {
                     setMapAction(null, null, null, null);
-                    editTool.deactivate();
+                    stopEditing();
                     if (selectedDrawingIcon)
                     {
                         selectedDrawingIcon.filters = [];
@@ -509,11 +522,21 @@
                 }
             }
 
+            private function stopEditing():void
+            {
+                isEditing = false;
+                if (editGraphic)
+                {
+                    editGraphic.checkForMouseListeners = false;
+                }
+                editGraphic = null;
+                lastActiveEditType = "none";
+                editTool.deactivate();
+            }
+
             private function activateDrawTool(event:MouseEvent):void
             {
                 addSharedData("Deactivate_DrawTool", null); // to be able to deactivate drawTool on other widgets
-                editTool.deactivate();
-                lastActiveEditType = "none";
 
                 // apply glow
                 selectedDrawingIcon = FocusableImage(event.currentTarget);
@@ -522,7 +545,9 @@
 
                 frmDraw.visible = true;
                 showMeasurements = false;
-                isEditing = false;
+
+                stopEditing();
+
                 drawType = selectedDrawingIcon.name;
                 switch (drawType)
                 {
@@ -613,7 +638,7 @@
             private function clear():void
             {
                 graphicsLayer.clear();
-                editTool.deactivate();
+                stopEditing();
                 updateHasDrawnGraphics();
                 clearGraphicToMeasurementGraphic();
             }
@@ -693,7 +718,8 @@
                 customContextMenu.customItems.push(menuItem);
                 lastDrawnGraphic.contextMenu = customContextMenu;
 
-                lastDrawnGraphic.addEventListener(MouseEvent.CLICK, graphic_clickHandler, false, 0, true);
+                lastDrawnGraphic.addEventListener(MouseEvent.MOUSE_DOWN, graphic_mouseDownHandler, false, 0, true);
+                lastDrawnGraphic.checkForMouseListeners = false;
                 graphicsLayer.add(lastDrawnGraphic);
 
                 var geom:Geometry = lastDrawnGraphic.geometry;
@@ -762,93 +788,87 @@
                 graphicsLayer.remove(drawnGraphic);
                 // also remove measurement label if any
                 graphicsLayer.remove(getMeasurementGraphic(drawnGraphic));
-                editTool.deactivate();
+                stopEditing();
                 updateHasDrawnGraphics();
             }
 
-            private function moveMeasurementGraphicToTop(drawnGraphic:Graphic):void
+            protected function graphic_mouseDownHandler(event:MouseEvent):void
             {
-                const measurementGraphic:Graphic = getMeasurementGraphic(drawnGraphic);
-                if (measurementGraphic)
+                var graphic:Graphic = event.currentTarget as Graphic;
+                graphic.removeEventListener(MouseEvent.MOUSE_DOWN, graphic_mouseDownHandler);
+                graphic.addEventListener(MouseEvent.MOUSE_MOVE, graphic_mouseMoveHandler);
+                graphic.addEventListener(MouseEvent.MOUSE_UP, graphic_mouseUpHandler);
+            }
+
+            protected function graphic_mouseMoveHandler(event:MouseEvent):void
+            {
+                var graphic:Graphic = event.currentTarget as Graphic;
+                graphic.removeEventListener(MouseEvent.MOUSE_MOVE, graphic_mouseMoveHandler);
+                graphic.removeEventListener(MouseEvent.MOUSE_UP, graphic_mouseUpHandler);
+                graphic.addEventListener(MouseEvent.MOUSE_DOWN, graphic_mouseDownHandler);
+            }
+
+            protected function graphic_mouseUpHandler(event:MouseEvent):void
+            {
+                var graphic:Graphic = event.currentTarget as Graphic;
+                graphic.removeEventListener(MouseEvent.MOUSE_MOVE, graphic_mouseMoveHandler);
+                graphic.removeEventListener(MouseEvent.MOUSE_UP, graphic_mouseUpHandler);
+                graphic.addEventListener(MouseEvent.MOUSE_DOWN, graphic_mouseDownHandler);
+
+                toggleEditing(graphic);
+            }
+
+            private function toggleEditing(currentGraphic:Graphic):void
+            {
+                if (editGraphic !== currentGraphic)
                 {
-                    measurementGraphic.graphicsLayer.moveToTop(measurementGraphic);
+                    stopEditing();
+                    editGraphic = currentGraphic;
                 }
-            }
 
-            private function drawIcon_rollOverHandler(event:MouseEvent):void
-            {
-                clearSelectionFilter();
-                event.target.filters = [ glowFilter ];
-            }
-
-            private function drawIcon_rollOutHandler(event:MouseEvent):void
-            {
-                clearSelectionFilter();
-            }
-
-            private function graphic_clickHandler(event:MouseEvent):void
-            {
-                if (editGraphic !== Graphic(event.currentTarget))
-                {
-                    editGraphic = Graphic(event.currentTarget);
-                    lastActiveEditType = "none"; // make sure move and edit vertices is the 1st mode
-                }
                 if (editGraphic.geometry is Polyline || editGraphic.geometry is Polygon)
                 {
                     if (lastActiveEditType == "none")
                     {
-                        isEditing = true;
                         lastActiveEditType = "moveEditVertices";
-                        editTool.activate(EditTool.MOVE | EditTool.EDIT_VERTICES, [ editGraphic ]);
-                        CursorManager.setCursor(moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
+                        startEditing(EditTool.MOVE | EditTool.EDIT_VERTICES, editGraphic);
+                        showMoveCursor();
                     }
                     else if (lastActiveEditType == "moveEditVertices")
                     {
-                        isEditing = true;
                         lastActiveEditType = "moveRotateScale";
-                        editTool.activate(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, [ editGraphic ]);
-                        CursorManager.setCursor(moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
+                        startEditing(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, editGraphic);
+                        showMoveCursor();
                     }
                     else if (lastActiveEditType == "moveRotateScale")
                     {
-                        isEditing = false;
-                        editGraphic = null;
-                        lastActiveEditType = "none";
-                        editTool.deactivate();
+                        stopEditing();
                     }
                 }
                 else if (editGraphic.geometry is Extent)
                 {
                     if (lastActiveEditType == "none")
                     {
-                        isEditing = true;
                         lastActiveEditType = "moveScale";
-                        editTool.activate(EditTool.MOVE | EditTool.SCALE, [ editGraphic ]);
-                        CursorManager.setCursor(moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
+                        startEditing(EditTool.MOVE | EditTool.SCALE, editGraphic);
+                        showMoveCursor();
                     }
                     else
                     {
-                        isEditing = false;
-                        editGraphic = null;
-                        lastActiveEditType = "none";
-                        editTool.deactivate();
+                        stopEditing();
                     }
                 }
                 else
                 {
                     if (lastActiveEditType == "none")
                     {
-                        isEditing = true;
                         lastActiveEditType = "moveEditVertices";
-                        editTool.activate(EditTool.EDIT_VERTICES | EditTool.MOVE, [ editGraphic ]);
-                        CursorManager.setCursor(moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
+                        startEditing(EditTool.EDIT_VERTICES | EditTool.MOVE, editGraphic);
+                        showMoveCursor();
                     }
                     else
                     {
-                        isEditing = false;
-                        editGraphic = null;
-                        lastActiveEditType = "none";
-                        editTool.deactivate();
+                        stopEditing();
                     }
                 }
 
@@ -860,6 +880,34 @@
                     addEditToolEventListeners();
                     moveMeasurementGraphicToTop(editGraphic);
                     map.addEventListener(MouseEvent.MOUSE_DOWN, map_mouseDownHandler);
+                }
+            }
+
+            private function startEditing(editMode:Number, graphic:Graphic):void
+            {
+                isEditing = true;
+                graphic.checkForMouseListeners = true;
+                editTool.activate(editMode, [ graphic ]);
+            }
+
+            private function showMoveCursor():void
+            {
+                var hasMoveCursorIdBeenSet:Boolean = (moveCursorIconId > 0);
+                if (hasMoveCursorIdBeenSet)
+                {
+                    CursorManager.removeCursor(moveCursorIconId);
+                }
+
+                moveCursorIconId = CursorManager.setCursor(
+                    moveCursorIcon, CursorManagerPriority.HIGH, -16, -16);
+            }
+
+            private function moveMeasurementGraphicToTop(drawnGraphic:Graphic):void
+            {
+                const measurementGraphic:Graphic = getMeasurementGraphic(drawnGraphic);
+                if (measurementGraphic)
+                {
+                    measurementGraphic.graphicsLayer.moveToTop(measurementGraphic);
                 }
             }
 
@@ -897,10 +945,7 @@
                     map.removeEventListener(MouseEvent.MOUSE_UP, map_mouseUpHandler);
                     map.removeEventListener(MouseEvent.MOUSE_MOVE, map_mouseMoveHandler);
 
-                    isEditing = false;
-                    editGraphic = null;
-                    lastActiveEditType = "none";
-                    editTool.deactivate();
+                    stopEditing();
                 }
             }
 
@@ -958,7 +1003,6 @@
                 {
                     var normalizedGeometries:Array = item as Array;
                     graphic.geometry = normalizedGeometries[0];
-                    isEditing = true;
                     if (graphic.geometry is Polyline || graphic.geometry is Polygon)
                     {
                         if (lastActiveEditType == "moveScale")
@@ -967,25 +1011,25 @@
                         }
                         if (lastActiveEditType == "moveEditVertices")
                         {
-                            editTool.activate(EditTool.MOVE | EditTool.EDIT_VERTICES, [ graphic ]);
+                            startEditing(EditTool.MOVE | EditTool.EDIT_VERTICES, graphic);
                         }
                         else if (lastActiveEditType == "moveRotateScale")
                         {
-                            editTool.activate(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, [ graphic ]);
+                            startEditing(EditTool.MOVE | EditTool.SCALE | EditTool.ROTATE, graphic);
                         }
                     }
                     else if (graphic.geometry is Extent)
                     {
                         if (lastActiveEditType == "moveScale")
                         {
-                            editTool.activate(EditTool.MOVE | EditTool.SCALE, [ graphic ]);
+                            startEditing(EditTool.MOVE | EditTool.SCALE, graphic);
                         }
                     }
                     else
                     {
                         if (lastActiveEditType == "moveEditVertices")
                         {
-                            editTool.activate(EditTool.EDIT_VERTICES | EditTool.MOVE, [ graphic ]);
+                            startEditing(EditTool.EDIT_VERTICES | EditTool.MOVE, graphic);
                         }
                     }
                     if (getMeasurementGraphic(graphic))
@@ -1392,15 +1436,15 @@
                 moveMeasurementGraphicToTop(drawnGraphic);
             }
 
-            protected function getLongestString(... rest):String
+            private function drawIcon_rollOverHandler(event:MouseEvent):void
             {
-                var longest:String = "";
-                for (var i:int = 0; i < rest.length; i++)
-                {
-                    var n:String = getDefaultString(rest[i]);
-                    longest = n.length > longest.length ? n : longest;
-                }
-                return longest;
+                clearSelectionFilter();
+                event.target.filters = [ glowFilter ];
+            }
+
+            private function drawIcon_rollOutHandler(event:MouseEvent):void
+            {
+                clearSelectionFilter();
             }
         ]]>
     </fx:Script>
@@ -1637,13 +1681,6 @@
                                             width="100%"
                                             labelField="name"
                                             selectedIndex="0">
-                                <s:typicalItem>
-                                    <fx:Object name="{getLongestString('markerStyleCircle',
-                                                                       'markerStyleCross',
-                                                                       'markerStyleDiamond',
-                                                                       'markerStyleSquare',
-                                                                       'markerStyleX')}"/>
-                                </s:typicalItem>
                                 <s:ArrayList>
                                     <fx:Object name="{getDefaultString('markerStyleCircle')}" style="{SimpleMarkerSymbol.STYLE_CIRCLE}"/>
                                     <fx:Object name="{getDefaultString('markerStyleCross')}" style="{SimpleMarkerSymbol.STYLE_CROSS}"/>
@@ -1721,14 +1758,6 @@
                                             width="100%"
                                             labelField="name"
                                             selectedIndex="0">
-                                <s:typicalItem>
-                                    <fx:Object name="{getLongestString('fillStyleSolid',
-                                                                       'fillStyleBackwardDiagonal',
-                                                                       'fillStyleCross',
-                                                                       'fillStyleForwardDiagonal',
-                                                                       'fillStyleHorizontal',
-                                                                       'fillStyleVertical')}"/>
-                                </s:typicalItem>
                                 <s:ArrayList>
                                     <fx:Object name="{getDefaultString('fillStyleSolid')}" style="{SimpleFillSymbol.STYLE_SOLID}"/>
                                     <fx:Object name="{getDefaultString('fillStyleBackwardDiagonal')}" style="{SimpleFillSymbol.STYLE_BACKWARD_DIAGONAL}"/>
@@ -1794,15 +1823,6 @@
                                             width="100%"
                                             labelField="name"
                                             selectedIndex="0">
-                                <s:typicalItem>
-                                    <fx:Object name="{getLongestString('lineStyleSolid',
-                                                                       'lineStyleDashes',
-                                                                       'lineStyleDot',
-                                                                       'lineStyleDash',
-                                                                       'lineStyleDot',
-                                                                       'lineStyleDashDot',
-                                                                       'lineStyleDashDotDot')}"/>
-                                </s:typicalItem>
                                 <s:ArrayList>
                                     <fx:Object name="{getDefaultString('lineStyleSolid')}" style="{SimpleLineSymbol.STYLE_SOLID}"/>
                                     <fx:Object name="{getDefaultString('lineStyleDash')}" style="{SimpleLineSymbol.STYLE_DASH}"/>
@@ -1859,16 +1879,6 @@
                                         labelField="name"
                                         requireSelection="true"
                                         selectedIndex="0">
-                            <s:typicalItem>
-                                <fx:Object name="{getLongestString('unitsSquareKilometers',
-                                                                   'unitsSquareMiles',
-                                                                   'unitsAcres',
-                                                                   'unitsHectares',
-                                                                   'unitsSquareMeters',
-                                                                   'unitsSquareFeet',
-                                                                   'unitsYards',
-                                                                   'unitsSquareYards')}"/>
-                            </s:typicalItem>
                             <s:ArrayList>
                                 <fx:Object name="{getDefaultString('unitsSquareKilometers')}"
                                            abbr="{getDefaultString('unitsSquareKilometersAbbr')}"
@@ -1909,13 +1919,6 @@
                                         labelField="name"
                                         requireSelection="true"
                                         selectedIndex="0">
-                            <s:typicalItem>
-                                <fx:Object name="{getLongestString('unitsKilometers',
-                                                                   'unitsMiles',
-                                                                   'unitsMeters',
-                                                                   'unitsFeet',
-                                                                   'unitsYards')}"/>
-                            </s:typicalItem>
                             <s:ArrayList>
                                 <fx:Object name="{getDefaultString('unitsKilometers')}"
                                            abbr="{getDefaultString('unitsKilometersAbbr')}"

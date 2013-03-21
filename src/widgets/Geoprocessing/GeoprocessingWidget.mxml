@@ -34,11 +34,14 @@
             import com.esri.ags.events.GeoprocessorEvent;
             import com.esri.ags.events.GraphicEvent;
             import com.esri.ags.events.GraphicsLayerEvent;
+            import com.esri.ags.events.LayerEvent;
             import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.Geometry;
             import com.esri.ags.geometry.MapPoint;
+            import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
+            import com.esri.ags.layers.FeatureLayer;
             import com.esri.ags.layers.GPResultImageLayer;
-            import com.esri.ags.layers.GraphicsLayer;
+            import com.esri.ags.layers.Layer;
             import com.esri.ags.layers.supportClasses.ImageParameters;
             import com.esri.ags.layers.supportClasses.MapImage;
             import com.esri.ags.renderers.SimpleRenderer;
@@ -51,12 +54,12 @@
             import com.esri.ags.tasks.supportClasses.JobInfo;
             import com.esri.ags.tasks.supportClasses.ParameterValue;
             import com.esri.ags.tasks.supportClasses.ProjectParameters;
+            import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.utils.ErrorMessageUtil;
 
             import flashx.textLayout.conversion.TextConverter;
 
             import mx.collections.ArrayList;
-            import mx.collections.IList;
             import mx.controls.Alert;
             import mx.events.CloseEvent;
             import mx.rpc.AsyncResponder;
@@ -67,10 +70,12 @@
             import widgets.Geoprocessing.parameters.IGPFeatureParameter;
             import widgets.Geoprocessing.parameters.IGPParameter;
             import widgets.Geoprocessing.supportClasses.FeatureInputParamEvent;
+            import widgets.Geoprocessing.supportClasses.FeatureLayerCollectionHandler;
             import widgets.Geoprocessing.supportClasses.FileDownloader;
             import widgets.Geoprocessing.supportClasses.GPParamHandler;
             import widgets.Geoprocessing.supportClasses.GraphicEditor;
             import widgets.Geoprocessing.supportClasses.LayerOrderer;
+            import widgets.Geoprocessing.supportClasses.ParamErrorEvent;
             import widgets.Geoprocessing.supportClasses.VisibleGraphicsLayersWatcher;
 
             private const SYNCHRONOUS:String = "esriExecutionTypeSynchronous";
@@ -78,7 +83,7 @@
 
             private var executionType:String;
             private var autoSubmit:Boolean;
-            private var currentGraphicsLayer:GraphicsLayer;
+            private var currentLayer:FeatureLayer;
             private var visibleGraphicsLayersWatcher:VisibleGraphicsLayersWatcher = new VisibleGraphicsLayersWatcher();
             private var layerOrderer:LayerOrderer;
             private var gpParamHandler:GPParamHandler;
@@ -89,12 +94,20 @@
             private var totalProcessedAsyncResults:int;
             private var totalProjectedFeatures:int
             private var asyncResultMap:Dictionary;
-            private var outputGraphicsLayers:Array;
-            private var resultImageLayersOnMap:Array;
+            private var outputLayers:Array;
+            private var resultLayersOnMap:Array;
+            private var useResultMapServer:Boolean;
             private var hasResultMapServer:Boolean;
             private var hasUseAMFBeenSet:Boolean;
-            private var largestResultImageLayerExtent:Extent;
+            private var largestResultLayerExtent:Extent;
             private var graphicEditor:GraphicEditor;
+            private var inputLabel:String;
+            private var outputLabel:String;
+            private var taskDescription:String;
+            private var taskHelpURL:String;
+            private var shareResults:Boolean;
+
+            private var version:Number;
 
             [Bindable]
             private var submitLabel:String;
@@ -126,6 +139,21 @@
                     try
                     {
                         gpParamHandler = new GPParamHandler(configXML);
+
+                        for each (var inputFeatureParam:IGPFeatureParameter in gpParamHandler.getInputFeatureParams())
+                        {
+                            inputFeatureParam.layerName = "hiddenLayer_" + inputFeatureParam.layerName;
+                        }
+
+                        shareResults = configXML.shareresults[0] == "true";
+                        if (!shareResults)
+                        {
+                            for each (var outputFeatureParam:IGPFeatureParameter in gpParamHandler.getOutputFeatureParams())
+                            {
+                                outputFeatureParam.layerName = "hiddenLayer_" + outputFeatureParam.layerName;
+                            }
+                        }
+
                         layerOrderer = new LayerOrderer();
                         if (configXML.layerorder[0])
                         {
@@ -148,7 +176,6 @@
                             }
                         }
                         gp.outSpatialReference = map.spatialReference;
-                        getExecutionType();
                         autoSubmit = (configXML.autosubmit[0] == "true");
 
                         if (configXML.useamf.length() > 0)
@@ -157,65 +184,24 @@
                             hasUseAMFBeenSet = true;
                         }
 
-                        fetchGPServerDescription();
+                        useResultMapServer = configXML.useresultmapserver[0] != "false";
+
+                        taskDescription = configXML.description[0];
+                        taskHelpURL = configXML.helpurl[0];
 
                         submitLabel = configXML.labels.submitlabel || getDefaultString('gpSubmitLabel');
                         clearFeatureLabel = configXML.labels.clearfeaturelabel || getDefaultString("clearLabel");
                         helpLabel = configXML.labels.helplabel || getDefaultString("helpLabel");
-                        var inputLabel:String = configXML.labels.inputlabel || getDefaultString("inputLabel");
-                        var outputLabel:String = configXML.labels.outputlabel || getDefaultString("outputLabel");
+                        inputLabel = configXML.labels.inputlabel || getDefaultString("inputLabel");
+                        outputLabel = configXML.labels.outputlabel || getDefaultString("outputLabel");
 
-                        buildUI(configXML);
-
-                        initGraphicContextMenu();
-                        drawTool.map = map;
-                        graphicEditor = new GraphicEditor(map);
-
-                        visibleGraphicsLayersWatcher.map = map;
-                        visibleGraphicsLayersWatcher.startWatching();
-                        inputParamsDataGroup.visibleGraphicsLayers = visibleGraphicsLayersWatcher.visibleGraphicsLayers;
-
-                        inputParamsDataGroup.addEventListener(FeatureInputParamEvent.DRAW, inputParamsDataGroup_drawFeatureHandler, false, 0, true);
-                        inputParamsDataGroup.addEventListener(FeatureInputParamEvent.CLEAR, inputParamsDataGroup_clearFeatureHandler, false, 0, true);
-
-                        if (gpParamHandler.hasMapExtentInputParams())
-                        {
-                            map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
-                            gpParamHandler.updateMapExtentInputParams(map.extent)
-                        }
-
-                        needsToShowOutputView = gpParamHandler.hasVisibleOutput();
-                        if (needsToShowOutputView)
-                        {
-                            wTemplate.addTitlebarButton("assets/images/GeoprocessingTool16.png", inputLabel, inputTitlebarButton_clickHandler);
-                            wTemplate.addTitlebarButton("assets/images/i_table.png", outputLabel, outputTitlebarButton_clickHandler);
-                        }
+                        fetchGPServerDescription();
                     }
                     catch (error:Error)
                     {
                         showError(getDefaultString("initializationError", ErrorMessageUtil.makeHTMLSafe(error.message)));
                     }
                 }
-            }
-
-            private function getExecutionType():void
-            {
-                var gpTaskInspector:JSONTask = new JSONTask();
-                var urlVars:URLVariables = new URLVariables();
-                urlVars.f = "json";
-                gpTaskInspector.url = gp.url;
-                gpTaskInspector.proxyURL = gp.proxyURL;
-                gpTaskInspector.execute(urlVars, new AsyncResponder(gpTaskInspector_resultHandler, gpTaskInspector_faultHandler));
-            }
-
-            private function gpTaskInspector_resultHandler(serviceDescription:Object, token:Object = null):void
-            {
-                executionType = serviceDescription.executionType;
-            }
-
-            private function gpTaskInspector_faultHandler(fault:Fault, token:Object = null):void
-            {
-                showError(getDefaultString("unableToDetermineGPExecutionType", ErrorMessageUtil.makeHTMLSafe(fault.toString())));
             }
 
             private function fetchGPServerDescription():void
@@ -225,7 +211,9 @@
                 urlVars.f = "json";
                 gpServerInspector.url = getGPServerURL(gp.url);
                 gpServerInspector.proxyURL = gp.proxyURL;
-                gpServerInspector.execute(urlVars, new AsyncResponder(gpServerInspector_resultHandler, gpServerInspector_faultHandler));
+                gpServerInspector.execute(urlVars, new AsyncResponder(gpServerInspector_resultHandler,
+                                                                      gpServerInspector_faultHandler,
+                                                                      gpServerInspector.url));
             }
 
             private function getGPServerURL(url:String):String
@@ -234,53 +222,102 @@
                 return url.substr(0, lastPathIndex);
             }
 
-            private function gpServerInspector_resultHandler(gpServerDescription:Object, token:Object = null):void
+            private function gpServerInspector_resultHandler(gpServerDescription:Object, gpServerURL:String):void
             {
-                if (!hasUseAMFBeenSet)
-                {
-                    checkAMFSupport(gpServerDescription);
-                }
-                checkResultMapServerSupport(gpServerDescription);
+                executionType = gpServerDescription.executionType;
+                gp.useAMF = !hasUseAMFBeenSet && (gpServerDescription.currentVersion >= 10.1);
+                hasResultMapServer = useResultMapServer && gpServerDescription.resultMapServerName;
+
+                version = gpServerDescription.currentVersion;
+
+                gpServerDescription.url = gpServerURL;
+                gpServerDescription.proxyURL = gp.proxyURL;
+                checkIfUploadSupported(gpServerDescription);
+                gpParamHandler.setServiceInfo(gpServerDescription);
             }
 
-            private function checkAMFSupport(gpServerDescription:Object):void
+            private function checkIfUploadSupported(gpServerDescription:Object):void
             {
-                var version:Number = gpServerDescription.currentVersion;
-                if (version >= 10.1)
+                if (gpServerDescription.currentVersion >= 10.1)
                 {
-                    gp.useAMF = true;
+                    var uploadsInfoRequest:JSONTask = new JSONTask(gpServerDescription.url + "uploads/info");
+                    uploadsInfoRequest.proxyURL = gpServerDescription.proxyURL;
+                    var urlVars:URLVariables = new URLVariables();
+                    urlVars.f = "json";
+                    uploadsInfoRequest.execute(urlVars, new AsyncResponder(uploadsInfoRequest_resultHandler,
+                                                                           uploadsInfoRequest_faultHandler,
+                                                                           gpServerDescription));
+                }
+                else
+                {
+                    gpServerDescription.supportsUploads = false;
+                    continueInitialization();
                 }
             }
 
-            private function checkResultMapServerSupport(gpServerDescription:Object):void
+            private function uploadsInfoRequest_resultHandler(response:Object, gpServerDescription:Object):void
             {
-                if (gpServerDescription.resultMapServerName)
-                {
-                    hasResultMapServer = true;
-                }
+                gpServerDescription.maxUploadFileSize = response.maxUploadFileSize;
+                gpServerDescription.supportsUploads = !isNaN(gpServerDescription.maxUploadFileSize);
+                continueInitialization();
+            }
+
+            protected function uploadsInfoRequest_faultHandler(fault:Fault, gpServerDescription:Object):void
+            {
+                gpServerDescription.supportsUploads = false;
+                continueInitialization();
             }
 
             private function gpServerInspector_faultHandler(fault:Fault, token:Object = null):void
             {
                 //Could not fetch service capabilities
+                showError(getDefaultString("unableToDetermineGPExecutionType", ErrorMessageUtil.makeHTMLSafe(fault.toString())));
+                continueInitialization();
             }
 
-            private function buildUI(config:XML):void
+            private function continueInitialization():void
             {
-                if (configXML.description[0])
+                buildUI();
+
+                initGraphicContextMenu();
+                graphicEditor = new GraphicEditor(map);
+
+                visibleGraphicsLayersWatcher.map = map;
+                visibleGraphicsLayersWatcher.startWatching();
+                inputParamsDataGroup.visibleGraphicsLayers = visibleGraphicsLayersWatcher.visibleGraphicsLayers;
+
+                inputParamsDataGroup.addEventListener(FeatureInputParamEvent.DRAW, inputParamsDataGroup_drawFeatureHandler, false, 0, true);
+                inputParamsDataGroup.addEventListener(FeatureInputParamEvent.CLEAR, inputParamsDataGroup_clearFeatureHandler, false, 0, true);
+
+                if (gpParamHandler.hasMapExtentInputParams())
                 {
-                    descriptionText.text = configXML.description;
-                    if (descriptionText.text)
-                    {
-                        descriptionText.visible = true;
-                        descriptionText.includeInLayout = true;
-                    }
+                    map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
+                    gpParamHandler.updateMapExtentInputParams(map.extent)
                 }
 
-                if (configXML.helpurl[0])
+                needsToShowOutputView = gpParamHandler.hasVisibleOutput();
+                if (needsToShowOutputView)
+                {
+                    wTemplate.addTitlebarButton("assets/images/GeoprocessingTool16.png", inputLabel, inputTitlebarButton_clickHandler);
+                    wTemplate.addTitlebarButton("assets/images/i_table.png", outputLabel, outputTitlebarButton_clickHandler);
+                }
+
+                setInputState();
+            }
+
+            private function buildUI():void
+            {
+                if (taskDescription)
+                {
+                    descriptionText.text = taskDescription;
+                    descriptionText.visible = true;
+                    descriptionText.includeInLayout = true;
+                }
+
+                if (taskHelpURL)
                 {
                     var color:uint = getStyle('color');
-                    var linkText:String = "<a href='" + configXML.helpurl + "' target='_blank'><font color='#" + color.toString(16) + "'>" + helpLabel + "</font></a>";
+                    var linkText:String = "<a href='" + taskHelpURL + "' target='_blank'><font color='#" + color.toString(16) + "'>" + helpLabel + "</font></a>";
                     helpLink.textFlow = TextConverter.importToFlow(linkText, TextConverter.TEXT_FIELD_HTML_FORMAT);
                 }
 
@@ -300,13 +337,13 @@
             private function inputParamsDataGroup_drawFeatureHandler(event:FeatureInputParamEvent):void
             {
                 var featureParam:IGPFeatureParameter = event.featureParam;
-                currentGraphicsLayer = featureParam.layer;
+                currentLayer = featureParam.layer;
                 setMapAction(event.drawType, null, featureParam.defaultSymbol, map_drawEndHandler);
             }
 
             private function inputParamsDataGroup_clearFeatureHandler(event:FeatureInputParamEvent):void
             {
-                event.featureParam.layer.clear();
+                FeatureLayerCollectionHandler.clear(event.featureParam.layer);
             }
 
             protected function map_extentChangeHandler(event:ExtentEvent):void
@@ -329,10 +366,10 @@
                     drawnGraphic.geometry = extent.toPolygon();
                 }
 
-                currentGraphicsLayer.add(drawnGraphic);
-                if (!currentGraphicsLayer.map)
+                FeatureLayerCollectionHandler.add(drawnGraphic, currentLayer);
+                if (!currentLayer.map)
                 {
-                    map.addLayer(currentGraphicsLayer);
+                    map.addLayer(currentLayer);
                 }
 
                 inputParamsDataGroup.dispatchEvent(event);
@@ -409,7 +446,10 @@
                     const projectParameters:ProjectParameters = new ProjectParameters;
                     projectParameters.geometries = inputGeometryMap[key];
                     projectParameters.outSpatialReference = inputParam.spatialReference;
-                    GeometryServiceSingleton.instance.project(projectParameters, new AsyncResponder(projectionResultHandler, projectionFaultHandler, inputParam))
+                    GeometryServiceSingleton.instance.project(projectParameters,
+                                                              new AsyncResponder(projectionResultHandler,
+                                                                                 projectionFaultHandler,
+                                                                                 inputParam));
                 }
 
                 function projectionResultHandler(geometries:Array, inputParameter:IGPFeatureParameter):void
@@ -574,8 +614,8 @@
             {
                 if (hasResultMapServer)
                 {
-                    hideAllResultImageLayers();
-                    resultImageLayersOnMap = [];
+                    hideAllResultLayers();
+                    resultLayersOnMap = [];
                 }
 
                 var outputParams:Array = gpParamHandler.outputParams;
@@ -585,9 +625,17 @@
                     paramName = param.name;
                     if (asyncResultMap[paramName])
                     {
-                        if (hasResultMapServer)
+                        if (hasResultMapServer
+                            && isResultMapServerOutputType(param.type))
                         {
-                            processResultImageLayer(paramName);
+                            if (version >= 10.1)
+                            {
+                                processResultMapServiceLayer(param as IGPFeatureParameter);
+                            }
+                            else
+                            {
+                                processResultImageLayer(paramName);
+                            }
                         }
                         else
                         {
@@ -596,29 +644,41 @@
                     }
                 }
 
-                if (resultImageLayersOnMap)
+                if (resultLayersOnMap)
                 {
                     showOutputFeaturesClearButton();
-                    extractLargestResultImageLayerExtent();
+                    extractLargestResultLayerExtent();
                 }
+            }
+
+            private function isResultMapServerOutputType(type:String):Boolean
+            {
+                return type == GPParameterTypes.FEATURE_RECORD_SET_LAYER
+                    || type == GPParameterTypes.RASTER_DATA_LAYER;
             }
 
             private function processResultImageLayer(paramName:String):void
             {
+                var outputParam:IGPParameter = gpParamHandler.findOutputParamByName(paramName);
+                if (!outputParam.visible)
+                {
+                    return;
+                }
+
                 var lastExecutedJob:JobInfo = gp.submitJobLastResult;
-                var resultImageLayer:GPResultImageLayer = gp.getResultImageLayer(lastExecutedJob.jobId, paramName);
+                var resultImageLayer:Layer = gp.getResultImageLayer(lastExecutedJob.jobId, paramName);
                 resultImageLayer.id = paramName;
-                resultImageLayer.name = ("hiddenLayer_" + paramName);
-                resultImageLayersOnMap.push(resultImageLayer);
+                resultImageLayer.name = shareResults ? outputParam.label : "hiddenLayer_" + paramName;
+                resultLayersOnMap.push(resultImageLayer);
                 map.addLayer(resultImageLayer);
                 layerOrderer.orderLayers();
             }
 
-            private function hideAllResultImageLayers():void
+            private function hideAllResultLayers():void
             {
-                for each (var resultImageLayer:GPResultImageLayer in resultImageLayersOnMap)
+                for each (var resultLayer:Layer in resultLayersOnMap)
                 {
-                    map.removeLayer(resultImageLayer);
+                    map.removeLayer(resultLayer);
                 }
             }
 
@@ -626,6 +686,11 @@
             {
                 var resultDataType:String = parameterValue.dataType;
                 var outputParam:IGPParameter = gpParamHandler.findOutputParamByName(parameterValue.paramName);
+
+                if (!outputParam.visible)
+                {
+                    return;
+                }
 
                 if (resultDataType == GPParameterTypes.GP_DATA_FILE)
                 {
@@ -637,21 +702,21 @@
                 {
                     if (totalProcessedOutputFeatures == 0)
                     {
-                        outputGraphicsLayers = [];
+                        outputLayers = [];
                         hideOutputFeaturesClearButton();
                     }
 
                     var featureParam:IGPFeatureParameter = (outputParam as IGPFeatureParameter);
-                    var graphicsLayer:GraphicsLayer = featureParam.layer;
-                    graphicsLayer.infoWindowRenderer = featureParam.popUpRenderer;
-                    graphicsLayer.addEventListener(GraphicsLayerEvent.GRAPHICS_CLEAR, ouputGraphicsLayer_graphicsClearHandler, false, 0, true);
-                    graphicsLayer.addEventListener(GraphicEvent.GRAPHIC_REMOVE, ouputGraphicsLayer_graphicsRemoveHandler, false, 0, true);
-                    outputGraphicsLayers.push(graphicsLayer);
+                    var featureLayer:FeatureLayer = featureParam.layer;
+                    featureLayer.infoWindowRenderer = featureParam.popUpRenderer;
+                    featureLayer.addEventListener(GraphicsLayerEvent.GRAPHICS_CLEAR, ouputGraphicsLayer_graphicsClearHandler, false, 0, true);
+                    featureLayer.addEventListener(GraphicEvent.GRAPHIC_REMOVE, ouputGraphicsLayer_graphicsRemoveHandler, false, 0, true);
+                    outputLayers.push(featureLayer);
 
                     var resultFeatures:Array = (parameterValue.value as FeatureSet).features;
-                    graphicsLayer.graphicProvider = resultFeatures;
+                    FeatureLayerCollectionHandler.updateFeatures(resultFeatures, featureLayer);
                     // if renderer is null, set the renderer based on result geometry
-                    if (!graphicsLayer.renderer && resultFeatures && resultFeatures.length)
+                    if (!featureLayer.renderer && resultFeatures && resultFeatures.length)
                     {
                         var geometryType:String = Graphic(resultFeatures[0]).geometry.type;
                         var renderer:SimpleRenderer = new SimpleRenderer;
@@ -673,13 +738,13 @@
                                 break;
                             }
                         }
-                        graphicsLayer.renderer = renderer;
+                        featureLayer.renderer = renderer;
                     }
                     addContextMenuToGraphics(resultFeatures);
 
-                    if (!graphicsLayer.map)
+                    if (!featureLayer.map)
                     {
-                        map.addLayer(graphicsLayer);
+                        map.addLayer(featureLayer);
                         layerOrderer.orderLayers();
                     }
 
@@ -713,7 +778,8 @@
                 var outputFeatureParams:Array = gpParamHandler.getOutputFeatureParams();
                 for each (var featureParam:IGPFeatureParameter in outputFeatureParams)
                 {
-                    if (featureParam.popUpInfo)
+                    if (featureParam.popUpInfo
+                        && FeatureLayerCollectionHandler.hasFeatures(featureParam.layer))
                     {
                         featureParamPopUpToDisplay = featureParam;
                         break;
@@ -732,7 +798,8 @@
                     map.infoWindow.content = contentNavigator;
                 }
 
-                var graphic:Graphic = (featureParam.layer.graphicProvider as IList).getItemAt(0) as Graphic;
+                var graphic:Graphic = featureParam.layer.featureCollection.featureSet.features[0];
+                graphic.infoWindowRenderer = featureParam.popUpRenderer;
                 contentNavigator.dataProvider = new ArrayList([ graphic ]);
                 map.infoWindow.show(graphic.geometry is MapPoint ? graphic.geometry as MapPoint : graphic.geometry.extent.center);
             }
@@ -759,9 +826,9 @@
             private function showInputViewIfAllOutputFeaturesCleared():void
             {
                 var allGraphicsLayersCleared:Boolean = true;
-                for each (var graphicsLayer:GraphicsLayer in outputGraphicsLayers)
+                for each (var featureLayer:FeatureLayer in outputLayers)
                 {
-                    if (graphicsLayer.numGraphics > 0)
+                    if (featureLayer.featureCollection.featureSet.features.length > 0)
                     {
                         allGraphicsLayersCleared = false;
                         break;
@@ -793,15 +860,14 @@
 
             private function zoomToOutputFeatures():void
             {
-                var outputFeaturesExtent:Extent = gpParamHandler.getOutputFeaturesExtent();
-                updateMapExtent(outputFeaturesExtent);
+                map.zoomTo(gpParamHandler.getOutputFeaturesExtent());
             }
 
             protected function menuItem_contextMenuDeleteHandler(event:ContextMenuEvent):void
             {
                 var graphic:Graphic = event.contextMenuOwner as Graphic;
-                var graphicsLayer:GraphicsLayer = graphic.graphicsLayer;
-                graphicsLayer.remove(graphic);
+                var featureLayer:FeatureLayer = graphic.graphicsLayer as FeatureLayer;
+                FeatureLayerCollectionHandler.remove(graphic, featureLayer);
             }
 
             private function gp_jobCompleteHandler(event:GeoprocessorEvent):void
@@ -859,7 +925,7 @@
 
                 if (hasResultMapServer)
                 {
-                    hideAllResultImageLayers();
+                    hideAllResultLayers();
                 }
 
                 if (gpParamHandler)
@@ -897,7 +963,7 @@
 
                 if (hasResultMapServer)
                 {
-                    showAllResultImageLayers();
+                    showAllResultLayers();
                     layerOrderer.orderLayers();
                 }
 
@@ -926,85 +992,180 @@
 
             private function clearResultMapLayers():void
             {
-                for each (var resultImageLayer:GPResultImageLayer in resultImageLayersOnMap)
+                for each (var resultLayer:Layer in resultLayersOnMap)
                 {
-                    map.removeLayer(resultImageLayer);
+                    map.removeLayer(resultLayer);
                 }
 
-                resultImageLayersOnMap = null;
+                resultLayersOnMap = null;
             }
 
-            private function zoomToResultImageLayers():void
+            private function zoomToResultLayers():void
             {
-                updateMapExtent(largestResultImageLayerExtent);
+                map.zoomTo(largestResultLayerExtent);
             }
 
-            private function extractLargestResultImageLayerExtent():void
+            private function extractLargestResultLayerExtent():void
             {
-                largestResultImageLayerExtent = null;
-                var remainingResultImages:int = resultImageLayersOnMap.length;
+                largestResultLayerExtent = null;
+                var totalResultLayersToProcess:int = resultLayersOnMap.length;
 
                 var imageParams:ImageParameters = new ImageParameters();
                 imageParams.imageSpatialReference = map.spatialReference;
 
-                for each (var resultImageLayer:GPResultImageLayer in resultImageLayersOnMap)
+                for each (var resultLayer:Layer in resultLayersOnMap)
                 {
-                    gp.getResultImage(resultImageLayer.jobId, resultImageLayer.parameterName, imageParams, new AsyncResponder(resultImageSuccess, resultImageFailure, resultImageLayer));
-
-                    function resultImageSuccess(paramValue:ParameterValue, resultImageLayer:GPResultImageLayer):void
+                    if (resultLayer is GPResultImageLayer)
                     {
-                        var resultImage:MapImage = paramValue.value as MapImage;
-                        aggregateExtent(resultImage.extent);
-                        remainingResultImages--;
-                        if (remainingResultImages == 0)
+                        var resultImageLayer:GPResultImageLayer = resultLayer as GPResultImageLayer;
+                        gp.getResultImage(resultImageLayer.jobId, resultImageLayer.parameterName, imageParams,
+                                          new AsyncResponder(resultImageSuccess, resultImageFailure));
+
+                        function resultImageSuccess(paramValue:ParameterValue, token:Object = null):void
                         {
-                            zoomToResultImageLayers();
+                            var resultImage:MapImage = paramValue.value as MapImage;
+                            aggregateExtent(resultImage.extent);
+                            updateProcessedResultLayers();
+                        }
+
+                        function resultImageFailure(fault:Fault, token:Object = null):void
+                        {
+                            updateProcessedResultLayers();
                         }
                     }
-
-                    function aggregateExtent(extent:Extent):void
+                    else if (resultLayer is ArcGISDynamicMapServiceLayer)
                     {
-                        if (largestResultImageLayerExtent)
+                        var dynamicLayer:ArcGISDynamicMapServiceLayer = resultLayer as ArcGISDynamicMapServiceLayer;
+                        if (dynamicLayer.loaded)
                         {
-                            largestResultImageLayerExtent = extent.union(largestResultImageLayerExtent);
+                            aggregateExtent(dynamicLayer.initialExtent);
+                            updateProcessedResultLayers();
                         }
                         else
                         {
-                            largestResultImageLayerExtent = extent;
+                            dynamicLayer.addEventListener(LayerEvent.LOAD, dynamicLayer_loadHandler, false, 0, true);
+                            dynamicLayer.addEventListener(LayerEvent.LOAD_ERROR, dynamicLayer_loadErrorHandler, false, 0, true);
+
+                            function dynamicLayer_loadHandler(event:LayerEvent):void
+                            {
+                                dynamicLayer.removeEventListener(LayerEvent.LOAD, dynamicLayer_loadHandler);
+                                dynamicLayer.removeEventListener(LayerEvent.LOAD_ERROR, dynamicLayer_loadErrorHandler);
+
+                                if (map.spatialReference.equals(event.layer.spatialReference))
+                                {
+                                    aggregateExtent(dynamicLayer.initialExtent);
+                                    updateProcessedResultLayers();
+                                }
+                                else
+                                {
+                                    var layerExtent:Extent = event.layer.initialExtent;
+                                    if (!layerExtent)
+                                    {
+                                        updateProcessedResultLayers();
+                                        return;
+                                    }
+
+                                    if (map.spatialReference.isWebMercator()
+                                        && event.layer.spatialReference
+                                        && event.layer.spatialReference.wkid == 4326)
+                                    {
+                                        // clip the layer extent, so it's not going to Infinity; otherwise gives an error
+                                        layerExtent.xmin = Math.max(layerExtent.xmin, -180);
+                                        layerExtent.xmax = Math.min(layerExtent.xmax, 180);
+                                        layerExtent.ymin = Math.max(layerExtent.ymin, -89.99);
+                                        layerExtent.ymax = Math.min(layerExtent.ymax, 89.99);
+                                        layerExtent = WebMercatorUtil.geographicToWebMercator(layerExtent) as Extent;
+                                        aggregateExtent(layerExtent);
+                                    }
+                                    else if (event.layer.spatialReference
+                                        && event.layer.spatialReference.isWebMercator()
+                                        && map.spatialReference.wkid == 4326)
+                                    {
+                                        layerExtent = WebMercatorUtil.webMercatorToGeographic(layerExtent) as Extent;
+                                        aggregateExtent(layerExtent);
+                                    }
+                                    else
+                                    {
+                                        const projectParameters:ProjectParameters = new ProjectParameters;
+                                        projectParameters.geometries = [ layerExtent ];
+                                        projectParameters.outSpatialReference = map.spatialReference
+                                        GeometryServiceSingleton.instance.project(
+                                            projectParameters, new AsyncResponder(projectionResult, projectionFault));
+
+                                        function projectionResult(geometries:Array, token:Object = null):void
+                                        {
+                                            aggregateExtent(geometries[0]);
+                                            updateProcessedResultLayers();
+                                        }
+
+                                        function projectionFault(fault:Fault, token:Object = null):void
+                                        {
+                                            updateProcessedResultLayers();
+                                        }
+                                    }
+                                }
+                            }
+
+                            function dynamicLayer_loadErrorHandler(event:LayerEvent):void
+                            {
+                                dynamicLayer.removeEventListener(LayerEvent.LOAD, dynamicLayer_loadHandler);
+                                dynamicLayer.removeEventListener(LayerEvent.LOAD_ERROR, dynamicLayer_loadErrorHandler);
+                                updateProcessedResultLayers();
+                            }
                         }
                     }
+                }
 
-                    function resultImageFailure(fault:Fault, token:Object):void
+                function updateProcessedResultLayers():void
+                {
+                    totalResultLayersToProcess--;
+                    if (totalResultLayersToProcess == 0)
                     {
-                        //Swallow error
+                        zoomToResultLayers();
+                    }
+                }
+
+                function aggregateExtent(extent:Extent):void
+                {
+                    if (largestResultLayerExtent)
+                    {
+                        largestResultLayerExtent = extent.union(largestResultLayerExtent);
+                    }
+                    else
+                    {
+                        largestResultLayerExtent = extent;
                     }
                 }
             }
 
-            private function updateMapExtent(newExtent:Extent):void
+            private function showAllResultLayers():void
             {
-                if (newExtent)
+                for each (var resultLayer:Layer in resultLayersOnMap)
                 {
-                    map.extent = newExtent;
-                    if (!map.extent.contains(newExtent))
+                    if (!map.getLayer(resultLayer.id))
                     {
-                        map.level--;
+                        map.addLayer(resultLayer);
                     }
                 }
             }
 
-            private function showAllResultImageLayers():void
+            protected function paramDataGroup_errorHandler(event:ParamErrorEvent):void
             {
-                for each (var resultImageLayer:GPResultImageLayer in resultImageLayersOnMap)
-                {
-                    if (!map.getLayer(resultImageLayer.id))
-                    {
-                        map.addLayer(resultImageLayer);
-                    }
-                }
+                showError(event.message, event.title);
+            }
+
+            private function processResultMapServiceLayer(param:IGPFeatureParameter):void
+            {
+                var lastExecutedJob:JobInfo = gp.submitJobLastResult;
+                var resultMapServiceLayer:ArcGISDynamicMapServiceLayer = gp.getResultMapServiceLayer(lastExecutedJob.jobId);
+                resultMapServiceLayer.name = shareResults ? widgetTitle : "hiddenLayer_" + widgetTitle;
+                resultLayersOnMap.push(resultMapServiceLayer);
+                map.addLayer(resultMapServiceLayer);
+                layerOrderer.orderLayers();
             }
         ]]>
     </fx:Script>
+
     <fx:Declarations>
         <esri:Geoprocessor id="gp"
                            executeComplete="gp_executeCompleteHandler(event)"
@@ -1012,13 +1173,14 @@
                            getResultDataComplete="gp_resultDataCompleteHandler(event)"
                            jobComplete="gp_jobCompleteHandler(event)"
                            useAMF="false"/>
-        <esri:DrawTool id="drawTool" drawEnd="map_drawEndHandler(event)"/>
-        <esri:EditTool id="editTool" map="{map}"/>
     </fx:Declarations>
+
     <viewer:states>
+        <s:State name="startup"/>
         <s:State name="input"/>
         <s:State name="output"/>
     </viewer:states>
+
     <viewer:WidgetTemplate id="wTemplate"
                            closed="wTemplate_closedHandler(event)"
                            minimized="wTemplate_minimizedHandler(event)"
@@ -1026,35 +1188,46 @@
         <viewer:layout>
             <s:VerticalLayout/>
         </viewer:layout>
+
+        <mx:Image includeIn="startup" source="assets/images/loader.swf"/>
+
         <s:Label id="descriptionText"
                  fontWeight="bold"
                  includeInLayout="false"
                  visible="false"/>
+
         <s:Scroller width="100%" height="100%"
                     includeIn="input"
                     itemCreationPolicy="immediate">
             <supportClasses:InputParamDataGroup id="inputParamsDataGroup"
-                                                width="100%" height="100%"/>
+                                                width="100%" height="100%"
+                                                error="paramDataGroup_errorHandler(event)"/>
         </s:Scroller>
+
         <s:Scroller width="100%" height="100%"
                     includeIn="output"
                     itemCreationPolicy="immediate">
             <supportClasses:OutputParamDataGroup id="outputParamsDataGroup"
                                                  width="100%" height="100%"/>
         </s:Scroller>
+
         <s:Label id="missingRequiredFieldsText"
                  color="0xFF0000"
                  includeIn="input"
                  includeInLayout="false"
                  visible="false"/>
+
         <s:HGroup width="100%" verticalAlign="middle">
             <s:RichEditableText id="helpLink"
                                 editable="false"
                                 selectable="false"/>
+
             <mx:Spacer width="100%"/>
+
             <mx:Image id="busyAnimation"
                       source="assets/images/loader.swf"
                       visible="false"/>
+
             <s:Button id="clearOutputFeaturesButton"
                       click="clearAllGraphics()"
                       includeInLayout="false"

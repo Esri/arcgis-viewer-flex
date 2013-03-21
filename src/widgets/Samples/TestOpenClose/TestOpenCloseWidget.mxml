@@ -26,6 +26,7 @@
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.IBaseWidget;
             import com.esri.viewer.ViewerContainer;
+            import com.esri.viewer.utils.LabelUtil;
 
             import mx.collections.ArrayCollection;
 
@@ -70,6 +71,7 @@
 
                 widgetLabels.dataProvider = widgetItems;
                 widgetLabels.labelField = "label";
+                widgetLabels.typicalItem = LabelUtil.findLongestLabelItem(widgetItems.source, 'label');
             }
 
             protected function button1_clickHandler(event:MouseEvent):void

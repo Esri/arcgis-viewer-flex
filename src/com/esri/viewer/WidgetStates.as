@@ -22,7 +22,7 @@ package com.esri.viewer
 public final class WidgetStates
 {
     /**
-     * Indicates the widget is opened.
+     * Indicates the widget is open.
      */
     public static const WIDGET_OPENED:String = "open";
 

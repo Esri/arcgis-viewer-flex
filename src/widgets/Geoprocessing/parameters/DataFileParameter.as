@@ -27,19 +27,9 @@ public class DataFileParameter extends BaseParameter
     //--------------------------------------------------------------------------
 
     private static const URL_DELIMITER:String = "url:";
+    private static const ITEM_ID_DELIMITER:String = "itemID:";
 
     private static const VALID_URL_REGEX:RegExp = /^(ht|f)tps?:\/\/[^\s\.]+(\.[^\s\.]+)*((\/|\.)[^\s\.]+)+\/?$/;
-
-    //--------------------------------------------------------------------------
-    //
-    //  Methods
-    //
-    //--------------------------------------------------------------------------
-
-    private function dataFileString():String
-    {
-        return URL_DELIMITER + _defaultValue.url;
-    }
 
     //--------------------------------------------------------------------------
     //
@@ -60,7 +50,7 @@ public class DataFileParameter extends BaseParameter
 
     override public function set defaultValue(value:Object):void
     {
-        _defaultValue = new DataFile(value.url);
+        _defaultValue = new DataFile(value.url, value.itemID);
     }
 
     //----------------------------------
@@ -80,13 +70,27 @@ public class DataFileParameter extends BaseParameter
 
     override public function defaultValueFromString(description:String):void
     {
-        var url:String = description.substr(URL_DELIMITER.length, description.length);
-        _defaultValue = new DataFile(url);
+        var dataFile:DataFile = new DataFile();
+
+        if (description.indexOf(URL_DELIMITER) == 0)
+        {
+            dataFile.url = description.substr(URL_DELIMITER.length);
+        }
+        else if (description.indexOf(ITEM_ID_DELIMITER) == 0)
+        {
+            dataFile.itemID = description.substr(ITEM_ID_DELIMITER.length);
+        }
+
+        _defaultValue = dataFile;
     }
 
     override public function hasValidValue():Boolean
     {
-        if (_defaultValue.url)
+        if (_defaultValue.itemID)
+        {
+            return true;
+        }
+        else if (_defaultValue.url)
         {
             var validURLIndex:int = _defaultValue.url.search(VALID_URL_REGEX);
             return validURLIndex == 0;

@@ -43,6 +43,7 @@
             import com.esri.ags.events.FeatureLayerEvent;
             import com.esri.ags.events.LayerEvent;
             import com.esri.ags.events.MapEvent;
+            import com.esri.ags.geometry.Geometry;
             import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
             import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
             import com.esri.ags.layers.FeatureLayer;
@@ -78,8 +79,8 @@
             private var updateGeometry:Boolean = true;
             private var updateAttributes:Boolean = true;
             private var dictionary:Dictionary = new Dictionary /*layer,renderer*/;
-            private var featureLayerToDynamicMapService:Dictionary = new Dictionary /*FeatureLayer,ArcGISDynamicMapServiceLayer*/
-            private var hiddenFeatureLayerToSettingsName:Dictionary = new Dictionary /*FeatureLayer,String*/
+            private var featureLayerToDynamicMapService:Dictionary = new Dictionary /*FeatureLayer,ArcGISDynamicMapServiceLayer*/;
+            private var hiddenFeatureLayerToSettingsName:Dictionary = new Dictionary /*FeatureLayer,String*/;
             private var excludeLayers:Array;
             private var lastState:String;
 
@@ -99,6 +100,7 @@
             private var visibleLayersChangeWatcher:ChangeWatcher;
             private var activeFeatureChangeWatcher:ChangeWatcher;
             private var layerToSettings:Dictionary = new Dictionary /*layer,settingsObject*/;
+            private var featureLayerToSelectionColor:Dictionary = new Dictionary /*FeatureLayer,SelectionColor*/;
 
             private function basewidget_initializeHandler():void
             {
@@ -466,6 +468,7 @@
                         //store the renderer info for each layer on map
                         storeInfoWindowRenderer();
                         editor.map = map;
+                        updateSelectionColor(featureLayers);
                         editor.featureLayers = featureLayers;
                         // infowindowLabel on the AttributeInspetor
                         editor.attributeInspector.infoWindowLabel = attributesLabel;
@@ -602,6 +605,7 @@
                                     else
                                     {
                                         deactivateEditor();
+                                        updateSelectionColor(featureLayers);
                                         editor.featureLayers = featureLayers;
                                         //store the renderer info for each layer on map
                                         storeInfoWindowRenderer();
@@ -759,6 +763,7 @@
                         featureLayers.unshift(event.layer);
                         deactivateEditor();
                         editor.map = map;
+                        updateSelectionColor(featureLayers);
                         editor.featureLayers = featureLayers;
                     }
                     else if (event.layer is ArcGISDynamicMapServiceLayer)
@@ -835,7 +840,7 @@
                         }
                     }
                 }
-                else if (newLayerIds.length - arrFinalLayers.length < index < newLayerIds.length)
+                else if ((newLayerIds.length - arrFinalLayers.length < index) && (index < newLayerIds.length))
                 {
                     if (layer is FeatureLayer && featureLayers.indexOf(layer) != -1)
                     {
@@ -1209,7 +1214,7 @@
                 }
                 else if (featureLayer.tableDetails is FeatureTableDetails)
                 {
-                    result = (featureLayer.layerDetails as FeatureTableDetails).isCreateAllowed;
+                    result = (featureLayer.tableDetails as FeatureTableDetails).isCreateAllowed;
                 }
 
                 return result;
@@ -1319,39 +1324,45 @@
                     if (outFields && outFields.length)
                     {
                         var attributeInspectorFieldInspectors:Array = [];
-                        for each (var field:Field in featureLayer.layerDetails.fields)
+                        var fieldInspector:FieldInspector;
+                        for each (var fieldObject:Object in outFields)
                         {
-                            var fieldInspector:FieldInspector = new FieldInspector;
+                            fieldInspector = new FieldInspector;
                             fieldInspector.featureLayer = featureLayer;
-                            fieldInspector.fieldName = field.name;
-                            fieldInspector.visible = false;
-                            for each (var fieldObject:Object in outFields)
-                            {
-                                if (fieldObject.name == field.name)
-                                {
-                                    fieldInspector.label = fieldObject.alias;
-                                    fieldInspector.toolTip = fieldObject.tooltip;
-                                    fieldInspector.visible = true;
-                                    break;
-                                }
-                            }
+                            fieldInspector.visible = true;
+                            fieldInspector.fieldName = fieldObject.name;
+                            fieldInspector.label = fieldObject.alias;
+                            fieldInspector.toolTip = fieldObject.tooltip;
+
                             attributeInspectorFieldInspectors.push(fieldInspector);
                         }
+                        for each (var field:Field in featureLayer.layerDetails.fields)
+                        {
+                            if (outFields.indexOf(field.name) == -1)
+                            {
+                                fieldInspector = new FieldInspector;
+                                fieldInspector.featureLayer = featureLayer;
+                                fieldInspector.visible = false;
+                                fieldInspector.fieldName = field.name;
+
+                                attributeInspectorFieldInspectors.push(fieldInspector);
+                            }
+                        }
                         editor.attributeInspector.fieldInspectors = attributeInspectorFieldInspectors;
+                        editor.attributeInspector.formFieldsOrder = AttributeInspector.FIELD_INSPECTOR_ORDER;
                     }
                     else
                     {
-                        editor.attributeInspector.fieldInspectors = [];
+                        var formFieldsOrder:String = settingsObject.formFieldsOrder;
+                        if (formFieldsOrder)
+                        {
+                            editor.attributeInspector.formFieldsOrder = formFieldsOrder;
+                        }
                     }
                     var singleToMultilineThreshold:Number = settingsObject.singleToMultilineThreshold;
                     if (singleToMultilineThreshold && !isNaN(singleToMultilineThreshold))
                     {
                         editor.attributeInspector.singleToMultilineThreshold = singleToMultilineThreshold;
-                    }
-                    var formFieldsOrder:String = settingsObject.formFieldsOrder;
-                    if (formFieldsOrder)
-                    {
-                        editor.attributeInspector.formFieldsOrder = formFieldsOrder;
                     }
                     var showObjectID:String = settingsObject.showObjectID;
                     if (showObjectID)
@@ -1366,6 +1377,23 @@
                 }
             }
 
+            private function updateSelectionColor(featureLayers:Array):void
+            {
+                if (!editor.toolbarVisible)
+                {
+                    for each (var featureLayer:FeatureLayer in featureLayers)
+                    {
+                        if (!featureLayerToSelectionColor[featureLayer] &&
+                            featureLayer.layerDetails &&
+                            (featureLayer.layerDetails.geometryType == Geometry.POLYGON || featureLayer.layerDetails.geometryType == Geometry.POLYLINE))
+                        {
+                            featureLayerToSelectionColor[featureLayer] = featureLayer.selectionColor;
+                            featureLayer.selectionColor = NaN;
+                        }
+                    }
+                }
+            }
+
             private function widgetClosedHandler(event:Event):void
             {
                 disablePanZoomNavigationWidget = false;
@@ -1376,6 +1404,10 @@
                 // clear feature layer selection
                 for each (var featureLayer:FeatureLayer in featureLayers)
                 {
+                    if (featureLayerToSelectionColor[featureLayer]) // restore selection color
+                    {
+                        featureLayer.selectionColor = featureLayerToSelectionColor[featureLayer];
+                    }
                     if (featureLayer.selectedFeatures.length > 0)
                     {
                         featureLayer.clearSelection();

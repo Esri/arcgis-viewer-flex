@@ -22,7 +22,6 @@
                    xmlns:viewer="com.esri.viewer.*"
                    xmlns:components="com.esri.viewer.components.*"
                    xmlns:HeaderController="widgets.HeaderController.*"
-                   xmlns:singleLineSearch="com.esri.viewer.components.singleLineSearch.*"
                    width="100%"
                    borderSkin="{null}"
                    creationComplete="creationCompleteHandler(event)"
@@ -120,9 +119,10 @@
             {
                 if (configXML)
                 {
-                    const shouldEnableSearch:Boolean = (configXML.search.@visible[0] == "true")
-                        || (configXML.search[0] && !configXML.search.@visible[0]);
-                    if (shouldEnableSearch)
+                    var geocoderXML:XML = configXML.geocoder[0] || configXML.search[0];
+
+                    const shouldEnableGeocoder:Boolean = geocoderXML && (geocoderXML.@visible[0] != "false");
+                    if (shouldEnableGeocoder)
                     {
                         singleLineSearch.hostBaseWidget = this;
                         singleLineSearch.includeInLayout = true;
@@ -477,10 +477,10 @@
                     </HeaderController:WidgetItemDataGroup>
                 </s:HGroup>
 
-                <singleLineSearch:SingleLineSearch id="singleLineSearch"
-                                                   width="230" height="28"
-                                                   includeInLayout="false"
-                                                   visible="false"/>
+                <components:GeocoderComponent id="singleLineSearch"
+                                              width="230" height="28"
+                                              includeInLayout="false"
+                                              visible="false"/>
 
                 <s:DataGroup id="linkGroup"
                              dataProvider="{linkList}"

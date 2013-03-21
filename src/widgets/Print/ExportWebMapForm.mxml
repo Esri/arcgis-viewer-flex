@@ -10,9 +10,12 @@
         <![CDATA[
             import com.esri.ags.events.PrintEvent;
             import com.esri.ags.events.ZoomEvent;
+            import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
+            import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
             import com.esri.ags.layers.FeatureLayer;
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.layers.Layer;
+            import com.esri.ags.layers.supportClasses.LayerInfo;
             import com.esri.ags.tasks.supportClasses.DataFile;
             import com.esri.ags.tasks.supportClasses.JobInfo;
             import com.esri.ags.tasks.supportClasses.LegendLayer;
@@ -21,6 +24,7 @@
             import com.esri.ags.tasks.supportClasses.PrintServiceInfo;
             import com.esri.viewer.BaseWidget;
             import com.esri.viewer.utils.ErrorMessageUtil;
+            import com.esri.viewer.utils.LabelUtil;
 
             import mx.collections.IList;
             import mx.rpc.Fault;
@@ -148,6 +152,7 @@
                         {
                             // filter the layer through the list of names of excluded layers.
                             var isExcludedLayer:Boolean = false;
+                            var excludedSublayers:Array = [];
                             for each (var excludeName:String in excludeLayersFromLegend)
                             {
                                 if (excludeName == layer.id)
@@ -155,11 +160,37 @@
                                     isExcludedLayer = true;
                                     break;
                                 }
+                                else
+                                {
+                                    const index:int = excludeName.indexOf("/");
+                                    if (index != -1)
+                                    {
+                                        const layerName:String = excludeName.substring(0, index);
+                                        const sublayerId:Number = Number(excludeName.substring(index + 1));
+                                        if (layerName == layer.id)
+                                        {
+                                            excludedSublayers.push(sublayerId);
+                                        }
+                                    }
+                                }
                             }
                             if (!isExcludedLayer)
                             {
                                 var legendLayer:LegendLayer = new LegendLayer();
                                 legendLayer.layerId = layer.id;
+                                if ((layer is ArcGISDynamicMapServiceLayer || layer is ArcGISTiledMapServiceLayer) && excludedSublayers.length)
+                                {
+                                    var includedSublayers:Array = [];
+                                    const layerInfos:Array = layer is ArcGISDynamicMapServiceLayer ? ArcGISDynamicMapServiceLayer(layer).layerInfos : ArcGISTiledMapServiceLayer(layer).layerInfos;
+                                    for each (var layerInfo:LayerInfo in layerInfos)
+                                    {
+                                        if (excludedSublayers.indexOf(layerInfo.layerId) == -1)
+                                        {
+                                            includedSublayers.push(layerInfo.layerId);
+                                        }
+                                    }
+                                    legendLayer.subLayerIds = includedSublayers;
+                                }
                                 legendLayers.push(legendLayer);
                             }
                         }
@@ -351,6 +382,8 @@
                 {
                     layoutTemplatesDDL.selectedItem = printParameters.layoutTemplate;
                 }
+
+                layoutTemplatesDDL.typicalItem = LabelUtil.findLongestLabelItem(layoutTemplates.toArray());
             }
 
             private function isContained(item:*, list:IList):Boolean
@@ -409,6 +442,8 @@
                 {
                     formatsDDL.selectedItem = printParameters.format;
                 }
+
+                formatsDDL.typicalItem = LabelUtil.findLongestLabelItem(formats.toArray());
             }
 
             private function printTask_jobCompleteHandler(event:PrintEvent):void
@@ -478,7 +513,6 @@
                  includeInLayout="{shouldShowTemplateOptions}"
                  visible="{shouldShowTemplateOptions}">
         <s:DropDownList id="layoutTemplatesDDL"
-                        width="175"
                         dataProvider="{printTask.getServiceInfoLastResult.layoutTemplates}"
                         requireSelection="true"/>
     </mx:FormItem>
@@ -488,7 +522,6 @@
                  includeInLayout="{shouldShowFormatOptions}"
                  visible="{shouldShowFormatOptions}">
         <s:DropDownList id="formatsDDL"
-                        width="100"
                         dataProvider="{printTask.getServiceInfoLastResult.formats}"
                         requireSelection="true"/>
     </mx:FormItem>

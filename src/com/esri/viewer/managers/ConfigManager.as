@@ -23,10 +23,12 @@ import com.esri.ags.layers.ArcGISImageServiceLayer;
 import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
 import com.esri.ags.layers.CSVLayer;
 import com.esri.ags.layers.FeatureLayer;
+import com.esri.ags.layers.GeoRSSLayer;
 import com.esri.ags.layers.KMLLayer;
 import com.esri.ags.layers.Layer;
 import com.esri.ags.layers.OpenStreetMapLayer;
 import com.esri.ags.layers.WMSLayer;
+import com.esri.ags.layers.WebTiledLayer;
 import com.esri.ags.layers.supportClasses.Field;
 import com.esri.ags.layers.supportClasses.LOD;
 import com.esri.ags.portal.WebMapUtil;
@@ -1047,8 +1049,15 @@ public class ConfigManager extends EventDispatcher
                     type="dynamic"
                     visible={dynLyr.visible}
                     alpha={dynLyr.alpha}
+                    minscale={dynLyr.minScale}
+                    maxscale={dynLyr.maxScale}
+                    showinlegend={dynLyr.showInLegend}
                     useproxy={dynLyr.proxyURL != null}
                     url={dynLyr.url}/>;
+            if (dynLyr.showInLegend && dynLyr.showInLegendHiddenLayers)
+            {
+                lyrXML.@showinlegendhiddenlayers = dynLyr.showInLegendHiddenLayers.join();
+            }
             if (dynLyr.visibleLayers)
             {
                 lyrXML.@visiblelayers = dynLyr.visibleLayers.toArray().join();
@@ -1061,6 +1070,9 @@ public class ConfigManager extends EventDispatcher
                     type="image"
                     visible={imgLyr.visible}
                     alpha={imgLyr.alpha}
+                    minscale={imgLyr.minScale}
+                    maxscale={imgLyr.maxScale}
+                    showinlegend={imgLyr.showInLegend}
                     useproxy={imgLyr.proxyURL != null}
                     url={imgLyr.url}/>;
             if (imgLyr.bandIds)
@@ -1074,6 +1086,9 @@ public class ConfigManager extends EventDispatcher
             lyrXML = <layer label={label}
                     type="tiled"
                     visible={tiledLyr.visible}
+                    minscale={tiledLyr.minScale}
+                    maxscale={tiledLyr.maxScale}
+                    showinlegend={tiledLyr.showInLegend}
                     alpha={tiledLyr.alpha}
                     useproxy={tiledLyr.proxyURL != null}
                     url={tiledLyr.url}/>;
@@ -1081,82 +1096,13 @@ public class ConfigManager extends EventDispatcher
             {
                 lyrXML.@displaylevels = tiledLyr.displayLevels.join();
             }
-        }
-        else if (layer is FeatureLayer && !(layer is CSVLayer))
-        {
-            var feaLyr:FeatureLayer = layer as FeatureLayer;
-            if (feaLyr.featureCollection)
+            if (tiledLyr.showInLegend && tiledLyr.showInLegendHiddenLayers)
             {
-                lyrXML = <layer label={label}
-                        type="feature"
-                        visible={feaLyr.visible}
-                        alpha={feaLyr.alpha}
-                        iseditable={feaLyr.isEditable}/>
+                lyrXML.@showinlegendhiddenlayers = tiledLyr.showInLegendHiddenLayers.join();
             }
             else
             {
-                lyrXML = <layer label={label}
-                        type="feature"
-                        visible={feaLyr.visible}
-                        alpha={feaLyr.alpha}
-                        mode={feaLyr.mode}
-                        useproxy={feaLyr.proxyURL != null}
-                        url={feaLyr.url}
-                        iseditable={feaLyr.isEditable}/>;
-            }
-        }
-        else if (layer is OpenStreetMapLayer)
-        {
-            var osmLyr:OpenStreetMapLayer = layer as OpenStreetMapLayer;
-            lyrXML = <layer label={label}
-                    type="osm"
-                    visible={osmLyr.visible}
-                    alpha={osmLyr.alpha}/>;
-        }
-        else if (layer is VETiledLayer)
-        {
-            var veLyr:VETiledLayer = layer as VETiledLayer;
-            lyrXML = <layer label={label}
-                    type="bing"
-                    visible={veLyr.visible}
-                    alpha={veLyr.alpha}
-                    style={veLyr.mapStyle}/>;
-            if (veLyr.displayLevels)
-            {
-                lyrXML.@displaylevels = veLyr.displayLevels.join();
-            }
-        }
-        else if (layer is KMLLayer)
-        {
-            var kmlLayer:KMLLayer = layer as KMLLayer;
-            lyrXML = <layer label={label}
-                    type="kml"
-                    visible={kmlLayer.visible}
-                    alpha={kmlLayer.alpha}
-                    url={kmlLayer.url}/>;
-        }
-        else if (layer is WMSLayer)
-        {
-            var wmsLayer:WMSLayer = layer as WMSLayer;
-            lyrXML = <layer label={label}
-                    type="wms"
-                    visible={wmsLayer.visible}
-                    alpha={wmsLayer.alpha}
-                    version={wmsLayer.version}
-                    skipgetcapabilities={wmsLayer.skipGetCapabilities}
-                    imageformat={wmsLayer.imageFormat}
-                    url={wmsLayer.url}/>;
-            if (wmsLayer.maxImageHeight > 0)
-            {
-                lyrXML.@maximageheight = wmsLayer.maxImageHeight;
-            }
-            if (wmsLayer.maxImageWidth > 0)
-            {
-                lyrXML.@maximagewidth = wmsLayer.maxImageWidth;
-            }
-            if (wmsLayer.visibleLayers)
-            {
-                lyrXML.@visiblelayers = wmsLayer.visibleLayers.toArray().join();
+                lyrXML.@showinlegend = tiledLyr.showInLegend;
             }
         }
         else if (layer is CSVLayer)
@@ -1165,6 +1111,9 @@ public class ConfigManager extends EventDispatcher
             lyrXML = <layer label={label}
                     type="csv"
                     visible={csvLyr.visible}
+                    minscale={csvLyr.minScale}
+                    maxscale={csvLyr.maxScale}
+                    showinlegend={csvLyr.showInLegend}
                     alpha={csvLyr.alpha}
                     url={csvLyr.url}
                     longitudefieldname={csvLyr.longitudeFieldName}
@@ -1183,6 +1132,134 @@ public class ConfigManager extends EventDispatcher
                 lyrXML.@sourcefields = fields.join();
             }
         }
+        else if (layer is FeatureLayer && !(layer is CSVLayer))
+        {
+            var feaLyr:FeatureLayer = layer as FeatureLayer;
+            if (feaLyr.featureCollection)
+            {
+                lyrXML = <layer label={label}
+                        type="feature"
+                        showinlegend={feaLyr.showInLegend}
+                        visible={feaLyr.visible}
+                        minscale={feaLyr.minScale}
+                        maxscale={feaLyr.maxScale}
+                        alpha={feaLyr.alpha}
+                        iseditable={feaLyr.isEditable}/>
+            }
+            else
+            {
+                lyrXML = <layer label={label}
+                        type="feature"
+                        showinlegend={feaLyr.showInLegend}
+                        visible={feaLyr.visible}
+                        minscale={feaLyr.minScale}
+                        maxscale={feaLyr.maxScale}
+                        alpha={feaLyr.alpha}
+                        mode={feaLyr.mode}
+                        useproxy={feaLyr.proxyURL != null}
+                        url={feaLyr.url}
+                        iseditable={feaLyr.isEditable}/>;
+            }
+        }
+        else if (layer is GeoRSSLayer)
+        {
+            var geoRSSLayer:GeoRSSLayer = layer as GeoRSSLayer;
+            lyrXML = <layer label={label}
+                    type="georss"
+                    showinlegend={geoRSSLayer.showInLegend}
+                    visible={geoRSSLayer.visible}
+                    minscale={geoRSSLayer.minScale}
+                    maxscale={geoRSSLayer.maxScale}
+                    alpha={geoRSSLayer.alpha}
+                    url={geoRSSLayer.url}/>;
+        }
+        else if (layer is KMLLayer)
+        {
+            var kmlLayer:KMLLayer = layer as KMLLayer;
+            lyrXML = <layer label={label}
+                    type="kml"
+                    showinlegend={kmlLayer.showInLegend}
+                    visible={kmlLayer.visible}
+                    minscale={kmlLayer.minScale}
+                    maxscale={kmlLayer.maxScale}
+                    alpha={kmlLayer.alpha}
+                    url={kmlLayer.url}/>;
+        }
+        else if (layer is OpenStreetMapLayer)
+        {
+            var osmLyr:OpenStreetMapLayer = layer as OpenStreetMapLayer;
+            lyrXML = <layer label={label}
+                    type="osm"
+                    visible={osmLyr.visible}
+                    minscale={osmLyr.minScale}
+                    maxscale={osmLyr.maxScale}
+                    showinlegend={osmLyr.showInLegend}
+                    alpha={osmLyr.alpha}/>;
+        }
+        else if (layer is VETiledLayer)
+        {
+            var veLyr:VETiledLayer = layer as VETiledLayer;
+            lyrXML = <layer label={label}
+                    type="bing"
+                    showinlegend={veLyr.showInLegend}
+                    visible={veLyr.visible}
+                    minscale={veLyr.minScale}
+                    maxscale={veLyr.maxScale}
+                    alpha={veLyr.alpha}
+                    style={veLyr.mapStyle}/>;
+        }
+        else if (layer is WebTiledLayer)
+        {
+            var webTiledLayer:WebTiledLayer = layer as WebTiledLayer;
+            lyrXML = <layer label={label}
+                    type="webtiled"
+                    showinlegend={webTiledLayer.showInLegend}
+                    visible={webTiledLayer.visible}
+                    minscale={webTiledLayer.minScale}
+                    maxscale={webTiledLayer.maxScale}
+                    alpha={webTiledLayer.alpha}
+                    url={webTiledLayer.urlTemplate}/>;
+            if (webTiledLayer.copyright)
+            {
+                lyrXML.@copyright = webTiledLayer.copyright;
+            }
+            if (webTiledLayer.subDomains)
+            {
+                lyrXML.@subdomains = webTiledLayer.subDomains.join();
+            }
+        }
+        else if (layer is WMSLayer)
+        {
+            var wmsLayer:WMSLayer = layer as WMSLayer;
+            lyrXML = <layer label={label}
+                    type="wms"
+                    showinlegend={wmsLayer.showInLegend}
+                    visible={wmsLayer.visible}
+                    minscale={wmsLayer.minScale}
+                    maxscale={wmsLayer.maxScale}
+                    alpha={wmsLayer.alpha}
+                    version={wmsLayer.version}
+                    skipgetcapabilities={wmsLayer.skipGetCapabilities}
+                    imageformat={wmsLayer.imageFormat}
+                    url={wmsLayer.url}/>;
+            if (wmsLayer.copyright)
+            {
+                lyrXML.@copyright = wmsLayer.copyright;
+            }
+            if (wmsLayer.maxImageHeight > 0)
+            {
+                lyrXML.@maximageheight = wmsLayer.maxImageHeight;
+            }
+            if (wmsLayer.maxImageWidth > 0)
+            {
+                lyrXML.@maximagewidth = wmsLayer.maxImageWidth;
+            }
+            if (wmsLayer.visibleLayers)
+            {
+                lyrXML.@visiblelayers = wmsLayer.visibleLayers.toArray().join();
+            }
+        }
+
         return lyrXML;
     }
 

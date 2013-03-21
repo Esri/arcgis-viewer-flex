@@ -41,6 +41,7 @@
             import com.esri.ags.symbols.Symbol;
             import com.esri.ags.tasks.supportClasses.Query;
             import com.esri.ags.tools.DrawTool;
+            import com.esri.viewer.utils.LabelUtil;
             import com.esri.viewer.utils.PopUpInfoParser;
 
             import mx.collections.ArrayCollection;
@@ -173,6 +174,7 @@
                 var chartLayerDefinitions:Array = getValidChartLayerDefinitions(configXML.layers.layer);
                 hasChartLayerDefinitions = (chartLayerDefinitions.length > 0);
                 layerSelection.dataProvider = new ArrayList(chartLayerDefinitions);
+                layerSelection.typicalItem = LabelUtil.findLongestLabelItem(chartLayerDefinitions, "label");
             }
 
             private function getValidChartLayerDefinitions(layers:XMLList):Array
@@ -552,7 +554,7 @@
 
             private function updateLayerSelectionMessage():void
             {
-                layerNotVisibleOrOutOfScaleRangeMessage = (layerSelection.selectedLabel + ' ' + layerSourceNotVisibleLabel);
+                layerNotVisibleOrOutOfScaleRangeMessage = (layerSelection.selectedItem.label + ' ' + layerSourceNotVisibleLabel);
             }
 
             private function clearChartAndSelectionHighlights():void
@@ -653,7 +655,9 @@
                       includeInLayout="{hasChartLayerDefinitions}"
                       visible="{hasChartLayerDefinitions}">
                 <s:Label text="{layerSelectionLabel}"/>
-                <mx:ComboBox id="layerSelection" valueCommit="layerSelection_valueCommitHandler(event)"/>
+                <s:DropDownList id="layerSelection"
+                                requireSelection="true"
+                                valueCommit="layerSelection_valueCommitHandler(event)"/>
                 <s:Label includeInLayout="{isHighlightFeatureLayerShown}"
                          text="{drawToolMenuLabel}"
                          visible="{isHighlightFeatureLayerShown}"/>
@@ -727,7 +731,9 @@
                  left="10"
                  includeIn="chart"
                  itemCreationPolicy="immediate">
-            <s:Label includeInLayout="{!doesChartHaveData}"
+            <s:Label width="100%"
+                     includeInLayout="{!doesChartHaveData}"
+                     maxDisplayedLines="-1"
                      text="{noChartDataToDisplayLabel}"
                      visible="{!doesChartHaveData}"/>
             <Chart:ChartBrowser id="chartBrowser"

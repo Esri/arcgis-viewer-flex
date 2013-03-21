@@ -106,8 +106,8 @@ public class TOC extends Tree
     private var _useLayerFadeEffect:Boolean = false;
     private var _useLayerFadeEffectChanged:Boolean = false;
 
-    // show layer menu
-    private var _showLayerMenu:Boolean = true;
+    // include legend items
+    private var _includeLegendItems:Boolean;
 
     //--------------------------------------------------------------------------
     //
@@ -312,6 +312,30 @@ public class TOC extends Tree
     }
 
     //--------------------------------------------------------------------------
+    //  includeLegendItems
+    //--------------------------------------------------------------------------
+
+    [Bindable("includeLegendItemsChanged")]
+    /**
+     * Whether to include legend items.
+     */
+    public function get includeLegendItems():Boolean
+    {
+        return _includeLegendItems;
+    }
+
+    /**
+     * @private
+     */
+    public function set includeLegendItems(value:Boolean):void
+    {
+        _includeLegendItems = value;
+
+        onFilterChange();
+        dispatchEvent(new Event("includeLegendItemsChanged"));
+    }
+
+    //--------------------------------------------------------------------------
     //
     //  Overriden Methods
     //
@@ -448,7 +472,7 @@ public class TOC extends Tree
                 }
             }
         }
-        else if ((newLayerIds.length - _tocRoots.length) < index < newLayerIds.length)
+        else if ((newLayerIds.length - _tocRoots.length < index) && (index < newLayerIds.length))
         {
             // index of item to move
             currentTOCIndex = getCurrentTOCIndex();
@@ -613,7 +637,7 @@ public class TOC extends Tree
             setLayerFadeEffect(layer);
         }
 
-        var tocItem:TocMapLayerItem = new TocMapLayerItem(layer, _labelFunction, _isMapServiceOnly);
+        var tocItem:TocMapLayerItem = new TocMapLayerItem(layer, _labelFunction, _isMapServiceOnly, _includeLegendItems);
         // need to get the true index of this layer in the map, removing any graphics layers from the equation if necessary as well as any exclude layers
         var trueMapLayerIndex:Number = 0;
         for each (var mapLayer:Layer in this.map.layers)

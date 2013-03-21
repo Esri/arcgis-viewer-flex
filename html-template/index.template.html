@@ -3,7 +3,6 @@
     <head>
         <title>${title}</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <meta http-equiv="X-UA-Compatible" content="requiresActiveX=true" />
         <meta name="description" content="Esri ArcGIS viewer for Flex"/>
         <meta name="keywords" content="Esri, ArcGIS, Flex Viewer"/>
         <meta name="author" content="Esri"/>
@@ -56,6 +55,19 @@
                 flashvars, params, attributes);
             // JavaScript enabled so display the flashContent div in case it is not replaced with a swf object.
             swfobject.createCSS("#flashContent", "display:block;text-align:left;");
+            if (swfobject.ua.ie && swfobject.ua.win)
+            {
+                swfobject.addLoadEvent(
+                    function()
+                    {
+                        var app = swfobject.getObjectById("${application}");
+                        if (app)
+                        {
+                            app.focus();
+                        }
+                    }
+                );
+            }
         </script>
     </head>
     <body>

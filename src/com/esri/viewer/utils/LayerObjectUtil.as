@@ -19,6 +19,7 @@ package com.esri.viewer.utils
 import com.esri.ags.clusterers.ESRIClusterer;
 import com.esri.ags.layers.Layer;
 import com.esri.ags.renderers.IRenderer;
+import com.esri.ags.symbols.Symbol;
 
 public class LayerObjectUtil
 {
@@ -121,6 +122,7 @@ public class LayerObjectUtil
             }
         }
 
+        var copyright:String = obj.@copyright[0];
         var clustererParser:ClustererParser = new ClustererParser();
         var clusterer:ESRIClusterer = clustererParser.parseClusterer(obj.clustering[0]);
         var rendererParser:RendererParser = new RendererParser();
@@ -159,6 +161,10 @@ public class LayerObjectUtil
         }
         var culture:String = obj.@culture[0] ? obj.@culture : "";
 
+        var showInLegend:Boolean = obj.@showinlegend[0] != "false";
+
+        var showInLegendHiddenLayers:String = obj.@showinlegendhiddenlayers;
+
         // arcims layer
         var serviceHost:String = obj.@servicehost[0] ? obj.@servicehost : "";
         var serviceName:String = obj.@servicename[0] ? obj.@servicename : "";
@@ -190,6 +196,33 @@ public class LayerObjectUtil
         var sourceFields:String = obj.@sourcefields;
         var columnDelimiter:String = obj.@columndelimiter;
 
+        //web tiled layer
+        var subDomains:String = obj.@subdomains[0];
+
+        var symbolParser:SymbolParser = new SymbolParser();
+
+        var markerSymbol:Symbol;
+        if (obj.simplemarkersymbol[0])
+        {
+            markerSymbol = symbolParser.parseSimpleMarkerSymbol(obj.simplemarkersymbol[0]);
+        }
+        else if (obj.picturemarkersymbol[0])
+        {
+            markerSymbol = symbolParser.parsePictureMarkerSymbol(obj.picturemarkersymbol[0]);
+        }
+
+        var lineSymbol:Symbol;
+        if (obj.simplelinesymbol[0])
+        {
+            lineSymbol = symbolParser.parseSimpleLineSymbol(obj.simplelinesymbol[0]);
+        }
+
+        var fillSymbol:Symbol;
+        if (obj.simplefillsymbol[0])
+        {
+            fillSymbol = symbolParser.parseSimpleFillSymbol(obj.simplefillsymbol[0]);
+        }
+
         var resultObject:Object =
             {
                 id: String(num),
@@ -197,11 +230,13 @@ public class LayerObjectUtil
                 bandIds: bandIds,
                 autoRefresh: autoRefresh,
                 columnDelimiter: columnDelimiter,
+                copyright: copyright,
                 culture: culture,
                 clusterer: clusterer,
                 definitionExpression: definitionExpression,
                 disableClientCaching: disableClientCaching,
                 displayLevels: displayLevels,
+                fillSymbol: fillSymbol,
                 gdbVersion: gdbVersion,
                 icon: icon,
                 imageFormat: imageFormat,
@@ -210,7 +245,9 @@ public class LayerObjectUtil
                 label: label,
                 layerId: layerId,
                 latitudeFieldName: latitudeFieldName,
+                lineSymbol: lineSymbol,
                 longitudeFieldName: longitudeFieldName,
+                markerSymbol: markerSymbol,
                 maxAllowableOffset: maxAllowableOffset,
                 maxImageHeight: maxImageHeight,
                 maxImageWidth: maxImageWidth,
@@ -225,9 +262,12 @@ public class LayerObjectUtil
                 serviceName: serviceName,
                 serviceMode: serviceMode,
                 serviceURL: serviceURL,
+                showInLegend: showInLegend,
+                showInLegendHiddenLayers: showInLegendHiddenLayers,
                 skipGetCapabilities: skipGetCapabilities,
                 sourceFields: sourceFields,
                 style: style,
+                subDomains: subDomains,
                 subLayers: subLayers,
                 tileMatrixSetId: tileMatrixSetId,
                 token: token,

@@ -468,6 +468,11 @@
             private function clear():void
             {
                 onTurnOnNav();
+                if (selectedDrawingIcon)
+                {
+                    selectedDrawingIcon.filters = [];
+                    selectedDrawingIcon = null;
+                }
                 graphicsLayer.clear();
             }
 

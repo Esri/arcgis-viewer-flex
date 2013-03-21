@@ -832,7 +832,44 @@
                     const settings:Object = featureLayerToSettings[settingsKey];
                     if (settings)
                     {
-                        applyFieldInspectors(featureLayer, settings, attributeTable);
+                        var outFields:Array = settings.outFields as Array;
+                        if (outFields && outFields.length)
+                        {
+                            var attributeTableFieldInspectors:Array = [];
+                            var fieldInspector:FieldInspector;
+                            for each (var fieldObject:Object in outFields)
+                            {
+                                fieldInspector = new FieldInspector;
+                                fieldInspector.featureLayer = featureLayer;
+                                fieldInspector.visible = true;
+                                fieldInspector.fieldName = fieldObject.name;
+                                fieldInspector.label = fieldObject.alias;
+                                fieldInspector.toolTip = fieldObject.tooltip;
+
+                                attributeTableFieldInspectors.push(fieldInspector);
+                            }
+                            for each (var field:Field in getFields(featureLayer))
+                            {
+                                if (outFields.indexOf(field.name) == -1)
+                                {
+                                    fieldInspector = new FieldInspector;
+                                    fieldInspector.featureLayer = featureLayer;
+                                    fieldInspector.visible = false;
+                                    fieldInspector.fieldName = field.name;
+
+                                    attributeTableFieldInspectors.push(fieldInspector);
+                                }
+                            }
+                            attributeTable.fieldInspectors = attributeTableFieldInspectors;
+                            attributeTable.columnsOrder = AttributeTable.FIELD_INSPECTOR_ORDER;
+                        }
+                        else
+                        {
+                            if (settings.columnsOrder)
+                            {
+                                attributeTable.columnsOrder = settings.columnsOrder;
+                            }
+                        }
                         if (settings.showObjectId)
                         {
                             attributeTable.showObjectID = settings.showObjectId == "true";
@@ -852,10 +889,6 @@
                         if (settings.showRelatedRecords)
                         {
                             attributeTable.showRelatedRecords = settings.showRelatedRecords == "true";
-                        }
-                        if (settings.columnsOrder)
-                        {
-                            attributeTable.columnsOrder = settings.columnsOrder;
                         }
                     }
                     attributeTable.showTitle = false;
@@ -881,34 +914,6 @@
                     {
                         viewStack.addChild(navigatorContent);
                     }
-                }
-            }
-
-            private function applyFieldInspectors(featureLayer:FeatureLayer, settings:Object, attributeTable:AttributeTable):void
-            {
-                var outFields:Array = settings.outFields as Array;
-                if (outFields && outFields.length)
-                {
-                    var attributeTableFieldInspectors:Array = [];
-                    for each (var field:Field in getFields(featureLayer))
-                    {
-                        var fieldInspector:FieldInspector = new FieldInspector;
-                        fieldInspector.featureLayer = featureLayer;
-                        fieldInspector.fieldName = field.name;
-                        fieldInspector.visible = false;
-                        for each (var fieldObject:Object in outFields)
-                        {
-                            if (fieldObject.name == field.name)
-                            {
-                                fieldInspector.label = fieldObject.alias;
-                                fieldInspector.toolTip = fieldObject.tooltip;
-                                fieldInspector.visible = true;
-                                break;
-                            }
-                        }
-                        attributeTableFieldInspectors.push(fieldInspector);
-                    }
-                    attributeTable.fieldInspectors = attributeTableFieldInspectors;
                 }
             }
 
@@ -1034,7 +1039,7 @@
                         }
                     }
                 }
-                else if (newLayerIds.length - arrFinalLayers.length < index < newLayerIds.length)
+                else if ((newLayerIds.length - arrFinalLayers.length < index) && (index < newLayerIds.length))
                 {
                     if (layer is FeatureLayer && featureLayers.indexOf(layer) != -1)
                     {
@@ -1245,13 +1250,29 @@
                     featureLayer.clearSelection();
                 }
             }
+
+            private function updateTabBar():void
+            {
+                if (5 <= viewStack.numChildren)
+                {
+                    tabBar.percentWidth = 100;
+                    tabBar.right = 150;
+                }
+                else
+                {
+                    tabBar.percentWidth = NaN
+                    tabBar.right = null;
+                }
+            }
         ]]>
     </fx:Script>
 
     <viewer:WidgetTemplate id="wTemplate" closed="widgetClosedHandler(event)">
         <mx:ViewStack id="viewStack"
                       width="100%" height="100%"
-                      left="5" top="5"/>
+                      left="5" top="5"
+                      childAdd="updateTabBar()"
+                      childRemove="updateTabBar()"/>
         <s:TabBar id="tabBar"
                   left="5" top="2"
                   dataProvider="{viewStack}"/>

@@ -37,6 +37,8 @@ import spark.components.SkinnableContainer;
 [Event(name="open", type="flash.events.Event")]
 [Event(name="minimized", type="flash.events.Event")]
 [Event(name="closed", type="flash.events.Event")]
+[Event(name="startDrag", type="flash.events.Event")]
+[Event(name="stopDrag", type="flash.events.Event")]
 
 [SkinState("open")]
 [SkinState("minimized")]
@@ -94,6 +96,10 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
     private static const WIDGET_MINIMIZED:String = "minimized";
 
     private static const WIDGET_CLOSED:String = "closed";
+
+    private static const WIDGET_START_DRAG:String = "startDrag";
+
+    private static const WIDGET_STOP_DRAG:String = "stopDrag";
 
     private var _widgetId:Number;
 
@@ -355,6 +361,7 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
             if (!DragManager.isDragging)
             {
                 widget.startDrag();
+                dispatchEvent(new Event(WIDGET_START_DRAG));
             }
 
             if (_resizable)
@@ -376,6 +383,7 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
         var widget:UIComponent = parent as UIComponent;
 
         widget.stopDrag();
+        dispatchEvent(new Event(WIDGET_STOP_DRAG));
 
         var appHeight:Number = FlexGlobals.topLevelApplication.height;
         var appWidth:Number = FlexGlobals.topLevelApplication.width;
