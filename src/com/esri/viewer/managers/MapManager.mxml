@@ -276,14 +276,14 @@ Class used to configure the viewer map component (including layers) and handle m
                     {
                         var ext:String = m_configData.mapAttrs[i].extent;
                         var extArray:Array = ext.split(" ");
-                        var extent:Extent = new Extent(Number(extArray[0]), Number(extArray[1]), Number(extArray[2]), Number(extArray[3]));
+                        var extent:Extent = createExtent(extArray);
                         m_fullExtent = extent;
                     }
                     else if (id == "initial")
                     {
                         var iext:String = m_configData.mapAttrs[i].extent;
                         var iextArray:Array = iext.split(" ");
-                        initialExtent = new Extent(Number(iextArray[0]), Number(iextArray[1]), Number(iextArray[2]), Number(iextArray[3]));
+                        initialExtent = createExtent(iextArray);
                     }
                     else if (id == "center")
                     {
@@ -392,6 +392,23 @@ Class used to configure the viewer map component (including layers) and handle m
                 }
             }
 
+            private function createExtent(extentArray:Array):Extent
+            {
+                if (extentArray && extentArray.length == 4)
+                {
+                    var xMin:Number = parseFloat(extentArray[0]);
+                    var yMin:Number = parseFloat(extentArray[1]);
+                    var xMax:Number = parseFloat(extentArray[2]);
+                    var yMax:Number = parseFloat(extentArray[3]);
+                }
+
+                var canCreateExtent:Boolean =
+                    !isNaN(xMin) && !isNaN(yMin)
+                    && !isNaN(xMax) && !isNaN(yMax);
+
+                return canCreateExtent ? new Extent(xMin, yMin, xMax, yMax) : null;
+            }
+
             private function map_loadHandler(event:MapEvent):void
             {
                 var center:String;
@@ -419,15 +436,20 @@ Class used to configure the viewer map component (including layers) and handle m
                     var centerXY:Array = center.split(" ");
                     if (centerXY.length == 2)
                     {
-                        var centerPt:MapPoint = new MapPoint(centerXY[0], centerXY[1]);
-                        map.centerAt(centerPt);
-                        if (scale > 0)
+                        var centerX:Number = parseFloat(centerXY[0]);
+                        var centerY:Number = parseFloat(centerXY[1]);
+
+                        if (!isNaN(centerX) && !isNaN(centerY))
                         {
-                            map.scale = scale;
-                        }
-                        else if (level >= 0)
-                        {
-                            map.level = level;
+                            map.centerAt(new MapPoint(centerX, centerY));
+                            if (scale > 0)
+                            {
+                                map.scale = scale;
+                            }
+                            else if (level >= 0)
+                            {
+                                map.level = level;
+                            }
                         }
                     }
                 }
