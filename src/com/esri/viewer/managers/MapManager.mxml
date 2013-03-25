@@ -47,7 +47,6 @@ Class used to configure the viewer map component (including layers) and handle m
             import com.esri.ags.layers.Layer;
             import com.esri.ags.layers.supportClasses.Field;
             import com.esri.ags.layers.supportClasses.LayerDetails;
-            import com.esri.ags.layers.supportClasses.LayerInfo;
             import com.esri.ags.layers.supportClasses.LayerInfoWindowRenderer;
             import com.esri.ags.layers.supportClasses.StaticLayer_m_esriLogo;
             import com.esri.ags.layers.supportClasses.TableDetails;
