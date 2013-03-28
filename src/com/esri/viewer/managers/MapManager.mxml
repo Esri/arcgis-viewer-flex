@@ -273,16 +273,13 @@ Class used to configure the viewer map component (including layers) and handle m
 
                     if (id == "full")
                     {
-                        var ext:String = m_configData.mapAttrs[i].extent;
-                        var extArray:Array = ext.split(" ");
-                        var extent:Extent = createExtent(extArray);
-                        m_fullExtent = extent;
+                        var fullExtentTextCoordinates:String = m_configData.mapAttrs[i].extent;
+                        m_fullExtent = createExtent(fullExtentTextCoordinates.split(" "));
                     }
                     else if (id == "initial")
                     {
-                        var iext:String = m_configData.mapAttrs[i].extent;
-                        var iextArray:Array = iext.split(" ");
-                        initialExtent = createExtent(iextArray);
+                        var initExtentTextCoordinates:String = m_configData.mapAttrs[i].extent;
+                        initialExtent = createExtent(initExtentTextCoordinates.split(" "));
                     }
                     else if (id == "center")
                     {
@@ -391,14 +388,14 @@ Class used to configure the viewer map component (including layers) and handle m
                 }
             }
 
-            private function createExtent(extentArray:Array):Extent
+            private function createExtent(extentTextCoordinates:Array):Extent
             {
-                if (extentArray && extentArray.length == 4)
+                if (extentTextCoordinates && extentTextCoordinates.length == 4)
                 {
-                    var xMin:Number = parseFloat(extentArray[0]);
-                    var yMin:Number = parseFloat(extentArray[1]);
-                    var xMax:Number = parseFloat(extentArray[2]);
-                    var yMax:Number = parseFloat(extentArray[3]);
+                    var xMin:Number = parseFloat(extentTextCoordinates[0]);
+                    var yMin:Number = parseFloat(extentTextCoordinates[1]);
+                    var xMax:Number = parseFloat(extentTextCoordinates[2]);
+                    var yMax:Number = parseFloat(extentTextCoordinates[3]);
                 }
 
                 var canCreateExtent:Boolean =
