@@ -47,7 +47,6 @@ Class used to configure the viewer map component (including layers) and handle m
             import com.esri.ags.layers.Layer;
             import com.esri.ags.layers.supportClasses.Field;
             import com.esri.ags.layers.supportClasses.LayerDetails;
-            import com.esri.ags.layers.supportClasses.LayerInfo;
             import com.esri.ags.layers.supportClasses.LayerInfoWindowRenderer;
             import com.esri.ags.layers.supportClasses.StaticLayer_m_esriLogo;
             import com.esri.ags.layers.supportClasses.TableDetails;
@@ -274,16 +273,13 @@ Class used to configure the viewer map component (including layers) and handle m
 
                     if (id == "full")
                     {
-                        var ext:String = m_configData.mapAttrs[i].extent;
-                        var extArray:Array = ext.split(" ");
-                        var extent:Extent = new Extent(Number(extArray[0]), Number(extArray[1]), Number(extArray[2]), Number(extArray[3]));
-                        m_fullExtent = extent;
+                        var fullExtentTextCoordinates:String = m_configData.mapAttrs[i].extent;
+                        m_fullExtent = createExtent(fullExtentTextCoordinates.split(" "));
                     }
                     else if (id == "initial")
                     {
-                        var iext:String = m_configData.mapAttrs[i].extent;
-                        var iextArray:Array = iext.split(" ");
-                        initialExtent = new Extent(Number(iextArray[0]), Number(iextArray[1]), Number(iextArray[2]), Number(iextArray[3]));
+                        var initExtentTextCoordinates:String = m_configData.mapAttrs[i].extent;
+                        initialExtent = createExtent(initExtentTextCoordinates.split(" "));
                     }
                     else if (id == "center")
                     {
@@ -392,6 +388,23 @@ Class used to configure the viewer map component (including layers) and handle m
                 }
             }
 
+            private function createExtent(extentTextCoordinates:Array):Extent
+            {
+                if (extentTextCoordinates && extentTextCoordinates.length == 4)
+                {
+                    var xMin:Number = parseFloat(extentTextCoordinates[0]);
+                    var yMin:Number = parseFloat(extentTextCoordinates[1]);
+                    var xMax:Number = parseFloat(extentTextCoordinates[2]);
+                    var yMax:Number = parseFloat(extentTextCoordinates[3]);
+                }
+
+                var canCreateExtent:Boolean =
+                    !isNaN(xMin) && !isNaN(yMin)
+                    && !isNaN(xMax) && !isNaN(yMax);
+
+                return canCreateExtent ? new Extent(xMin, yMin, xMax, yMax) : null;
+            }
+
             private function map_loadHandler(event:MapEvent):void
             {
                 var center:String;
@@ -419,15 +432,20 @@ Class used to configure the viewer map component (including layers) and handle m
                     var centerXY:Array = center.split(" ");
                     if (centerXY.length == 2)
                     {
-                        var centerPt:MapPoint = new MapPoint(centerXY[0], centerXY[1]);
-                        map.centerAt(centerPt);
-                        if (scale > 0)
+                        var centerX:Number = parseFloat(centerXY[0]);
+                        var centerY:Number = parseFloat(centerXY[1]);
+
+                        if (!isNaN(centerX) && !isNaN(centerY))
                         {
-                            map.scale = scale;
-                        }
-                        else if (level >= 0)
-                        {
-                            map.level = level;
+                            map.centerAt(new MapPoint(centerX, centerY));
+                            if (scale > 0)
+                            {
+                                map.scale = scale;
+                            }
+                            else if (level >= 0)
+                            {
+                                map.level = level;
+                            }
                         }
                     }
                 }
