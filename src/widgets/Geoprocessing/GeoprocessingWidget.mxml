@@ -238,7 +238,8 @@
 
             private function checkIfUploadSupported(gpServerDescription:Object):void
             {
-                if (gpServerDescription.currentVersion >= 10.1)
+                if (gpServerDescription.currentVersion >= 10.1
+                    && gpParamHandler.hasUploadCompatibleParams())
                 {
                     var uploadsInfoRequest:JSONTask = new JSONTask(gpServerDescription.url + "uploads/info");
                     uploadsInfoRequest.proxyURL = gpServerDescription.proxyURL;
