@@ -259,7 +259,7 @@
             private function uploadsInfoRequest_resultHandler(response:Object, gpServerDescription:Object):void
             {
                 gpServerDescription.maxUploadFileSize = response.maxUploadFileSize;
-                gpServerDescription.supportsUploads = !isNaN(gpServerDescription.maxUploadFileSize);
+                gpServerDescription.supportsUploads = true;
                 continueInitialization();
             }
 
