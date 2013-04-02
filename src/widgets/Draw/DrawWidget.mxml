@@ -569,7 +569,7 @@
                         showMeasurements = true;
 
                         drawStatus = drawLineLabel;
-                        setMapAction(drawType, drawStatus, lineSymbol, map_drawEndHandler, map_drawUpdateHandler, false, false);
+                        setMapAction(drawType, drawStatus, lineSymbol, map_drawEndHandler, map_drawUpdateHandler);
                         break;
                     }
                     case DrawTool.FREEHAND_POLYLINE:
@@ -579,7 +579,7 @@
                         showMeasurements = true;
 
                         drawStatus = drawFreehandLineLabel;
-                        setMapAction(drawType, drawStatus, lineSymbol, map_drawEndHandler, map_drawUpdateHandler, false, false);
+                        setMapAction(drawType, drawStatus, lineSymbol, map_drawEndHandler, map_drawUpdateHandler);
                         break;
                     }
                     case DrawTool.EXTENT:
@@ -589,7 +589,7 @@
                         showMeasurements = true;
 
                         drawStatus = drawRectangleLabel;
-                        setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler, map_drawUpdateHandler, false, false);
+                        setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler, map_drawUpdateHandler);
                         break;
                     }
                     case DrawTool.CIRCLE:
@@ -599,7 +599,7 @@
                         showMeasurements = true;
 
                         drawStatus = drawCircleLabel;
-                        setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler, map_drawUpdateHandler, false, false);
+                        setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler, map_drawUpdateHandler);
                         break;
                     }
                     case DrawTool.ELLIPSE:
@@ -609,7 +609,7 @@
                         showMeasurements = true;
 
                         drawStatus = drawEllipseLabel;
-                        setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler, map_drawUpdateHandler, false, false);
+                        setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler, map_drawUpdateHandler);
                         break;
                     }
                     case DrawTool.POLYGON:
@@ -619,7 +619,7 @@
                         showMeasurements = true;
 
                         drawStatus = drawPolygonLabel;
-                        setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler, map_drawUpdateHandler, false, false);
+                        setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler, map_drawUpdateHandler);
                         break;
                     }
                     case DrawTool.FREEHAND_POLYGON:
@@ -629,7 +629,7 @@
                         showMeasurements = true;
 
                         drawStatus = drawFreehandPolygonLabel;
-                        setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler, map_drawUpdateHandler, false, false);
+                        setMapAction(drawType, drawStatus, fillSymbol, map_drawEndHandler, map_drawUpdateHandler);
                         break;
                     }
                 }
