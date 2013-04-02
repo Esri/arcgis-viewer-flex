@@ -425,5 +425,21 @@ public class GPParamHandler
             param.serviceInfo = serviceInfo;
         }
     }
+
+    public function hasUploadCompatibleParams():Boolean
+    {
+        var hasUploadCompatibleInputParam:Boolean = false;
+
+        for each (var param:IGPParameter in inputParams)
+        {
+            if (param.type == GPParameterTypes.DATA_FILE)
+            {
+                hasUploadCompatibleInputParam = true;
+                break;
+            }
+        }
+
+        return hasUploadCompatibleInputParam;
+    }
 }
 }

@@ -238,7 +238,8 @@
 
             private function checkIfUploadSupported(gpServerDescription:Object):void
             {
-                if (gpServerDescription.currentVersion >= 10.1)
+                if (gpServerDescription.currentVersion >= 10.1
+                    && gpParamHandler.hasUploadCompatibleParams())
                 {
                     var uploadsInfoRequest:JSONTask = new JSONTask(gpServerDescription.url + "uploads/info");
                     uploadsInfoRequest.proxyURL = gpServerDescription.proxyURL;
@@ -258,7 +259,7 @@
             private function uploadsInfoRequest_resultHandler(response:Object, gpServerDescription:Object):void
             {
                 gpServerDescription.maxUploadFileSize = response.maxUploadFileSize;
-                gpServerDescription.supportsUploads = !isNaN(gpServerDescription.maxUploadFileSize);
+                gpServerDescription.supportsUploads = true;
                 continueInitialization();
             }
 
