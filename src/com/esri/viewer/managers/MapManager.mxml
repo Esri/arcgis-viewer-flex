@@ -64,8 +64,11 @@ Class used to configure the viewer map component (including layers) and handle m
             import com.esri.ags.symbols.SimpleMarkerSymbol;
             import com.esri.ags.symbols.Symbol;
             import com.esri.ags.symbols.TextSymbol;
+            import com.esri.ags.tasks.GeometryServiceSingleton;
+            import com.esri.ags.tasks.supportClasses.ProjectParameters;
             import com.esri.ags.tools.DrawTool;
             import com.esri.ags.tools.NavigationTool;
+            import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.ConfigData;
             import com.esri.viewer.IBaseWidget;
@@ -136,6 +139,8 @@ Class used to configure the viewer map component (including layers) and handle m
             private var m_drawUpdateFunction:Function;
 
             private var m_drawEndFunction:Function;
+
+            private var m_initialExtent:Extent;
 
             private var m_fullExtent:Extent;
 
@@ -265,7 +270,6 @@ Class used to configure the viewer map component (including layers) and handle m
             private function configMapAttributes():void
             {
                 var spatialReference:SpatialReference;
-                var initialExtent:Extent;
 
                 for (var i:int = 0; i < m_configData.mapAttrs.length; i++)
                 {
@@ -279,7 +283,8 @@ Class used to configure the viewer map component (including layers) and handle m
                     else if (id == "initial")
                     {
                         var initExtentTextCoordinates:String = m_configData.mapAttrs[i].extent;
-                        initialExtent = createExtent(initExtentTextCoordinates.split(" "));
+                        m_initialExtent = createExtent(initExtentTextCoordinates.split(" "));
+                        map.addEventListener(MapEvent.LOAD, map_loadHandler);
                     }
                     else if (id == "center")
                     {
@@ -381,32 +386,48 @@ Class used to configure the viewer map component (including layers) and handle m
                 {
                     m_fullExtent.spatialReference = spatialReference;
                 }
-                if (initialExtent)
+                if (m_initialExtent && !m_initialExtent.spatialReference)
                 {
-                    initialExtent.spatialReference = spatialReference;
-                    map.extent = initialExtent;
+                    m_initialExtent.spatialReference = spatialReference;
                 }
             }
 
-            private function createExtent(extentTextCoordinates:Array):Extent
+            private function createExtent(textualExtentAttributes:Array):Extent
             {
-                if (extentTextCoordinates && extentTextCoordinates.length == 4)
+                if (textualExtentAttributes && textualExtentAttributes.length >= 4)
                 {
-                    var xMin:Number = parseFloat(extentTextCoordinates[0]);
-                    var yMin:Number = parseFloat(extentTextCoordinates[1]);
-                    var xMax:Number = parseFloat(extentTextCoordinates[2]);
-                    var yMax:Number = parseFloat(extentTextCoordinates[3]);
+                    var xMin:Number = parseFloat(textualExtentAttributes[0]);
+                    var yMin:Number = parseFloat(textualExtentAttributes[1]);
+                    var xMax:Number = parseFloat(textualExtentAttributes[2]);
+                    var yMax:Number = parseFloat(textualExtentAttributes[3]);
+
+                    if (textualExtentAttributes.length == 5)
+                    {
+                        var wkid:Number = parseFloat(textualExtentAttributes[4]);
+                    }
                 }
 
                 var canCreateExtent:Boolean =
                     !isNaN(xMin) && !isNaN(yMin)
                     && !isNaN(xMax) && !isNaN(yMax);
 
-                return canCreateExtent ? new Extent(xMin, yMin, xMax, yMax) : null;
+                var extent:Extent;
+                if (canCreateExtent)
+                {
+                    extent = new Extent(xMin, yMin, xMax, yMax);
+                    if (!isNaN(wkid))
+                    {
+                        extent.spatialReference = new SpatialReference(wkid);
+                    }
+                }
+
+                return extent;
             }
 
             private function map_loadHandler(event:MapEvent):void
             {
+                map.removeEventListener(MapEvent.LOAD, map_loadHandler);
+
                 var center:String;
                 var level:Number;
                 var scale:Number;
@@ -429,15 +450,46 @@ Class used to configure the viewer map component (including layers) and handle m
                 }
                 if (center)
                 {
-                    var centerXY:Array = center.split(" ");
-                    if (centerXY.length == 2)
+                    var centerPoint:MapPoint = createMapPoint(center.split(" "));
+                    if (centerPoint)
                     {
-                        var centerX:Number = parseFloat(centerXY[0]);
-                        var centerY:Number = parseFloat(centerXY[1]);
-
-                        if (!isNaN(centerX) && !isNaN(centerY))
+                        if (canApplyDirectlyToMap(centerPoint.spatialReference))
                         {
-                            map.centerAt(new MapPoint(centerX, centerY));
+                            applyCenterProperties(centerPoint);
+                        }
+                        else if (map.spatialReference.isWebMercator()
+                            && centerPoint.spatialReference.wkid == 4326)
+                        {
+                            applyCenterProperties(WebMercatorUtil.geographicToWebMercator(centerPoint) as MapPoint);
+                        }
+                        else if (map.spatialReference.wkid == 4326
+                            && centerPoint.spatialReference.isWebMercator())
+                        {
+                            applyCenterProperties(WebMercatorUtil.webMercatorToGeographic(centerPoint) as MapPoint);
+                        }
+                        else
+                        {
+                            var centerProjectParams:ProjectParameters = new ProjectParameters();
+                            centerProjectParams.geometries = [ centerPoint ];
+                            centerProjectParams.outSpatialReference = map.spatialReference;
+                            GeometryServiceSingleton.instance.project(
+                                centerProjectParams, new AsyncResponder(centerProjectionSuccessHandler,
+                                                                        centerProjectionFailureHandler));
+
+                            function centerProjectionSuccessHandler(geometries:Array, token:Object = null):void
+                            {
+                                applyCenterProperties(geometries[0]);
+                            }
+
+                            function centerProjectionFailureHandler(fault:Fault, token:Object = null):void
+                            {
+                                //ignore error
+                            }
+                        }
+
+                        function applyCenterProperties(center:MapPoint):void
+                        {
+                            map.centerAt(center);
                             if (scale > 0)
                             {
                                 map.scale = scale;
@@ -449,6 +501,76 @@ Class used to configure the viewer map component (including layers) and handle m
                         }
                     }
                 }
+                else if (m_initialExtent)
+                {
+                    if (canApplyDirectlyToMap(m_initialExtent.spatialReference))
+                    {
+                        map.extent = m_initialExtent;
+                    }
+                    else if (map.spatialReference.isWebMercator()
+                        && m_initialExtent.spatialReference.wkid == 4326)
+                    {
+                        map.extent = WebMercatorUtil.geographicToWebMercator(m_initialExtent) as Extent;
+                    }
+                    else if (map.spatialReference.wkid == 4326
+                        && m_initialExtent.spatialReference.isWebMercator())
+                    {
+                        map.extent = WebMercatorUtil.webMercatorToGeographic(m_initialExtent) as Extent;
+                    }
+                    else
+                    {
+                        var extentProjectParams:ProjectParameters = new ProjectParameters();
+                        extentProjectParams.geometries = [ m_initialExtent ];
+                        extentProjectParams.outSpatialReference = map.spatialReference;
+                        GeometryServiceSingleton.instance.project(
+                            extentProjectParams, new AsyncResponder(extentProjectionSuccessHandler,
+                                                                    extentProjectionFailureHandler));
+
+                        function extentProjectionSuccessHandler(geometries:Array, token:Object = null):void
+                        {
+                            map.extent = geometries[0];
+                        }
+
+                        function extentProjectionFailureHandler(fault:Fault, token:Object = null):void
+                        {
+                            //ignore error
+                        }
+                    }
+                }
+
+                function canApplyDirectlyToMap(spatialReference:SpatialReference):Boolean
+                {
+                    return !spatialReference
+                        || map.spatialReference.equals(spatialReference)
+                        || (map.spatialReference.isWebMercator() && spatialReference.isWebMercator());
+                }
+            }
+
+            private function createMapPoint(textualMapPointAttributes:Array):MapPoint
+            {
+                var point:MapPoint;
+
+                if (textualMapPointAttributes.length >= 2)
+                {
+                    var pointX:Number = parseFloat(textualMapPointAttributes[0]);
+                    var pointY:Number = parseFloat(textualMapPointAttributes[1]);
+
+                    if (textualMapPointAttributes.length == 3)
+                    {
+                        var wkid:Number = parseFloat(textualMapPointAttributes[2]);
+                    }
+
+                    if (!isNaN(pointX) && !isNaN(pointY))
+                    {
+                        point = new MapPoint(pointX, pointY);
+                        if (!isNaN(wkid))
+                        {
+                            point.spatialReference = new SpatialReference(wkid);
+                        }
+                    }
+                }
+
+                return point;
             }
 
             private function configBasemaps():void
