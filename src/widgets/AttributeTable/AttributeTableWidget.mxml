@@ -223,6 +223,10 @@
                 {
                     layerSettings.exportLocation = layerXML.exportlocation;
                 }
+                if (layerXML.exportcolumndelimiter.length() > 0)
+                {
+                    layerSettings.exportColumnDelimiter = layerXML.exportcolumndelimiter;
+                }
                 if (layerXML.showattachments.length() > 0)
                 {
                     layerSettings.showAttachments = layerXML.showattachments;
@@ -881,6 +885,10 @@
                         if (settings.exportLocation)
                         {
                             attributeTable.exportLocation = settings.exportLocation == "true";
+                        }
+                        if (settings.exportColumnDelimiter)
+                        {
+                            attributeTable.exportColumnDelimiter = settings.exportColumnDelimiter;
                         }
                         if (settings.showAttachments)
                         {
