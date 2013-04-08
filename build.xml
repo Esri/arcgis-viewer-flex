@@ -28,7 +28,7 @@
             description="Runs Flash Builder"/>
 
     <target name="full-build"
-            depends="clean,backup-actionScriptProperties,update-actionScriptProperties,run-flash-builder,restore-actionScriptProperties,check-fb-result,build-all-resoure-modules,update-index.html,copy-index.html,copy-version.xml"
+            depends="clean,backup-actionScriptProperties,update-actionScriptProperties,run-flash-builder,restore-actionScriptProperties,check-fb-result,build-all-resource-modules,update-index.html,copy-index.html,copy-version.xml"
             description="Runs a full build"/>
 
     <target name="clean" description="Deletes dist directory">
@@ -82,7 +82,7 @@
         </fail>
     </target>
 
-    <target name="build-all-resoure-modules" depends="get-bundles">
+    <target name="build-all-resource-modules" depends="get-bundles">
         <script language="javascript">
             <![CDATA[
                 var locales = project.getProperty("locale.modules");
@@ -101,7 +101,7 @@
         </script>
     </target>
 
-    <target name="build-resoure-module">
+    <target name="build-resource-module">
         <java jar="${env.FLEX_HOME}/lib/mxmlc.jar"
               failonerror="true"
               maxmemory="1024m"
