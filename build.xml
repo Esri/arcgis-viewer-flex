@@ -28,7 +28,7 @@
             description="Runs Flash Builder"/>
 
     <target name="full-build"
-            depends="clean,backup-actionScriptProperties,update-actionScriptProperties,run-flash-builder,restore-actionScriptProperties,check-fb-result,build-all-resoure-modules,update-index.html,copy-index.html,copy-version.xml"
+            depends="clean,backup-actionScriptProperties,update-actionScriptProperties,run-flash-builder,restore-actionScriptProperties,check-fb-result,build-all-resource-modules,update-index.html,copy-index.html,copy-version.xml"
             description="Runs a full build"/>
 
     <target name="clean" description="Deletes dist directory">
@@ -82,76 +82,26 @@
         </fail>
     </target>
 
-    <target name="build-all-resoure-modules" depends="get-bundles">
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="ar"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="da_DK"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="de_DE"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="en_US"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="es_ES"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="et_EE"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="fr_FR"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="he_IL"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="it_IT"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="ja_JP"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="ko_KR"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="lt_LT"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="lv_LV"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="nb_NO"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="nl_NL"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="pl_PL"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="pt_BR"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="pt_PT"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="ro_RO"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="ru_RU"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="sv_SE"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="zh_CN"/>
-        </antcall>
+    <target name="build-all-resource-modules" depends="get-bundles">
+        <script language="javascript">
+            <![CDATA[
+                var locales = project.getProperty("locale.modules");
+                locales = locales.split(",");
+
+                for each (var locale in locales)
+                {
+                    var antCall = project.createTask("antcall");
+                    antCall.setTarget("build-resource-module");
+                    var param = antCall.createParam();
+                    param.setName("LOCALE");
+                    param.setValue(locale);
+                    antCall.perform();
+                }
+            ]]>
+        </script>
     </target>
 
-    <target name="build-resoure-module">
+    <target name="build-resource-module">
         <java jar="${env.FLEX_HOME}/lib/mxmlc.jar"
               failonerror="true"
               maxmemory="1024m"
