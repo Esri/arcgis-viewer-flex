@@ -83,72 +83,22 @@
     </target>
 
     <target name="build-all-resoure-modules" depends="get-bundles">
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="ar"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="da_DK"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="de_DE"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="en_US"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="es_ES"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="et_EE"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="fr_FR"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="he_IL"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="it_IT"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="ja_JP"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="ko_KR"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="lt_LT"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="lv_LV"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="nb_NO"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="nl_NL"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="pl_PL"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="pt_BR"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="pt_PT"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="ro_RO"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="ru_RU"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="sv_SE"/>
-        </antcall>
-        <antcall target="build-resoure-module">
-            <param name="LOCALE" value="zh_CN"/>
-        </antcall>
+        <script language="javascript">
+            <![CDATA[
+                var locales = project.getProperty("locale.modules");
+                locales = locales.split(",");
+
+                for each (var locale in locales)
+                {
+                    var antCall = project.createTask("antcall");
+                    antCall.setTarget("build-resource-module");
+                    var param = antCall.createParam();
+                    param.setName("LOCALE");
+                    param.setValue(locale);
+                    antCall.perform();
+                }
+            ]]>
+        </script>
     </target>
 
     <target name="build-resoure-module">
