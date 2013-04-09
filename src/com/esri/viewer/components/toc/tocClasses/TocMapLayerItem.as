@@ -242,7 +242,6 @@ public class TocMapLayerItem extends TocItem
     {
         if (item.isGroupLayer())
         {
-            item.visible = actualVisibleLayers.indexOf(item.layerInfo.layerId) != -1;
             if (item.visible)
             {
                 for each (var child:TocLayerInfoItem in item.children)
