@@ -39,6 +39,7 @@ Class used to configure the viewer map component (including layers) and handle m
             import com.esri.ags.events.LayerEvent;
             import com.esri.ags.events.MapEvent;
             import com.esri.ags.geometry.Extent;
+            import com.esri.ags.geometry.Geometry;
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
             import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
@@ -453,96 +454,69 @@ Class used to configure the viewer map component (including layers) and handle m
                     var centerPoint:MapPoint = createMapPoint(center.split(" "));
                     if (centerPoint)
                     {
-                        if (canApplyDirectlyToMap(centerPoint.spatialReference))
-                        {
-                            applyCenterProperties(centerPoint);
-                        }
-                        else if (map.spatialReference.isWebMercator()
-                            && centerPoint.spatialReference.wkid == 4326)
-                        {
-                            applyCenterProperties(WebMercatorUtil.geographicToWebMercator(centerPoint) as MapPoint);
-                        }
-                        else if (map.spatialReference.wkid == 4326
-                            && centerPoint.spatialReference.isWebMercator())
-                        {
-                            applyCenterProperties(WebMercatorUtil.webMercatorToGeographic(centerPoint) as MapPoint);
-                        }
-                        else
-                        {
-                            var centerProjectParams:ProjectParameters = new ProjectParameters();
-                            centerProjectParams.geometries = [ centerPoint ];
-                            centerProjectParams.outSpatialReference = map.spatialReference;
-                            GeometryServiceSingleton.instance.project(
-                                centerProjectParams, new AsyncResponder(centerProjectionSuccessHandler,
-                                                                        centerProjectionFailureHandler));
-
-                            function centerProjectionSuccessHandler(geometries:Array, token:Object = null):void
-                            {
-                                applyCenterProperties(geometries[0]);
-                            }
-
-                            function centerProjectionFailureHandler(fault:Fault, token:Object = null):void
-                            {
-                                //ignore error
-                            }
-                        }
-
-                        function applyCenterProperties(center:MapPoint):void
-                        {
-                            map.centerAt(center);
-                            if (scale > 0)
-                            {
-                                map.scale = scale;
-                            }
-                            else if (level >= 0)
-                            {
-                                map.level = level;
-                            }
-                        }
+                        projectAndApply(centerPoint,
+                                        function applyCenterProperties(center:MapPoint):void
+                                        {
+                                            map.centerAt(center);
+                                            if (scale > 0)
+                                            {
+                                                map.scale = scale;
+                                            }
+                                            else if (level >= 0)
+                                            {
+                                                map.level = level;
+                                            }
+                                        });
                     }
                 }
                 else if (m_initialExtent)
                 {
-                    if (canApplyDirectlyToMap(m_initialExtent.spatialReference))
-                    {
-                        map.extent = m_initialExtent;
-                    }
-                    else if (map.spatialReference.isWebMercator()
-                        && m_initialExtent.spatialReference.wkid == 4326)
-                    {
-                        map.extent = WebMercatorUtil.geographicToWebMercator(m_initialExtent) as Extent;
-                    }
-                    else if (map.spatialReference.wkid == 4326
-                        && m_initialExtent.spatialReference.isWebMercator())
-                    {
-                        map.extent = WebMercatorUtil.webMercatorToGeographic(m_initialExtent) as Extent;
-                    }
-                    else
-                    {
-                        var extentProjectParams:ProjectParameters = new ProjectParameters();
-                        extentProjectParams.geometries = [ m_initialExtent ];
-                        extentProjectParams.outSpatialReference = map.spatialReference;
-                        GeometryServiceSingleton.instance.project(
-                            extentProjectParams, new AsyncResponder(extentProjectionSuccessHandler,
-                                                                    extentProjectionFailureHandler));
-
-                        function extentProjectionSuccessHandler(geometries:Array, token:Object = null):void
-                        {
-                            map.extent = geometries[0];
-                        }
-
-                        function extentProjectionFailureHandler(fault:Fault, token:Object = null):void
-                        {
-                            //ignore error
-                        }
-                    }
+                    projectAndApply(m_initialExtent,
+                                    function applyExtentProperties(extent:Extent):void
+                                    {
+                                        map.extent = extent;
+                                    });
                 }
+            }
 
-                function canApplyDirectlyToMap(spatialReference:SpatialReference):Boolean
+            private function projectAndApply(geometry:Geometry, resultHandler:Function):void
+            {
+                var canApplyDirectlyToMap:Boolean = !geometry.spatialReference
+                    || map.spatialReference.equals(geometry.spatialReference)
+                    || (map.spatialReference.isWebMercator() && geometry.spatialReference.isWebMercator());
+
+                if (canApplyDirectlyToMap)
                 {
-                    return !spatialReference
-                        || map.spatialReference.equals(spatialReference)
-                        || (map.spatialReference.isWebMercator() && spatialReference.isWebMercator());
+                    resultHandler(geometry);
+                }
+                else if (map.spatialReference.isWebMercator()
+                    && geometry.spatialReference.wkid == 4326)
+                {
+                    resultHandler(WebMercatorUtil.geographicToWebMercator(geometry));
+                }
+                else if (map.spatialReference.wkid == 4326
+                    && geometry.spatialReference.isWebMercator())
+                {
+                    resultHandler(WebMercatorUtil.webMercatorToGeographic(geometry));
+                }
+                else
+                {
+                    var projectParams:ProjectParameters = new ProjectParameters();
+                    projectParams.geometries = [ geometry ];
+                    projectParams.outSpatialReference = map.spatialReference;
+                    GeometryServiceSingleton.instance.project(
+                        projectParams, new AsyncResponder(projectionSuccessHandler,
+                                                          projectionFailureHandler));
+
+                    function projectionSuccessHandler(geometries:Array, token:Object = null):void
+                    {
+                        resultHandler(geometries[0]);
+                    }
+
+                    function projectionFailureHandler(fault:Fault, token:Object = null):void
+                    {
+                        //ignore error
+                    }
                 }
             }
 
