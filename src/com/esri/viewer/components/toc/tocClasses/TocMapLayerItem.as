@@ -233,8 +233,8 @@ public class TocMapLayerItem extends TocItem
     {
         var actualVisibleLayers:Array = getActualVisibleLayers(ArcGISDynamicMapServiceLayer(layer).visibleLayers.toArray(), _dynamicMapServiceLayerInfos);
         for each (var child:TocLayerInfoItem in children)
-        {
-            updateTOCItemVisibility(child, ArcGISDynamicMapServiceLayer(layer).visibleLayers.toArray());
+        {   
+            updateTOCItemVisibility(child, actualVisibleLayers);
         }
     }
 

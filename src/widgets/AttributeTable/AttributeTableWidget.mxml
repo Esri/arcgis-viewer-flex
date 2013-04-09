@@ -49,7 +49,8 @@
             import com.esri.ags.layers.supportClasses.Field;
             import com.esri.ags.layers.supportClasses.LayerInfo;
             import com.esri.ags.tasks.JSONTask;
-
+            import com.esri.viewer.utils.MapServiceUtil;
+            
             import mx.binding.utils.ChangeWatcher;
             import mx.collections.ArrayCollection;
             import mx.containers.ViewStack;
@@ -474,13 +475,14 @@
                     arcGISDynamicMapServiceLayer.addEventListener(FlexEvent.HIDE, layer_hideShowHandler);
                     arcGISDynamicMapServiceLayer.addEventListener(FlexEvent.SHOW, layer_hideShowHandler);
 
-                    if (arcGISDynamicMapServiceLayer.visibleLayers)
-                    {
-                        arcGISDynamicMapServiceLayer.visibleLayers.removeEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);
-                        arcGISDynamicMapServiceLayer.visibleLayers.addEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);
-                    }
-                    visibleLayersChangeWatcher = ChangeWatcher.watch(arcGISDynamicMapServiceLayer, "visibleLayers", visibleLayersChange);
                     var copyLayerInfos:Array = arcGISDynamicMapServiceLayer.layerInfos;
+                    if (!arcGISDynamicMapServiceLayer.visibleLayers)
+                    {   
+                        var visLayers:Array = getActualVisibleLayers(MapServiceUtil.getVisibleSubLayers(copyLayerInfos), copyLayerInfos);
+                        arcGISDynamicMapServiceLayer.visibleLayers = new ArrayCollection(visLayers);
+                    }
+                    arcGISDynamicMapServiceLayer.visibleLayers.addEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);
+                    visibleLayersChangeWatcher = ChangeWatcher.watch(arcGISDynamicMapServiceLayer, "visibleLayers", visibleLayersChange);
                     for each (var copyLayerInfo:LayerInfo in copyLayerInfos)
                     {
                         updateMinMaxScaleOnLayerInfos(copyLayerInfo, copyLayerInfos);
