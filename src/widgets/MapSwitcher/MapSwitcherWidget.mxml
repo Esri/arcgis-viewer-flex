@@ -175,13 +175,10 @@
                 toc.basemapLayers = getBasemapLayers();
                 toc.excludeGraphicsLayers = true;
                 toc.includeLegendItems = includeLegendItems;
-                if (expandLayerItems)
-                {
-                    toc.expandLayerItems();
-                }
                 var tocLayers:ArrayCollection = toc.dataProvider as ArrayCollection;
                 opLayersButton.visible = tocLayers.length ? true : false;
                 tocLayers.addEventListener(CollectionEvent.COLLECTION_CHANGE, toc_collectionChangeHandler);
+                toc.expandLayerItems = expandLayerItems;
             }
 
             private function toc_collectionChangeHandler(event:CollectionEvent):void
