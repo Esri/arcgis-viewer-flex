@@ -346,7 +346,7 @@
                         layoutTemplateWhitelist.push(layoutTemplateXML.toString());
                     }
 
-                    if (layoutTemplateWhitelist.length > 0)
+                    if (layoutTemplates && layoutTemplateWhitelist.length > 0)
                     {
                         var totalLayoutTemplates:int = layoutTemplates.length;
                         var layoutTemplate:String;
@@ -383,13 +383,15 @@
                     layoutTemplatesDDL.selectedItem = printParameters.layoutTemplate;
                 }
 
-                layoutTemplatesDDL.typicalItem = LabelUtil.findLongestLabelItem(layoutTemplates.toArray());
+                if (shouldShowTemplateOptions)
+                {
+                    layoutTemplatesDDL.typicalItem = LabelUtil.findLongestLabelItem(layoutTemplates.toArray());
+                }
             }
 
             private function isContained(item:*, list:IList):Boolean
             {
-                var listContents:Array = list.toArray();
-                return listContents.indexOf(item) > -1;
+                return list && list.getItemIndex(item) > -1;
             }
 
             private function initFormats(serviceInfo:PrintServiceInfo):void
@@ -406,7 +408,7 @@
                         formatTemplateWhitelist.push(formatXML.toString());
                     }
 
-                    if (formatTemplateWhitelist.length > 0)
+                    if (formats && formatTemplateWhitelist.length > 0)
                     {
                         var totalFormats:int = formats.length;
                         var format:String;
@@ -443,7 +445,10 @@
                     formatsDDL.selectedItem = printParameters.format;
                 }
 
-                formatsDDL.typicalItem = LabelUtil.findLongestLabelItem(formats.toArray());
+                if (shouldShowFormatOptions)
+                {
+                    formatsDDL.typicalItem = LabelUtil.findLongestLabelItem(formats.toArray());
+                }
             }
 
             private function printTask_jobCompleteHandler(event:PrintEvent):void
