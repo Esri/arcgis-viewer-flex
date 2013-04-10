@@ -275,14 +275,8 @@ public class TocItem extends EventDispatcher
      */
     public function isGroupLayer():Boolean
     {
-        var result:Boolean;
-
-        if (children && children.length > 0)
-        {
-            result = children.getItemAt(0) is TocLegendItem ? false : true;
-        }
-
-        return result;
+        return children && children.length > 0
+            && !(children.getItemAt(0) is TocLegendItem);
     }
 
     /**

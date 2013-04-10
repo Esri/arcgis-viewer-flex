@@ -69,7 +69,6 @@ public class TOC extends Tree
 
         // Set default styles
         setStyle("borderStyle", "none");
-
     }
 
     //--------------------------------------------------------------------------
