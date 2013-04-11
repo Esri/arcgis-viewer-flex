@@ -16,6 +16,7 @@
 package com.esri.viewer.components.toc.tocClasses
 {
 
+import flash.events.Event;
 import flash.events.EventDispatcher;
 
 import mx.collections.ArrayCollection;
@@ -80,6 +81,7 @@ public class TocItem extends EventDispatcher
             children = new ArrayCollection();
         }
         children.addItem(item);
+        getTopMostTocItem().dispatchEvent(new Event(Event.CHANGE));
     }
 
     //--------------------------------------------------------------------------
@@ -273,14 +275,23 @@ public class TocItem extends EventDispatcher
      */
     public function isGroupLayer():Boolean
     {
-        var result:Boolean;
+        return children && children.length > 0
+            && !(children.getItemAt(0) is TocLegendItem);
+    }
 
-        if (children && children.length > 0)
+    /**
+     * Gets top-most TOC item.
+     */
+    protected function getTopMostTocItem():TocItem
+    {
+        var topMostTocItem:TocItem;
+        var currentTocItem:TocItem = this;
+        while (currentTocItem != null)
         {
-            result = children.getItemAt(0) is TocLegendItem ? false : true;
+            topMostTocItem = currentTocItem;
+            currentTocItem = currentTocItem.parent;
         }
-
-        return result;
+        return topMostTocItem;
     }
 
     /**
