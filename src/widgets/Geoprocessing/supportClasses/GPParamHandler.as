@@ -432,7 +432,8 @@ public class GPParamHandler
 
         for each (var param:IGPParameter in inputParams)
         {
-            if (param.type == GPParameterTypes.DATA_FILE)
+            if (param.type == GPParameterTypes.DATA_FILE
+                || param.type == GPParameterTypes.RASTER_DATA_LAYER)
             {
                 hasUploadCompatibleInputParam = true;
                 break;
