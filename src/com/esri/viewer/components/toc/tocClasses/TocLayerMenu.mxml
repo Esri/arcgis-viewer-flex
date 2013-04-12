@@ -144,10 +144,12 @@
                 }
 
                 var layerExtent:Extent = _layer.initialExtent;
-                if (!_map.extent.spatialReference.equals(layerExtent.spatialReference))
+                var mapExtent:Extent = _map.extent;
+                if (layerExtent && mapExtent
+                    && !mapExtent.spatialReference.equals(layerExtent.spatialReference))
                 {
                     // convert client side.
-                    if (_map.extent.spatialReference.isWebMercator() && layerExtent.spatialReference.wkid == 4326)
+                    if (mapExtent.spatialReference.isWebMercator() && layerExtent.spatialReference.wkid == 4326)
                     {
                         // clip the layer extent, so it's not going to Infinity; otherwise gives an error
                         layerExtent.xmin = Math.max(layerExtent.xmin, -180);
@@ -157,7 +159,7 @@
                         layerExtent = WebMercatorUtil.geographicToWebMercator(layerExtent) as Extent;
                         updateMapExtent(layerExtent);
                     }
-                    else if (layerExtent.spatialReference.isWebMercator() && _map.extent.spatialReference.wkid == 4326)
+                    else if (layerExtent.spatialReference.isWebMercator() && mapExtent.spatialReference.wkid == 4326)
                     {
                         layerExtent = WebMercatorUtil.webMercatorToGeographic(layerExtent) as Extent;
                         updateMapExtent(layerExtent);
@@ -166,7 +168,7 @@
                     {
                         const projectParameters:ProjectParameters = new ProjectParameters;
                         projectParameters.geometries = [ layerExtent ];
-                        projectParameters.outSpatialReference = _map.extent.spatialReference
+                        projectParameters.outSpatialReference = mapExtent.spatialReference
                         geometryService.project(projectParameters);
                     }
                 }
