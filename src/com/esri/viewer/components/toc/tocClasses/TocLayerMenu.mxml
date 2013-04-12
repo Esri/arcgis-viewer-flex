@@ -144,7 +144,8 @@
                 }
 
                 var layerExtent:Extent = _layer.initialExtent;
-                if (!_map.extent.spatialReference.equals(layerExtent.spatialReference))
+                if (layerExtent && _map.extent
+                    && !_map.extent.spatialReference.equals(layerExtent.spatialReference))
                 {
                     // convert client side.
                     if (_map.extent.spatialReference.isWebMercator() && layerExtent.spatialReference.wkid == 4326)
