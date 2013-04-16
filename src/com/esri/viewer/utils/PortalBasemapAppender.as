@@ -107,10 +107,8 @@ public class PortalBasemapAppender extends EventDispatcher
         portalItemToLabel = new Dictionary(true);
         processedArcGISBasemaps = [];
         totalBasemaps = configData.basemaps.length;
-        var portalItem:PortalItem;
-        for (var i:uint = 0; i < totalPossibleArcGISBasemaps; i++)
+        for each (var portalItem:PortalItem in resultItems)
         {
-            portalItem = resultItems[i];
             portalItemOrder.push(portalItem);
             portalItem.getJSONData(new AsyncResponder(portalItem_getJSONDataResultHandler,
                                                       portalItem_getJSONDataFaultHandler,
