@@ -309,7 +309,7 @@ public class PortalBasemapAppender extends EventDispatcher
 
         if (url)
         {
-            layerXML = createTiledLayerXML(title, iconURL, url, basemapLayerObject, false);
+            layerXML = createLayerXML(title, "tiled", iconURL, url, basemapLayerObject.opacity, false);
         }
         else if (isNonEsriType(type))
         {
@@ -319,16 +319,14 @@ public class PortalBasemapAppender extends EventDispatcher
         return layerXML;
     }
 
-    private function createTiledLayerXML(title:String, iconURL:String, url:String, basemapLayerObject:Object, visible:Boolean):XML
+    private function createLayerXML(title:String, type:String, iconURL:String, url:String, alpha:Number, visible:Boolean):XML
     {
-        var layerXML:XML = <layer label={title}
-                type="tiled"
+        return <layer label={title}
+                type={type}
                 icon={iconURL}
                 url={url}
-                alpha={basemapLayerObject.opacity}
+                alpha={alpha}
                 visible={visible}/>;
-
-        return layerXML;
     }
 
     private function isNonEsriType(type:String):Boolean
