@@ -118,7 +118,7 @@ public class PortalBasemapAppender extends EventDispatcher
 
     private function portalItem_getJSONDataResultHandler(itemData:Object, item:PortalItem):void
     {
-        createBasemapLayerObject(itemData, item);
+        createBasemapLayerObjectFromWebMapItemAndData(item, itemData);
         if (isDefaultBasemap(itemData.baseMap))
         {
             defaultBasemapTitle = itemData.baseMap.title;
@@ -126,7 +126,7 @@ public class PortalBasemapAppender extends EventDispatcher
         updateTotalArcGISBasemaps();
     }
 
-    private function createBasemapLayerObject(itemData:Object, item:PortalItem):void
+    private function createBasemapLayerObjectFromWebMapItemAndData(item:PortalItem, itemData:Object):void
     {
         if (!itemData)
         {
@@ -311,7 +311,7 @@ public class PortalBasemapAppender extends EventDispatcher
         {
             layerXML = createTiledLayerXML(title, iconURL, url, basemapLayerObject, false);
         }
-        else if (isAllowedType(type))
+        else if (isNonEsriType(type))
         {
             layerXML = createNonEsriLayerXML(title, iconURL, basemapLayerObject, false, type);
         }
@@ -331,7 +331,7 @@ public class PortalBasemapAppender extends EventDispatcher
         return layerXML;
     }
 
-    private function isAllowedType(type:String):Boolean
+    private function isNonEsriType(type:String):Boolean
     {
         return type == "OpenStreetMap" ||
             (isBingBasemap(type) && hasBingKey());
