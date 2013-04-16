@@ -23,11 +23,13 @@ import com.esri.ags.portal.supportClasses.PortalGroup;
 import com.esri.ags.portal.supportClasses.PortalItem;
 import com.esri.ags.portal.supportClasses.PortalQueryParameters;
 import com.esri.ags.portal.supportClasses.PortalQueryResult;
+import com.esri.ags.tasks.JSONTask;
 import com.esri.viewer.AppEvent;
 import com.esri.viewer.ConfigData;
 
 import flash.events.Event;
 import flash.events.EventDispatcher;
+import flash.net.URLVariables;
 import flash.utils.Dictionary;
 
 import mx.resources.ResourceManager;
@@ -107,16 +109,38 @@ public class PortalBasemapAppender extends EventDispatcher
         portalItemToLabel = new Dictionary(true);
         processedArcGISBasemaps = [];
         totalBasemaps = configData.basemaps.length;
-        for each (var portalItem:PortalItem in resultItems)
+        for each (var item:PortalItem in resultItems)
         {
-            portalItemOrder.push(portalItem);
-            portalItem.getJSONData(new AsyncResponder(portalItem_getJSONDataResultHandler,
-                                                      portalItem_getJSONDataFaultHandler,
-                                                      portalItem));
+            processPortalItem(item);
         }
     }
 
-    private function portalItem_getJSONDataResultHandler(itemData:Object, item:PortalItem):void
+    private function processPortalItem(item:PortalItem):void
+    {
+        if (item.type == PortalItem.TYPE_WEB_MAP)
+        {
+            portalItemOrder.push(item);
+            processWebMapPortalItem(item);
+        }
+        else if (item.type == PortalItem.TYPE_MAP_SERVICE)
+        {
+            portalItemOrder.push(item);
+            processMapServicePortalItem(item);
+        }
+        else
+        {
+            updateTotalArcGISBasemaps();
+        }
+    }
+
+    private function processWebMapPortalItem(item:PortalItem):void
+    {
+        item.getJSONData(new AsyncResponder(item_getJSONDataResultHandler,
+                                            item_getJSONDataFaultHandler,
+                                            item));
+    }
+
+    private function item_getJSONDataResultHandler(itemData:Object, item:PortalItem):void
     {
         createBasemapLayerObjectFromWebMapItemAndData(item, itemData);
         if (isDefaultBasemap(itemData.baseMap))
@@ -395,11 +419,98 @@ public class PortalBasemapAppender extends EventDispatcher
         }
     }
 
-    private function portalItem_getJSONDataFaultHandler(fault:Fault, token:Object = null):void
+    private function item_getJSONDataFaultHandler(fault:Fault, token:Object = null):void
     {
         AppEvent.dispatch(AppEvent.APP_ERROR,
                           LocalizationUtil.getDefaultString("couldNotFetchBasemapData",
                                                             fault.faultString));
+        updateTotalArcGISBasemaps();
+    }
+
+    private function processMapServicePortalItem(item:PortalItem):void
+    {
+        const urlVars:URLVariables = new URLVariables();
+        urlVars.f = "json";
+        var mapServiceMetadataRequest:JSONTask = new JSONTask(item.url);
+        mapServiceMetadataRequest.execute(
+            urlVars, new AsyncResponder(mapServiceRequest_resultHandler,
+                                        mapServiceRequest_faultHandler,
+                                        item));
+    }
+
+    private function mapServiceRequest_resultHandler(serviceMetadata:Object, item:PortalItem):void
+    {
+        createBasemapLayerObjectFromMapServiceItemAndData(item, serviceMetadata);
+        updateTotalArcGISBasemaps();
+    }
+
+    private function createBasemapLayerObjectFromMapServiceItemAndData(item:PortalItem, serviceMetadata:Object):void
+    {
+        if (!serviceMetadata)
+        {
+            return;
+        }
+
+        var layerType:String = getLayerType(serviceMetadata, item);
+        if (!layerType)
+        {
+            return;
+        }
+
+        var title:String = item.title;
+        var iconURL:String = item.thumbnailURL;
+        var existingBasemapLayerObject:Object = findBasemapLayerObjectById(title);
+        if (existingBasemapLayerObject)
+        {
+            existingBasemapLayerObject.icon = iconURL;
+            return;
+        }
+
+        portalItemToLabel[item] = title;
+        addBasemapLayerObject(mapServicePortalItemToLayerXML(item, layerType));
+    }
+
+    private function getLayerType(serviceMetadata:Object, item:PortalItem):String
+    {
+        var layerType:String;
+
+        if (serviceMetadata.singleFusedMapCache)
+        {
+            layerType = "tiled";
+        }
+        else if (serviceMetadata.bandCount)
+        {
+            layerType = "image";
+        }
+        else if (isNaN(Number(item.url.charAt(item.url.length - 1))))
+        {
+            layerType = "dynamic";
+        }
+        else
+        {
+            layerType = "feature";
+        }
+
+        return layerType;
+    }
+
+    private function mapServicePortalItemToLayerXML(item:PortalItem, type:String):XML
+    {
+        const title:String = item.title;
+        const iconURL:String = item.thumbnailURL;
+        const url:String = item.url;
+        return createLayerXML(title, type, iconURL, url, 1, false);
+    }
+
+    private function mapServiceRequest_faultHandler(fault:Fault, token:Object = null):void
+    {
+        if (fault.faultString != "Sign in aborted")
+        {
+            AppEvent.dispatch(AppEvent.APP_ERROR,
+                              LocalizationUtil.getDefaultString("couldNotFetchBasemapData",
+                                                                fault.faultString));
+        }
+
         updateTotalArcGISBasemaps();
     }
 
