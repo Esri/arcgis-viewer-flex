@@ -38,6 +38,7 @@
             import com.esri.viewer.managers.WidgetManager;
             import com.esri.viewer.utils.LocalizationUtil;
 
+            import mx.controls.Alert;
             import mx.core.FlexGlobals;
             import mx.core.IVisualElement;
             import mx.events.FlexEvent;
@@ -107,6 +108,11 @@
             private function initializeHandler(event:FlexEvent):void
             {
                 IdentityManager.instance.enabled = true;
+
+                Alert.yesLabel = LocalizationUtil.getDefaultString('yesLabel');
+                Alert.noLabel = LocalizationUtil.getDefaultString('noLabel');
+                Alert.okLabel = LocalizationUtil.getDefaultString('okLabel');
+                Alert.cancelLabel = LocalizationUtil.getDefaultString('cancelLabel');
             }
 
             private function creationCompleteHandler(event:FlexEvent):void
