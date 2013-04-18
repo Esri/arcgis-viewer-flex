@@ -29,7 +29,6 @@
             import com.esri.ags.Map;
             import com.esri.ags.events.ExtentEvent;
             import com.esri.ags.events.MapEvent;
-            import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.geometry.Polygon;
             import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
