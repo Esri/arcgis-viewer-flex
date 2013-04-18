@@ -221,10 +221,17 @@
               includeInLayout="{hostComponent.addEnabled &amp;&amp; hostComponent.featureLayer.isUpdateAllowed(hostComponent.feature)}"
               label="{chooseFileText}"
               visible="{hostComponent.addEnabled &amp;&amp; hostComponent.featureLayer.isUpdateAllowed(hostComponent.feature)}"/>
-    <s:HGroup includeIn="loadState" verticalAlign="middle">
-        <s:Label text="{hostComponent.attachmentName}"/>
-        <s:Label text="{numberFormatter.format(hostComponent.attachmentSize / 1024.0)+' '+resourceManager.getString('ESRIMessages', 'attachmentInspectorKiloBytes')}"/>
-    </s:HGroup>
+    <s:VGroup width="100%"
+              includeIn="loadState"
+              verticalAlign="middle">
+        <s:Label width="100%"
+                 maxDisplayedLines="-1"
+                 text="{hostComponent.attachmentName}"
+                 textAlign="center"/>
+        <s:Label width="100%"
+                 text="{numberFormatter.format(hostComponent.attachmentSize / 1024.0)+' '+resourceManager.getString('ESRIMessages', 'attachmentInspectorKiloBytes')}"
+                 textAlign="center"/>
+    </s:VGroup>    
     <s:HGroup width="100%"
               horizontalAlign="center"
               includeIn="loadState"
