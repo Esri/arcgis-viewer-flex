@@ -374,6 +374,8 @@
             {
                 overviewMap.extent = map.extent.expand(3);
                 overviewGraphic.geometry = map.visibleArea;
+                //hide overview box if larger than overview map
+                overviewGraphic.visible = overviewMap.extent.contains(overviewGraphic.geometry);
             }
 
             private function updateMapExtentFromOverview():void
@@ -384,13 +386,6 @@
             private function map_extentChangeHandler(event:ExtentEvent):void
             {
                 updateOverviewExtentFromMap();
-                updateOverviewGraphicVisibility();
-            }
-
-            private function updateOverviewGraphicVisibility():void
-            {
-                //hide overview box if larger than overview map
-                overviewGraphic.visible = overviewMap.extent.contains(overviewGraphic.geometry);
             }
 
             private function overviewMap_loadHandler(event:MapEvent):void
@@ -409,7 +404,6 @@
 
                 map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
                 updateOverviewExtentFromMap();
-                updateOverviewGraphicVisibility();
             }
 
             private function overviewMap_mouseRollOutHandler(event:MouseEvent):void
