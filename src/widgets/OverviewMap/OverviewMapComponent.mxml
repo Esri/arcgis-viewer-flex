@@ -434,8 +434,14 @@
 
                 graphicsLayer.add(overviewGraphic);
 
-                map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
-                updateOverviewExtentFromMap();
+                if (map.loaded)
+                {
+                    trackMapExtent();
+                }
+                else
+                {
+                    map.addEventListener(MapEvent.LOAD, map_loadHandler);
+                }
             }
 
             private function overviewGraphic_mouseDownHandler(event:MouseEvent):void
@@ -505,8 +511,9 @@
                 }
             }
 
-            private function map_extentChangeHandler(event:ExtentEvent):void
+            private function trackMapExtent():void
             {
+                map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
                 updateOverviewExtentFromMap();
             }
 
@@ -516,6 +523,17 @@
                 overviewGraphic.geometry = map.visibleArea;
                 //hide overview box if larger than overview map
                 overviewGraphic.visible = overviewMap.extent.contains(overviewGraphic.geometry);
+            }
+
+            private function map_extentChangeHandler(event:ExtentEvent):void
+            {
+                updateOverviewExtentFromMap();
+            }
+
+            private function map_loadHandler(event:MapEvent):void
+            {
+                map.removeEventListener(MapEvent.LOAD, map_loadHandler);
+                trackMapExtent();
             }
 
             private function sequence_effectStartHandler(event:EffectEvent):void
