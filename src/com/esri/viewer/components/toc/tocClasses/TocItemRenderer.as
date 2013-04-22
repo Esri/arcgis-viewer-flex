@@ -94,15 +94,15 @@ public class TocItemRenderer extends TreeItemRenderer
         super.data = value;
 
         if (value is TocLegendItem)
-        {   
+        {
             _legendSwatchContainer.removeAllElements();
-            
+
             var symbol:Symbol = TocLegendItem(value).legendItemInfo.symbol;
             if (symbol)
-            {   
+            {
                 var swatch:UIComponent = symbol.createSwatch(LEGEND_SWATCH_SIZE, LEGEND_SWATCH_SIZE);
                 if (swatch)
-                {                   
+                {
                     _legendSwatchContainer.addElement(swatch);
                 }
             }

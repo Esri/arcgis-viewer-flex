@@ -41,10 +41,10 @@
             import com.esri.ags.layers.supportClasses.AttachmentInfo;
             import com.esri.ags.skins.supportClasses.AttachmentMouseEvent;
             import com.esri.viewer.utils.LocalizationUtil;
-            
+
             import mx.binding.utils.ChangeWatcher;
             import mx.events.FlexEvent;
-            
+
             import spark.components.DataGroup;
             import spark.components.HScrollBar;
             import spark.events.IndexChangeEvent;

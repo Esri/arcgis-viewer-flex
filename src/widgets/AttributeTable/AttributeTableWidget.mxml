@@ -50,7 +50,7 @@
             import com.esri.ags.layers.supportClasses.LayerInfo;
             import com.esri.ags.tasks.JSONTask;
             import com.esri.viewer.utils.MapServiceUtil;
-            
+
             import mx.binding.utils.ChangeWatcher;
             import mx.collections.ArrayCollection;
             import mx.containers.ViewStack;
@@ -409,7 +409,7 @@
                 jsonTask.execute(urlVars, new AsyncResponder(jsonTask_resultHandler, jsonTask_faultHandler));
 
                 function jsonTask_resultHandler(resultObject:Object, token:Object = null):void
-                {                
+                {
                     var layers:Array = resultObject.layers;
                     if (layers && layers.length)
                     {
@@ -422,7 +422,7 @@
                     }
                 }
                 function jsonTask_faultHandler(fault:Fault, token:Object = null):void
-                {   
+                {
                     var layers:Array = [];
                     for each (var layerInfo:LayerInfo in layer.layerInfos)
                     {
@@ -477,7 +477,7 @@
 
                     var copyLayerInfos:Array = arcGISDynamicMapServiceLayer.layerInfos;
                     if (!arcGISDynamicMapServiceLayer.visibleLayers)
-                    {   
+                    {
                         var visLayers:Array = getActualVisibleLayers(MapServiceUtil.getVisibleSubLayers(copyLayerInfos), copyLayerInfos);
                         arcGISDynamicMapServiceLayer.visibleLayers = new ArrayCollection(visLayers);
                     }

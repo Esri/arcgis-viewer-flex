@@ -58,7 +58,7 @@
             import com.esri.ags.tasks.JSONTask;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.utils.MapServiceUtil;
-            
+
             import mx.binding.utils.ChangeWatcher;
             import mx.collections.ArrayCollection;
             import mx.core.FlexGlobals;
@@ -541,7 +541,7 @@
 
                             var copyLayerInfos:Array = arcGISDynamicMapServiceLayer.layerInfos;
                             if (!arcGISDynamicMapServiceLayer.visibleLayers)
-                            {   
+                            {
                                 var visLayers:Array = getActualVisibleLayers(MapServiceUtil.getVisibleSubLayers(copyLayerInfos), copyLayerInfos);
                                 arcGISDynamicMapServiceLayer.visibleLayers = new ArrayCollection(visLayers);
                             }
