@@ -1283,7 +1283,7 @@
                 if (5 <= viewStack.numChildren)
                 {
                     tabBar.percentWidth = 100;
-                    tabBar.right = 150;
+                    tabBar.right = 500;
                 }
                 else
                 {
