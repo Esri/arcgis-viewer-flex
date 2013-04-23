@@ -66,6 +66,7 @@ public class FeatureLayerParameter extends BaseParameter implements IGPFeaturePa
     {
         _layer = new FeatureLayer();
         _layer.featureCollection = new FeatureCollection(new FeatureSet([]), new LayerDetails());
+        _layer.outFields = [ "*" ];
     }
 
     //--------------------------------------------------------------------------
@@ -271,6 +272,19 @@ public class FeatureLayerParameter extends BaseParameter implements IGPFeaturePa
     //  Overridden methods
     //
     //--------------------------------------------------------------------------
+
+    override public function set paramInfo(value:Object):void
+    {
+        if (value)
+        {
+            super.paramInfo = value;
+            if (value.defaultValue)
+            {
+                var featureSet:FeatureSet = FeatureSet.fromJSON(value.defaultValue);
+                layer.featureCollection.layerDefinition.fields = featureSet.fields;
+            }
+        }
+    }
 
     override public function hasValidValue():Boolean
     {

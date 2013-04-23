@@ -442,5 +442,27 @@ public class GPParamHandler
 
         return hasUploadCompatibleInputParam;
     }
+
+    public function setTaskInfo(taskInfo:Object):void
+    {
+        if (!taskInfo || !taskInfo.parameters)
+        {
+            return;
+        }
+
+        var allParams:Array = _inputParams.concat(_outputParams);
+
+        for each (var param:IGPParameter in allParams)
+        {
+            for each (var paramInfo:Object in taskInfo.parameters)
+            {
+                if (param.name == paramInfo.name)
+                {
+                    param.paramInfo = paramInfo;
+                    break;
+                }
+            }
+        }
+    }
 }
 }
