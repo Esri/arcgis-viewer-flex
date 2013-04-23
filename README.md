@@ -18,18 +18,22 @@ This is the source code for the ArcGIS Viewer for Flex (a.k.a Flex Viewer). Lear
 
 ## Instructions (Getting Started)
 
-See http://links.esri.com/flexviewer-gettingstarted-developers for more details.
+There are three different ways of getting the source code from the GitHub web site: clone, [fork] (https://help.github.com/articles/fork-a-repo) and download zip.  See http://links.esri.com/flexviewer-gettingstarted-developers for more details.
 
-1. In Adobe Flash Builder 4.6, go to "File" -> "Import Flash Builder project..."
-2. Keeping "File" option selected, click "Browse..." button.
-3. Select flexviewer-3.1-src.zip downloaded in step 1, e.g. "C:\Documents and Settings\jack\My Documents\flexviewer-3.1-src.zip".
-4. "Extract new project to:" textbox will be automatically set to location where the project source will reside, e.g. "C:\Documents and Settings\jack\Adobe Flash Builder 4.6\FlexViewer.
-5. Click "Finish" button. Project will be created and displayed in the Package Explorer window of Adobe Flash Builder, e.g. in this case FlexViewer.
-6. If prompted to upgrade the project (because it was created with a previous version of Flash Builder), click "OK"
-7. If prompted to choose Flex SDK version, select "Flex 4.6.0" or higher
-8. If needed, download API Library from http://links.esri.com/flex-api/latest-download.
-9. Go to "Project" -> "Properties" -> "Flex Build Path".
-10. Click "Add SWC" and navigate to the agslib-3.[*]-[YYYY-MM-DD].swc file.
+Once you have the source code on your own machine, you need to import it into Adobe Flash Builder.
+
+1. In Adobe Flash Builder 4.6 or 4.7, go to "File" -> "Import Flash Builder project...", then depending on whether you have a zip file or not, follow step 2 or 3.
+2. If you downloaded the zip file:
+  1. Keep "File" option selected, click "Browse..." button. Select the downloaded flexviewer-3.[*]-src.zip file, for example "C:\Documents and Settings\jack\My Documents\flexviewer-3.[*]-src.zip".
+  2. "Extract new project to:" textbox will be automatically set to location where the project source will reside, e.g. "C:\Documents and Settings\jack\Adobe Flash Builder 4.7\FlexViewer.
+3. If you cloned and/or forked the repo:
+  1. Select "Project folder", click "Browse..." button and navigate to your local repo, for example C:\Users\jack\Documents\GitHub\arcgis-viewer-flex.
+4. Click "Finish" button. Project will be created and displayed in the Package Explorer window of Adobe Flash Builder, e.g. in this case FlexViewer.
+5. If prompted to upgrade the project (because it was created with a previous version of Flash Builder), click "OK"
+6. If prompted to choose Flex SDK version, select "Flex 4.6.0" or higher.
+7. Download API Library from http://links.esri.com/flex-api/latest-download. Unzip it.
+8. Go to "Project" -> "Properties" -> "Flex Build Path".
+9. Click "Add SWC" and navigate to the agslib-3.[*]-[YYYY-MM-DD].swc API library file.
 
 Optionally:
 
