@@ -23,6 +23,8 @@
                 autoDrawBackground="false">
     <fx:Script>
         <![CDATA[
+            import com.esri.ags.components.IdentityManager;
+            import com.esri.ags.components.supportClasses.Credential;
             import com.esri.viewer.utils.LocalizationUtil;
 
             import widgets.Geoprocessing.parameters.DataFileParameter;
@@ -119,6 +121,11 @@
                 urlVars.f = "json";
                 urlRequest.data = urlVars;
                 urlRequest.method = URLRequestMethod.POST;
+                var credential:Credential = IdentityManager.instance.findCredential(url);
+                if (credential && credential.token)
+                {
+                    urlVars.token = credential.token;
+                }
                 return urlRequest;
             }
 
