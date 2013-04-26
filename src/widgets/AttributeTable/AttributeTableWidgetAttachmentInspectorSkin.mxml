@@ -38,10 +38,7 @@
     <fx:Script>
         <![CDATA[
             import com.esri.ags.components.supportClasses.AttachmentRemoveEvent;
-            import com.esri.ags.layers.FeatureLayer;
             import com.esri.ags.layers.supportClasses.AttachmentInfo;
-            import com.esri.ags.layers.supportClasses.FeatureLayerDetails;
-            import com.esri.ags.layers.supportClasses.FeatureTableDetails;
             import com.esri.ags.skins.supportClasses.AttachmentMouseEvent;
             import com.esri.viewer.utils.LocalizationUtil;
 
@@ -173,10 +170,14 @@
                   includeIn="queryAttachmentInfosGroup"
                   source="assets/images/loader.swf"/>
     <s:Label id="numAttachments"
+             width="100%"
              excludeFrom="noAttachmentsState, disabled"
              fontWeight="bold"
              includeInLayout.queryAttachmentInfos="false"
+             maxDisplayedLines="1"
              paddingTop="5"
+             showTruncationTip="true"
+             textAlign="center"
              visible.queryAttachmentInfos="false"/>
     <s:Spacer/>
     <s:BorderContainer width="80%" height="100%"
@@ -201,8 +202,6 @@
                                            isEditable="{hostComponent.featureLayer.isEditable}"
                                            itemRenderer="com.esri.viewer.skins.supportClasses.AttachmentRenderer"
                                            keyUp="attachmentInfoList_keyUpHandler(event)"
-                                           minHeight="140"
-                                           minWidth="200"
                                            useVirtualLayout="false">
             <supportClasses:layout>
                 <supportClasses:AttachmentLayout id="attachmentLayout"
@@ -211,22 +210,34 @@
             </supportClasses:layout>
         </supportClasses:AttachmentInfoList>
     </s:BorderContainer>
-    <s:Label fontWeight="bold"
+    <s:Label width="100%"
+             fontWeight="bold"
              includeIn="noAttachmentsInList"
+             maxDisplayedLines="1"
              paddingTop="5"
-             text="{noAttachmentsText}"/>
+             showTruncationTip="true"
+             text="{noAttachmentsText}"
+             textAlign="center"/>
     <s:Spacer includeIn="noAttachmentsInList"/>
     <s:Button id="browseButton"
+              width="180"
               enabled.disabled="false"
               enabled.queryAttachmentInfos="false"
               excludeFrom="loadState"
               includeInLayout="{hostComponent.addEnabled &amp;&amp; hostComponent.featureLayer.isUpdateAllowed(hostComponent.feature)}"
               label="{chooseFileText}"
               visible="{hostComponent.addEnabled &amp;&amp; hostComponent.featureLayer.isUpdateAllowed(hostComponent.feature)}"/>
-    <s:HGroup includeIn="loadState" verticalAlign="middle">
-        <s:Label text="{hostComponent.attachmentName}"/>
-        <s:Label text="{numberFormatter.format(hostComponent.attachmentSize / 1024.0)+' '+resourceManager.getString('ESRIMessages', 'attachmentInspectorKiloBytes')}"/>
-    </s:HGroup>
+    <s:VGroup width="100%"
+              includeIn="loadState"
+              verticalAlign="middle">
+        <s:Label width="100%"
+                 maxDisplayedLines="-1"
+                 text="{hostComponent.attachmentName}"
+                 textAlign="center"/>
+        <s:Label width="100%"
+                 text="{numberFormatter.format(hostComponent.attachmentSize / 1024.0)+' '+resourceManager.getString('ESRIMessages', 'attachmentInspectorKiloBytes')}"
+                 textAlign="center"/>
+    </s:VGroup>
     <s:HGroup width="100%"
               horizontalAlign="center"
               includeIn="loadState"

@@ -39,6 +39,7 @@ Class used to configure the viewer map component (including layers) and handle m
             import com.esri.ags.events.LayerEvent;
             import com.esri.ags.events.MapEvent;
             import com.esri.ags.geometry.Extent;
+            import com.esri.ags.geometry.Geometry;
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
             import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
@@ -47,7 +48,6 @@ Class used to configure the viewer map component (including layers) and handle m
             import com.esri.ags.layers.Layer;
             import com.esri.ags.layers.supportClasses.Field;
             import com.esri.ags.layers.supportClasses.LayerDetails;
-            import com.esri.ags.layers.supportClasses.LayerInfo;
             import com.esri.ags.layers.supportClasses.LayerInfoWindowRenderer;
             import com.esri.ags.layers.supportClasses.StaticLayer_m_esriLogo;
             import com.esri.ags.layers.supportClasses.TableDetails;
@@ -65,8 +65,11 @@ Class used to configure the viewer map component (including layers) and handle m
             import com.esri.ags.symbols.SimpleMarkerSymbol;
             import com.esri.ags.symbols.Symbol;
             import com.esri.ags.symbols.TextSymbol;
+            import com.esri.ags.tasks.GeometryServiceSingleton;
+            import com.esri.ags.tasks.supportClasses.ProjectParameters;
             import com.esri.ags.tools.DrawTool;
             import com.esri.ags.tools.NavigationTool;
+            import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.ConfigData;
             import com.esri.viewer.IBaseWidget;
@@ -87,6 +90,8 @@ Class used to configure the viewer map component (including layers) and handle m
             import mx.rpc.AsyncResponder;
             import mx.rpc.AsyncToken;
             import mx.rpc.Fault;
+            import mx.rpc.IResponder;
+            import mx.rpc.Responder;
             import mx.rpc.events.FaultEvent;
             import mx.rpc.events.ResultEvent;
             import mx.rpc.http.HTTPService;
@@ -137,6 +142,8 @@ Class used to configure the viewer map component (including layers) and handle m
             private var m_drawUpdateFunction:Function;
 
             private var m_drawEndFunction:Function;
+
+            private var m_initialExtent:Extent;
 
             private var m_fullExtent:Extent;
 
@@ -266,7 +273,6 @@ Class used to configure the viewer map component (including layers) and handle m
             private function configMapAttributes():void
             {
                 var spatialReference:SpatialReference;
-                var initialExtent:Extent;
 
                 for (var i:int = 0; i < m_configData.mapAttrs.length; i++)
                 {
@@ -274,16 +280,14 @@ Class used to configure the viewer map component (including layers) and handle m
 
                     if (id == "full")
                     {
-                        var ext:String = m_configData.mapAttrs[i].extent;
-                        var extArray:Array = ext.split(" ");
-                        var extent:Extent = new Extent(Number(extArray[0]), Number(extArray[1]), Number(extArray[2]), Number(extArray[3]));
-                        m_fullExtent = extent;
+                        var fullExtentTextCoordinates:String = m_configData.mapAttrs[i].extent;
+                        m_fullExtent = createExtent(fullExtentTextCoordinates.split(" "));
                     }
                     else if (id == "initial")
                     {
-                        var iext:String = m_configData.mapAttrs[i].extent;
-                        var iextArray:Array = iext.split(" ");
-                        initialExtent = new Extent(Number(iextArray[0]), Number(iextArray[1]), Number(iextArray[2]), Number(iextArray[3]));
+                        var initExtentTextCoordinates:String = m_configData.mapAttrs[i].extent;
+                        m_initialExtent = createExtent(initExtentTextCoordinates.split(" "));
+                        map.addEventListener(MapEvent.LOAD, map_loadHandler);
                     }
                     else if (id == "center")
                     {
@@ -385,18 +389,117 @@ Class used to configure the viewer map component (including layers) and handle m
                 {
                     m_fullExtent.spatialReference = spatialReference;
                 }
-                if (initialExtent)
+                if (m_initialExtent && !m_initialExtent.spatialReference)
                 {
-                    initialExtent.spatialReference = spatialReference;
-                    map.extent = initialExtent;
+                    m_initialExtent.spatialReference = spatialReference;
                 }
+            }
+
+            private function createExtent(textualExtentAttributes:Array):Extent
+            {
+                if (textualExtentAttributes && textualExtentAttributes.length >= 4)
+                {
+                    var xMin:Number = parseFloat(textualExtentAttributes[0]);
+                    var yMin:Number = parseFloat(textualExtentAttributes[1]);
+                    var xMax:Number = parseFloat(textualExtentAttributes[2]);
+                    var yMax:Number = parseFloat(textualExtentAttributes[3]);
+
+                    if (textualExtentAttributes.length == 5)
+                    {
+                        var wkid:Number = parseFloat(textualExtentAttributes[4]);
+                    }
+                }
+
+                var canCreateExtent:Boolean =
+                    !isNaN(xMin) && !isNaN(yMin)
+                    && !isNaN(xMax) && !isNaN(yMax);
+
+                var extent:Extent;
+                if (canCreateExtent)
+                {
+                    extent = new Extent(xMin, yMin, xMax, yMax);
+                    if (!isNaN(wkid))
+                    {
+                        extent.spatialReference = new SpatialReference(wkid);
+                    }
+                }
+
+                return extent;
             }
 
             private function map_loadHandler(event:MapEvent):void
             {
+                map.removeEventListener(MapEvent.LOAD, map_loadHandler);
+
+                if (m_initialExtent)
+                {
+                    project(m_initialExtent, new mx.rpc.Responder(project_resultHandler,
+                                                                  project_faultHandler));
+                }
+                else
+                {
+                    applyCenter();
+                }
+
+                function project_resultHandler(extent:Extent):void
+                {
+                    map.extent = extent;
+                    applyCenter();
+                }
+
+                function project_faultHandler(fault:Fault):void
+                {
+                    applyCenter();
+                }
+            }
+
+            private function project(geometry:Geometry, responder:IResponder):void
+            {
+                var canApplyDirectlyToMap:Boolean = !geometry.spatialReference
+                    || map.spatialReference.equals(geometry.spatialReference)
+                    || (map.spatialReference.isWebMercator() && geometry.spatialReference.isWebMercator());
+
+                if (canApplyDirectlyToMap)
+                {
+                    responder.result(geometry);
+                }
+                else if (map.spatialReference.isWebMercator()
+                    && geometry.spatialReference.wkid == 4326)
+                {
+                    responder.result(WebMercatorUtil.geographicToWebMercator(geometry));
+                }
+                else if (map.spatialReference.wkid == 4326
+                    && geometry.spatialReference.isWebMercator())
+                {
+                    responder.result(WebMercatorUtil.webMercatorToGeographic(geometry));
+                }
+                else
+                {
+                    var projectParams:ProjectParameters = new ProjectParameters();
+                    projectParams.geometries = [ geometry ];
+                    projectParams.outSpatialReference = map.spatialReference;
+                    GeometryServiceSingleton.instance.project(
+                        projectParams, new mx.rpc.Responder(projectionSuccessHandler,
+                                                            projectionFailureHandler));
+
+                    function projectionSuccessHandler(geometries:Array):void
+                    {
+                        responder.result(geometries[0]);
+                    }
+
+                    function projectionFailureHandler(fault:Fault):void
+                    {
+                        responder.fault(fault);
+                    }
+                }
+            }
+
+            private function applyCenter():void
+            {
                 var center:String;
                 var level:Number;
                 var scale:Number;
+
                 for (var i:int = 0; i < m_configData.mapAttrs.length; i++)
                 {
                     var id:String = m_configData.mapAttrs[i].id;
@@ -414,23 +517,63 @@ Class used to configure the viewer map component (including layers) and handle m
                         scale = parseFloat(m_configData.mapAttrs[i].scale);
                     }
                 }
-                if (center)
+
+                if (!center)
                 {
-                    var centerXY:Array = center.split(" ");
-                    if (centerXY.length == 2)
+                    return;
+                }
+
+                var centerPoint:MapPoint = createMapPoint(center.split(" "));
+                if (!centerPoint)
+                {
+                    return;
+                }
+
+                project(centerPoint,
+                        new mx.rpc.Responder(project_resultHandler,
+                                             project_faultHandler));
+
+                function project_resultHandler(center:MapPoint):void
+                {
+                    map.centerAt(center);
+                    if (scale > 0)
                     {
-                        var centerPt:MapPoint = new MapPoint(centerXY[0], centerXY[1]);
-                        map.centerAt(centerPt);
-                        if (scale > 0)
+                        map.scale = scale;
+                    }
+                    else if (level >= 0)
+                    {
+                        map.level = level;
+                    }
+                }
+
+                function project_faultHandler(fault:Fault):void {}
+            }
+
+            private function createMapPoint(textualMapPointAttributes:Array):MapPoint
+            {
+                var point:MapPoint;
+
+                if (textualMapPointAttributes.length >= 2)
+                {
+                    var pointX:Number = parseFloat(textualMapPointAttributes[0]);
+                    var pointY:Number = parseFloat(textualMapPointAttributes[1]);
+
+                    if (textualMapPointAttributes.length == 3)
+                    {
+                        var wkid:Number = parseFloat(textualMapPointAttributes[2]);
+                    }
+
+                    if (!isNaN(pointX) && !isNaN(pointY))
+                    {
+                        point = new MapPoint(pointX, pointY);
+                        if (!isNaN(wkid))
                         {
-                            map.scale = scale;
-                        }
-                        else if (level >= 0)
-                        {
-                            map.level = level;
+                            point.spatialReference = new SpatialReference(wkid);
                         }
                     }
                 }
+
+                return point;
             }
 
             private function configBasemaps():void

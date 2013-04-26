@@ -16,6 +16,8 @@
 package com.esri.viewer.managers
 {
 
+import com.esri.ags.components.IdentityManager;
+import com.esri.ags.components.supportClasses.ServerInfo;
 import com.esri.ags.events.WebMapEvent;
 import com.esri.ags.geometry.Extent;
 import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
@@ -53,6 +55,7 @@ import mx.rpc.Responder;
 import mx.rpc.events.FaultEvent;
 import mx.rpc.events.ResultEvent;
 import mx.rpc.http.HTTPService;
+import mx.utils.URLUtil;
 
 [Event(name="configLoaded", type="com.esri.viewer.AppEvent")]
 
@@ -597,6 +600,20 @@ public class ConfigManager extends EventDispatcher
 
             var portalURL:String = configXML.map.@portalurl[0] || configXML.map.@arcgissharingurl[0];
             var addArcGISBasemaps:Boolean = configXML.map.@addarcgisbasemaps[0] == "true";
+
+            if (portalURL)
+            {
+                //workaround for named Portal instance scenario.
+                var serverURL:String = URLUtil.getProtocol(portalURL) + "://" + URLUtil.getServerName(portalURL);
+                var tokenServiceURL:String = portalURL.replace(/\/sharing.+/, "") + "/sharing/generateToken";
+                tokenServiceURL = URLUtil.replaceProtocol(tokenServiceURL, "https");
+
+                var serverInfo:ServerInfo = new ServerInfo();
+                serverInfo.server = serverURL;
+                serverInfo.tokenServiceURL = tokenServiceURL;
+
+                IdentityManager.instance.registerServers([ serverInfo ]);
+            }
 
             if (webMapItemID)
             {

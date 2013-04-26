@@ -57,6 +57,7 @@
             import com.esri.ags.tasks.GeometryServiceSingleton;
             import com.esri.ags.tasks.JSONTask;
             import com.esri.viewer.AppEvent;
+            import com.esri.viewer.utils.MapServiceUtil;
 
             import mx.binding.utils.ChangeWatcher;
             import mx.collections.ArrayCollection;
@@ -538,13 +539,14 @@
                             arcGISDynamicMapServiceLayer.addEventListener(FlexEvent.HIDE, layer_hideShowHandler);
                             arcGISDynamicMapServiceLayer.addEventListener(FlexEvent.SHOW, layer_hideShowHandler);
 
-                            if (arcGISDynamicMapServiceLayer.visibleLayers)
-                            {
-                                arcGISDynamicMapServiceLayer.visibleLayers.removeEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);
-                                arcGISDynamicMapServiceLayer.visibleLayers.addEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);
-                            }
-                            visibleLayersChangeWatcher = ChangeWatcher.watch(arcGISDynamicMapServiceLayer, "visibleLayers", visibleLayersChange);
                             var copyLayerInfos:Array = arcGISDynamicMapServiceLayer.layerInfos;
+                            if (!arcGISDynamicMapServiceLayer.visibleLayers)
+                            {
+                                var visLayers:Array = getActualVisibleLayers(MapServiceUtil.getVisibleSubLayers(copyLayerInfos), copyLayerInfos);
+                                arcGISDynamicMapServiceLayer.visibleLayers = new ArrayCollection(visLayers);
+                            }
+                            arcGISDynamicMapServiceLayer.visibleLayers.addEventListener(CollectionEvent.COLLECTION_CHANGE, visibleLayersChangeHandler);
+                            visibleLayersChangeWatcher = ChangeWatcher.watch(arcGISDynamicMapServiceLayer, "visibleLayers", visibleLayersChange);
                             for each (var copyLayerInfo:LayerInfo in copyLayerInfos)
                             {
                                 updateMinMaxScaleOnLayerInfos(copyLayerInfo, copyLayerInfos);
@@ -1185,7 +1187,6 @@
                     if (dynamicMapServiceLayer.visibleLayers && dynamicMapServiceLayer.visibleLayers.getItemIndex(featureLayerId) != -1)
                     {
                         dynamicMapServiceLayer.visibleLayers.removeItemAt(dynamicMapServiceLayer.visibleLayers.getItemIndex(featureLayerId));
-
                     }
                 }
             }

@@ -425,5 +425,44 @@ public class GPParamHandler
             param.serviceInfo = serviceInfo;
         }
     }
+
+    public function hasUploadCompatibleParams():Boolean
+    {
+        var hasUploadCompatibleInputParam:Boolean = false;
+
+        for each (var param:IGPParameter in inputParams)
+        {
+            if (param.type == GPParameterTypes.DATA_FILE
+                || param.type == GPParameterTypes.RASTER_DATA_LAYER)
+            {
+                hasUploadCompatibleInputParam = true;
+                break;
+            }
+        }
+
+        return hasUploadCompatibleInputParam;
+    }
+
+    public function setTaskInfo(taskInfo:Object):void
+    {
+        if (!taskInfo || !taskInfo.parameters)
+        {
+            return;
+        }
+
+        var allParams:Array = _inputParams.concat(_outputParams);
+
+        for each (var param:IGPParameter in allParams)
+        {
+            for each (var paramInfo:Object in taskInfo.parameters)
+            {
+                if (param.name == paramInfo.name)
+                {
+                    param.paramInfo = paramInfo;
+                    break;
+                }
+            }
+        }
+    }
 }
 }

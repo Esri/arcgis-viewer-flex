@@ -35,9 +35,6 @@
             import mx.collections.*;
             import mx.events.FlexEvent;
 
-            [Bindable]
-            private var directionsURL:String = "http://route.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World"; // default url        
-
             protected function basewidget_initializeHandler(event:FlexEvent):void
             {
                 if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
@@ -62,7 +59,7 @@
                     var url:String = configXML.url[0];
                     if (url)
                     {
-                        directionsURL = url;
+                        directions.url = url;
                     }
                     var useProxyForDirections:Boolean = configXML.useproxy[0] && configXML.useproxy == "true";
                     if (useProxyForDirections && configData.proxyUrl)
@@ -278,7 +275,6 @@
         <esri:Directions id="directions"
                          width="100%" height="100%"
                          directionsComplete="{map.infoWindow.hide()}"
-                         map="{map}"
-                         url="{directionsURL}"/>
+                         map="{map}"/>
     </viewer:WidgetTemplate>
 </viewer:BaseWidget>

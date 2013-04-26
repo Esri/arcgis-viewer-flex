@@ -195,13 +195,37 @@
                         inputLabel = configXML.labels.inputlabel || getDefaultString("inputLabel");
                         outputLabel = configXML.labels.outputlabel || getDefaultString("outputLabel");
 
-                        fetchGPServerDescription();
+                        fetchGPTaskInfo();
                     }
                     catch (error:Error)
                     {
                         showError(getDefaultString("initializationError", ErrorMessageUtil.makeHTMLSafe(error.message)));
                     }
                 }
+            }
+
+            private function fetchGPTaskInfo():void
+            {
+                var taskInfoRequest:JSONTask = new JSONTask();
+                var urlVars:URLVariables = new URLVariables();
+                urlVars.f = "json";
+                taskInfoRequest.url = gp.url;
+                taskInfoRequest.proxyURL = gp.proxyURL;
+                taskInfoRequest.execute(urlVars, new AsyncResponder(taskInfoRequest_resultHandler,
+                                                                    taskInfoRequest_faultHandler));
+            }
+
+            private function taskInfoRequest_resultHandler(taskInfo:Object, token:Object = null):void
+            {
+                gpParamHandler.setTaskInfo(taskInfo);
+                fetchGPServerDescription();
+            }
+
+            private function taskInfoRequest_faultHandler(fault:Fault, token:Object = null):void
+            {
+                //Could not fetch task capabilities
+                //handle silently since task info not required
+                fetchGPServerDescription();
             }
 
             private function fetchGPServerDescription():void
@@ -238,7 +262,8 @@
 
             private function checkIfUploadSupported(gpServerDescription:Object):void
             {
-                if (gpServerDescription.currentVersion >= 10.1)
+                if (gpServerDescription.currentVersion >= 10.1
+                    && gpParamHandler.hasUploadCompatibleParams())
                 {
                     var uploadsInfoRequest:JSONTask = new JSONTask(gpServerDescription.url + "uploads/info");
                     uploadsInfoRequest.proxyURL = gpServerDescription.proxyURL;
@@ -258,7 +283,7 @@
             private function uploadsInfoRequest_resultHandler(response:Object, gpServerDescription:Object):void
             {
                 gpServerDescription.maxUploadFileSize = response.maxUploadFileSize;
-                gpServerDescription.supportsUploads = !isNaN(gpServerDescription.maxUploadFileSize);
+                gpServerDescription.supportsUploads = true;
                 continueInitialization();
             }
 

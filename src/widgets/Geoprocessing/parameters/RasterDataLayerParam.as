@@ -22,6 +22,18 @@ public class RasterDataLayerParam extends BaseParameter
 {
     //--------------------------------------------------------------------------
     //
+    //  Constants
+    //
+    //--------------------------------------------------------------------------
+
+    private static const URL_DELIMITER:String = "url:";
+    private static const FORMAT_DELIMITER:String = "format:";
+    private static const ITEM_ID_DELIMITER:String = "itemID:";
+
+    private static const VALID_URL_REGEX:RegExp = /^(ht|f)tps?:\/\/[^\s\.]+(\.[^\s\.]+)*((\/|\.)[^\s\.]+)+\/?$/;
+
+    //--------------------------------------------------------------------------
+    //
     //  Overridden properties
     //
     //--------------------------------------------------------------------------
@@ -57,9 +69,48 @@ public class RasterDataLayerParam extends BaseParameter
     //
     //--------------------------------------------------------------------------
 
-    public override function defaultValueFromString(text:String):void
+    public override function defaultValueFromString(description:String):void
     {
-        //NOT SUPPORTED - OUTPUT PARAM ONLY
+        var dataFile:RasterData = new RasterData();
+
+        if (description.indexOf(URL_DELIMITER) == 0
+            || description.indexOf(FORMAT_DELIMITER) == 0)
+        {
+            var tokens:Array = description.split(",");
+            for each (var token:String in tokens)
+            {
+                if (token.indexOf(URL_DELIMITER) == 0)
+                {
+                    dataFile.url = token.substr(URL_DELIMITER.length);
+                }
+                else if (token.indexOf(FORMAT_DELIMITER) == 0)
+                {
+                    dataFile.format = token.substr(FORMAT_DELIMITER.length);
+                }
+            }
+        }
+        else if (description.indexOf(ITEM_ID_DELIMITER) == 0)
+        {
+            dataFile.itemID = description.substr(ITEM_ID_DELIMITER.length);
+        }
+
+        _defaultValue = dataFile;
+    }
+
+    override public function hasValidValue():Boolean
+    {
+        if (_defaultValue.itemID)
+        {
+            return true;
+        }
+        else if (_defaultValue.url)
+        {
+            return VALID_URL_REGEX.test(_defaultValue.url);
+        }
+        else
+        {
+            return false;
+        }
     }
 }
 

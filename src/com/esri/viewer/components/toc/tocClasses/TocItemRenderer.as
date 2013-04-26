@@ -18,7 +18,6 @@ package com.esri.viewer.components.toc.tocClasses
 
 import com.esri.ags.layers.Layer;
 import com.esri.ags.layers.TiledMapServiceLayer;
-import com.esri.ags.symbols.CompositeSymbol;
 import com.esri.ags.symbols.Symbol;
 import com.esri.viewer.AppEvent;
 import com.esri.viewer.components.toc.TOC;
@@ -31,6 +30,7 @@ import mx.controls.Image;
 import mx.controls.treeClasses.TreeItemRenderer;
 import mx.controls.treeClasses.TreeListData;
 import mx.core.FlexGlobals;
+import mx.core.UIComponent;
 
 import spark.components.Group;
 
@@ -95,11 +95,16 @@ public class TocItemRenderer extends TreeItemRenderer
 
         if (value is TocLegendItem)
         {
+            _legendSwatchContainer.removeAllElements();
+
             var symbol:Symbol = TocLegendItem(value).legendItemInfo.symbol;
-            if (symbol && !(symbol is CompositeSymbol))
+            if (symbol)
             {
-                _legendSwatchContainer.removeAllElements();
-                _legendSwatchContainer.addElement(symbol.createSwatch(LEGEND_SWATCH_SIZE, LEGEND_SWATCH_SIZE));
+                var swatch:UIComponent = symbol.createSwatch(LEGEND_SWATCH_SIZE, LEGEND_SWATCH_SIZE);
+                if (swatch)
+                {
+                    _legendSwatchContainer.addElement(swatch);
+                }
             }
         }
     }

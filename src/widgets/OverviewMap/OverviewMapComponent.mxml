@@ -29,7 +29,6 @@
             import com.esri.ags.Map;
             import com.esri.ags.events.ExtentEvent;
             import com.esri.ags.events.MapEvent;
-            import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.geometry.Polygon;
             import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
@@ -370,110 +369,6 @@
                 }
             }
 
-            private function updateOverviewExtentFromMap():void
-            {
-                overviewMap.extent = map.extent.expand(3);
-                overviewGraphic.geometry = map.visibleArea;
-            }
-
-            private function updateMapExtentFromOverview():void
-            {
-                map.center = overviewGraphic.geometry.extent.center;
-            }
-
-            private function map_extentChangeHandler(event:ExtentEvent):void
-            {
-                updateOverviewExtentFromMap();
-                updateOverviewGraphicVisibility();
-            }
-
-            private function updateOverviewGraphicVisibility():void
-            {
-                //hide overview box if larger than overview map
-                overviewGraphic.visible = overviewMap.extent.contains(overviewGraphic.geometry);
-            }
-
-            private function overviewMap_loadHandler(event:MapEvent):void
-            {
-                graphicsLayer.name = "overviewMapGraphicsLayer";
-                graphicsLayer.symbol = currentExtentSym;
-                overviewMap.addLayer(graphicsLayer);
-
-                overviewGraphic.geometry = map.extent;
-                overviewGraphic.addEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
-
-                //update map extent when mouse moves out of the overview map
-                overviewMap.addEventListener(MouseEvent.ROLL_OUT, overviewMap_mouseRollOutHandler);
-
-                graphicsLayer.add(overviewGraphic);
-
-                map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
-                updateOverviewExtentFromMap();
-                updateOverviewGraphicVisibility();
-            }
-
-            private function overviewMap_mouseRollOutHandler(event:MouseEvent):void
-            {
-                overviewMap.removeEventListener(MouseEvent.MOUSE_MOVE, overviewMap_mouseMoveHandler);
-                overviewMap.removeEventListener(MouseEvent.MOUSE_UP, overviewMap_mouseUpHandler);
-                overviewGraphic.addEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
-
-                if (hasOverviewGraphicBeenMoved)
-                {
-                    hasOverviewGraphicBeenMoved = false;
-                    updateMapExtentFromOverview();
-                }
-            }
-
-            private function overviewGraphic_mouseDownHandler(event:MouseEvent):void
-            {
-                overviewGraphic.removeEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
-                overviewMap.addEventListener(MouseEvent.MOUSE_UP, overviewMap_mouseUpHandler);
-                overviewMap.addEventListener(MouseEvent.MOUSE_MOVE, overviewMap_mouseMoveHandler);
-
-                var overviewCenterMapPoint:MapPoint = overviewGraphic.geometry.extent.center;
-                var mouseMapPoint:MapPoint = overviewMap.toMapFromStage(event.stageX, event.stageY);
-                lastMouseMapX = mouseMapPoint.x;
-                lastMouseMapY = mouseMapPoint.y;
-            }
-
-            private function overviewMap_mouseMoveHandler(event:MouseEvent):void
-            {
-                hasOverviewGraphicBeenMoved = true;
-
-                var overviewPolygon:Polygon = overviewGraphic.geometry as Polygon;
-                var overviewCenterMapPoint:MapPoint = overviewPolygon.extent.center;
-
-                var mouseMapPoint:MapPoint = overviewMap.toMapFromStage(event.stageX, event.stageY);
-                var deltaMapX:Number = mouseMapPoint.x - lastMouseMapX;
-                var deltaMapY:Number = mouseMapPoint.y - lastMouseMapY;
-                lastMouseMapX = mouseMapPoint.x;
-                lastMouseMapY = mouseMapPoint.y;
-
-                var ring:Array = overviewPolygon.removeRing(0)[0];
-                for (var iMapPoint:int = 4; iMapPoint >= 0; iMapPoint--)
-                {
-                    ring[iMapPoint].x += deltaMapX;
-                    ring[iMapPoint].y += deltaMapY;
-                }
-                overviewPolygon.addRing(ring);
-
-                overviewGraphic.refresh();
-            }
-
-            private function overviewMap_mouseUpHandler(event:MouseEvent):void
-            {
-                overviewMap.removeEventListener(MouseEvent.MOUSE_MOVE, overviewMap_mouseMoveHandler);
-                overviewMap.removeEventListener(MouseEvent.MOUSE_UP, overviewMap_mouseUpHandler);
-                overviewGraphic.addEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
-
-                if (hasOverviewGraphicBeenMoved)
-                {
-                    hasOverviewGraphicBeenMoved = false;
-                    updateMapExtentFromOverview();
-                }
-            }
-
             private function viewContainer_basemapSwitchHandler(event:AppEvent):void
             {
                 baseMapSwitched = true;
@@ -523,6 +418,122 @@
                         }
                     }
                 }
+            }
+
+            private function overviewMap_loadHandler(event:MapEvent):void
+            {
+                graphicsLayer.name = "overviewMapGraphicsLayer";
+                graphicsLayer.symbol = currentExtentSym;
+                overviewMap.addLayer(graphicsLayer);
+
+                overviewGraphic.geometry = map.extent;
+                overviewGraphic.addEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
+
+                //update map extent when mouse moves out of the overview map
+                overviewMap.addEventListener(MouseEvent.ROLL_OUT, overviewMap_mouseRollOutHandler);
+
+                graphicsLayer.add(overviewGraphic);
+
+                if (map.loaded)
+                {
+                    trackMapExtent();
+                }
+                else
+                {
+                    map.addEventListener(MapEvent.LOAD, map_loadHandler);
+                }
+            }
+
+            private function overviewGraphic_mouseDownHandler(event:MouseEvent):void
+            {
+                overviewGraphic.removeEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
+                overviewMap.addEventListener(MouseEvent.MOUSE_UP, overviewMap_mouseUpHandler);
+                overviewMap.addEventListener(MouseEvent.MOUSE_MOVE, overviewMap_mouseMoveHandler);
+
+                var overviewCenterMapPoint:MapPoint = overviewGraphic.geometry.extent.center;
+                var mouseMapPoint:MapPoint = overviewMap.toMapFromStage(event.stageX, event.stageY);
+                lastMouseMapX = mouseMapPoint.x;
+                lastMouseMapY = mouseMapPoint.y;
+            }
+
+            private function overviewMap_mouseMoveHandler(event:MouseEvent):void
+            {
+                hasOverviewGraphicBeenMoved = true;
+
+                var overviewPolygon:Polygon = overviewGraphic.geometry as Polygon;
+                var overviewCenterMapPoint:MapPoint = overviewPolygon.extent.center;
+
+                var mouseMapPoint:MapPoint = overviewMap.toMapFromStage(event.stageX, event.stageY);
+                var deltaMapX:Number = mouseMapPoint.x - lastMouseMapX;
+                var deltaMapY:Number = mouseMapPoint.y - lastMouseMapY;
+                lastMouseMapX = mouseMapPoint.x;
+                lastMouseMapY = mouseMapPoint.y;
+
+                var ring:Array = overviewPolygon.removeRing(0)[0];
+                for (var iMapPoint:int = 4; iMapPoint >= 0; iMapPoint--)
+                {
+                    ring[iMapPoint].x += deltaMapX;
+                    ring[iMapPoint].y += deltaMapY;
+                }
+                overviewPolygon.addRing(ring);
+
+                overviewGraphic.refresh();
+            }
+
+            private function overviewMap_mouseRollOutHandler(event:MouseEvent):void
+            {
+                overviewMap.removeEventListener(MouseEvent.MOUSE_MOVE, overviewMap_mouseMoveHandler);
+                overviewMap.removeEventListener(MouseEvent.MOUSE_UP, overviewMap_mouseUpHandler);
+                overviewGraphic.addEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
+
+                if (hasOverviewGraphicBeenMoved)
+                {
+                    hasOverviewGraphicBeenMoved = false;
+                    updateMapExtentFromOverview();
+                }
+            }
+
+            private function updateMapExtentFromOverview():void
+            {
+                map.center = overviewGraphic.geometry.extent.center;
+            }
+
+            private function overviewMap_mouseUpHandler(event:MouseEvent):void
+            {
+                overviewMap.removeEventListener(MouseEvent.MOUSE_MOVE, overviewMap_mouseMoveHandler);
+                overviewMap.removeEventListener(MouseEvent.MOUSE_UP, overviewMap_mouseUpHandler);
+                overviewGraphic.addEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
+
+                if (hasOverviewGraphicBeenMoved)
+                {
+                    hasOverviewGraphicBeenMoved = false;
+                    updateMapExtentFromOverview();
+                }
+            }
+
+            private function trackMapExtent():void
+            {
+                map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
+                updateOverviewExtentFromMap();
+            }
+
+            private function updateOverviewExtentFromMap():void
+            {
+                overviewMap.extent = map.extent.expand(3);
+                overviewGraphic.geometry = map.visibleArea;
+                //hide overview box if larger than overview map
+                overviewGraphic.visible = overviewMap.extent.contains(overviewGraphic.geometry);
+            }
+
+            private function map_extentChangeHandler(event:ExtentEvent):void
+            {
+                updateOverviewExtentFromMap();
+            }
+
+            private function map_loadHandler(event:MapEvent):void
+            {
+                map.removeEventListener(MapEvent.LOAD, map_loadHandler);
+                trackMapExtent();
             }
 
             private function sequence_effectStartHandler(event:EffectEvent):void

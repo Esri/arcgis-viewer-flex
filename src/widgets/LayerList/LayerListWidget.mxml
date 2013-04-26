@@ -75,10 +75,7 @@
                 toc.basemapLayers = getBasemapLayers();
                 toc.excludeGraphicsLayers = true;
                 toc.includeLegendItems = includeLegendItems;
-                if (expandLayerItems)
-                {
-                    toc.expandLayerItems();
-                }
+                toc.expandLayerItems = expandLayerItems;
             }
 
             private function getExcludeLayers():ArrayCollection
