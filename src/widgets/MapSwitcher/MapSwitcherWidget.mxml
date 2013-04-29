@@ -262,10 +262,8 @@
 
             private function updateContainerPosition(anchorComponent:UIComponent, container:UIComponent):void
             {
-                var app:UIComponent = FlexGlobals.topLevelApplication as UIComponent;
-
-                var appRect:Rectangle = app.screen;
-                var anchorRect:Rectangle = anchorComponent.getBounds(app as DisplayObject);
+                var mapBounds:Rectangle = map.getVisibleRect();
+                var anchorRect:Rectangle = anchorComponent.getBounds(FlexGlobals.topLevelApplication as UIComponent);
                 var containerRect:Rectangle = new Rectangle(0, 0, container.width, container.height);
 
                 var isLTR:Boolean = (layoutDirection == LayoutDirection.LTR);
@@ -282,10 +280,10 @@
                 bottomContainerRect.y = anchorRect.y + anchorRect.height;
                 topContainerRect.y = anchorRect.y + 1 - container.height;
 
-                var leftIntersectionRect:Rectangle = appRect.intersection(leftContainerRect);
-                var rightIntersectionRect:Rectangle = appRect.intersection(rightContainerRect);
-                var bottomIntersectionRect:Rectangle = appRect.intersection(bottomContainerRect);
-                var topIntersectionRect:Rectangle = appRect.intersection(topContainerRect);
+                var leftIntersectionRect:Rectangle = mapBounds.intersection(leftContainerRect);
+                var rightIntersectionRect:Rectangle = mapBounds.intersection(rightContainerRect);
+                var bottomIntersectionRect:Rectangle = mapBounds.intersection(bottomContainerRect);
+                var topIntersectionRect:Rectangle = mapBounds.intersection(topContainerRect);
 
                 if (leftIntersectionRect.width > rightIntersectionRect.width)
                 {
