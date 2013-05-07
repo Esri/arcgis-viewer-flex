@@ -91,7 +91,7 @@ public class ResultAttributes
                 var dateFormat:String;
                 if (fieldXML)
                 {
-                    useUTC = fieldXML.format.@useutc[0] || fieldXML.@useutc[0] == "true";
+                    useUTC = fieldXML.format.@useutc[0] == "true" || fieldXML.@useutc[0] == "true";
                     dateFormat = fieldXML.format.@dateformat[0] || fieldXML.@dateformat[0];
                     if (dateFormat)
                     {
