@@ -16,7 +16,8 @@
 -->
 <s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009"
              xmlns:mx="library://ns.adobe.com/flex/mx"
-             xmlns:s="library://ns.adobe.com/flex/spark">
+             xmlns:s="library://ns.adobe.com/flex/spark"
+             xmlns:fieldClasses="widgets.Edit.fieldClasses.*">
 
     <fx:Metadata>
         /**
@@ -27,6 +28,45 @@
         [Event(name="attachmentGroupClicked", type="flash.events.Event")]     
         [Event(name="relatedRecordsGroupClicked", type="flash.events.Event")]  
     </fx:Metadata>
+
+    <fx:Declarations>
+        <fx:Component id="codedValueDomainField">
+            <fieldClasses:CodedValueDomainField minWidth="200"/>
+        </fx:Component>
+        <fx:Component id="dateField">
+            <fieldClasses:CalendarField/>
+        </fx:Component>
+        <fx:Component id="doubleField">
+            <fieldClasses:DoubleField minWidth="200"/>
+        </fx:Component>
+        <fx:Component id="integerField">
+            <fieldClasses:IntegerField minWidth="200"/>
+        </fx:Component>
+        <fx:Component id="labelField">
+            <fieldClasses:LabelField minWidth="200"/>
+        </fx:Component>
+        <fx:Component id="memoField">
+            <fieldClasses:MemoField minWidth="200"/>
+        </fx:Component>
+        <fx:Component id="rangeDomainField">
+            <fieldClasses:RangeDomainField minWidth="200"/>
+        </fx:Component>
+        <fx:Component id="singleField">
+            <fieldClasses:DoubleField minWidth="200"/>
+        </fx:Component>
+        <fx:Component id="smallIntegerField">
+            <fieldClasses:IntegerField minWidth="200"/>
+        </fx:Component>
+        <fx:Component id="stringField">
+            <fieldClasses:StringField minWidth="200"/>
+        </fx:Component>
+        <fx:Component id="textField">
+            <fieldClasses:TextField minWidth="200"/>
+        </fx:Component>
+        <fx:Component id="typeField">
+            <fieldClasses:TypeField minWidth="200"/>
+        </fx:Component>
+    </fx:Declarations>
 
     <fx:Script>
         <![CDATA[
