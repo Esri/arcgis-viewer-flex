@@ -389,9 +389,15 @@ Class used to configure the viewer map component (including layers) and handle m
                 {
                     m_fullExtent.spatialReference = spatialReference;
                 }
-                if (m_initialExtent && !m_initialExtent.spatialReference)
+                if (m_initialExtent)
                 {
+                    var initialExtentSR:SpatialReference = m_initialExtent.spatialReference;
+
+                    //ensure map's SR
                     m_initialExtent.spatialReference = spatialReference;
+                    map.extent = m_initialExtent;
+
+                    m_initialExtent.spatialReference = initialExtentSR;
                 }
             }
 
