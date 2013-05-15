@@ -272,7 +272,7 @@ Class used to configure the viewer map component (including layers) and handle m
 
             private function configMapAttributes():void
             {
-                var spatialReference:SpatialReference;
+                var mapSpatialReference:SpatialReference;
 
                 for (var i:int = 0; i < m_configData.mapAttrs.length; i++)
                 {
@@ -331,10 +331,10 @@ Class used to configure the viewer map component (including layers) and handle m
 
                         if (wkid || wkt)
                         {
-                            spatialReference = new SpatialReference(wkid, wkt);
+                            mapSpatialReference = new SpatialReference(wkid, wkt);
                         }
 
-                        m_configData.mapAttrs[i].refObj = spatialReference;
+                        m_configData.mapAttrs[i].refObj = mapSpatialReference;
                     }
                     else if (id == "zoomSlider")
                     {
@@ -387,17 +387,16 @@ Class used to configure the viewer map component (including layers) and handle m
 
                 if (m_fullExtent)
                 {
-                    m_fullExtent.spatialReference = spatialReference;
+                    m_fullExtent.spatialReference = mapSpatialReference;
                 }
                 if (m_initialExtent)
                 {
-                    var initialExtentSR:SpatialReference = m_initialExtent.spatialReference;
-
-                    //ensure map's SR
-                    m_initialExtent.spatialReference = spatialReference;
-                    map.extent = m_initialExtent;
-
-                    m_initialExtent.spatialReference = initialExtentSR;
+                    //ensure map's SR, extent may be updated later if projection is needed
+                    map.extent = new Extent(m_initialExtent.xmin,
+                                            m_initialExtent.ymin,
+                                            m_initialExtent.xmax,
+                                            m_initialExtent.ymax,
+                                            mapSpatialReference);
                 }
             }
 
