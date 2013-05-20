@@ -940,13 +940,24 @@
 
             private function map_mouseUpHandler(event:MouseEvent):void
             {
-                if (event.target !== editGraphic)
+                if (getTargetAsGraphic(event.target as DisplayObject) !== editGraphic)
                 {
                     map.removeEventListener(MouseEvent.MOUSE_UP, map_mouseUpHandler);
                     map.removeEventListener(MouseEvent.MOUSE_MOVE, map_mouseMoveHandler);
 
                     stopEditing();
                 }
+            }
+
+            private function getTargetAsGraphic(target:DisplayObject):Graphic
+            {
+                if (!target || target === map)
+                {
+                    return null;
+                }
+
+                var graphic:Graphic = target as Graphic;
+                return (graphic ? graphic : getTargetAsGraphic(target.parent));
             }
 
             private function map_mouseMoveHandler(event:MouseEvent):void
