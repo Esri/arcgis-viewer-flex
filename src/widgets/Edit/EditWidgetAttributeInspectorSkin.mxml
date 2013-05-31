@@ -17,7 +17,7 @@
 <s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009"
              xmlns:mx="library://ns.adobe.com/flex/mx"
              xmlns:s="library://ns.adobe.com/flex/spark"
-             xmlns:fieldClasses="widgets.Edit.fieldClasses.*">
+             xmlns:fieldClasses="com.esri.ags.skins.fieldClasses.*">
 
     <fx:Metadata>
         /**
@@ -34,10 +34,17 @@
             <fieldClasses:CodedValueDomainField minWidth="200"/>
         </fx:Component>
         <fx:Component id="dateField">
-            <fieldClasses:CalendarField/>
+            <!--
+            Display dates in local time, using a localized short date format. eg: for en_US: MM/DD/YYYY
+            See PopUpFieldFormat date formats or provide a custom one.
+            -->
+            <fieldClasses:CalendarField dateFormat="shortDate" useUTC="false"/>
         </fx:Component>
         <fx:Component id="doubleField">
-            <fieldClasses:DoubleField minWidth="200"/>
+            <!--
+            By default the number of digits after de decimal separator is 2, but it's customizable.
+            -->
+            <fieldClasses:DoubleField fractionalDigits="2" minWidth="200"/>
         </fx:Component>
         <fx:Component id="integerField">
             <fieldClasses:IntegerField minWidth="200"/>
@@ -110,7 +117,7 @@
             private function isRelatedRecordsGroupShown(activeFeature:Graphic):Boolean
             {
                 var result:Boolean;
-                
+
                 if (activeFeature.graphicsLayer is FeatureLayer)
                 {
                     const featureLayer:FeatureLayer = FeatureLayer(activeFeature.graphicsLayer);
@@ -125,7 +132,7 @@
                         result = featureTableDetails.relationships.length > 0;
                     }
                 }
-                               
+
                 return result;
             }
 
