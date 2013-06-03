@@ -48,6 +48,7 @@
             import com.esri.ags.layers.supportClasses.FeatureEditResults;
             import com.esri.ags.layers.supportClasses.Field;
             import com.esri.ags.layers.supportClasses.LayerInfo;
+            import com.esri.ags.skins.fieldClasses.CalendarField;
             import com.esri.ags.tasks.JSONTask;
             import com.esri.viewer.utils.MapServiceUtil;
 
@@ -206,6 +207,14 @@
                             if (fieldXML.@tooltip[0])
                             {
                                 fieldObject.tooltip = fieldXML.@tooltip;
+                            }
+                            if (fieldXML.@dateformat[0])
+                            {
+                                fieldObject.dateFormat = fieldXML.@dateformat;
+                            }
+                            if (fieldXML.@useutc[0])
+                            {
+                                fieldObject.useUTC = fieldXML.@useutc == "true";
                             }
                             outFields.push(fieldObject);
                         }
@@ -868,7 +877,21 @@
                                 fieldInspector.fieldName = fieldObject.name;
                                 fieldInspector.label = fieldObject.alias;
                                 fieldInspector.toolTip = fieldObject.tooltip;
-
+                                if (isDateField(fieldObject.name, featureLayer) && 
+                                    (fieldObject.dateFormat != null || fieldObject.useUTC != null))
+                                {   
+                                    var calendarFieldFactory:ClassFactory = new ClassFactory(CalendarField);
+                                    calendarFieldFactory.properties = {};
+                                    if (fieldObject.dateFormat != null)
+                                    {
+                                        calendarFieldFactory.properties.dateFormat = fieldObject.dateFormat;
+                                    }
+                                    if (fieldObject.useUTC != null)
+                                    {
+                                        calendarFieldFactory.properties.useUTC = fieldObject.useUTC;
+                                    }
+                                    fieldInspector.editor = calendarFieldFactory;      
+                                }
                                 attributeTableFieldInspectors.push(fieldInspector);
                             }
                             for each (var field:Field in getFields(featureLayer))
@@ -930,6 +953,26 @@
                     featureLayerToNavigatorContent[featureLayer] = navigatorContent;
                     featureLayerToAttributeTable[featureLayer] = attributeTable;
                 }
+            }
+            
+            private function isDateField(fieldName:String, featureLayer:FeatureLayer):Boolean
+            {
+                var result:Boolean;                
+                
+                var fields:Array = getFields(featureLayer);
+                if (fields)
+                {
+                    for each(var field:Field in fields)
+                    {
+                        if (field.name == fieldName && field.type == Field.TYPE_DATE)
+                        {
+                            result = true;
+                            break;
+                        }
+                    }
+                }
+                
+                return result;
             }
 
             private function addAttributeTableTab(featureLayer:FeatureLayer):void
