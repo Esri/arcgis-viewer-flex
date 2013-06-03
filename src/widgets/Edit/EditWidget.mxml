@@ -277,6 +277,10 @@
                             {
                                 fieldObject.tooltip = fieldXML.@tooltip;
                             }
+                            if (fieldXML.@required[0])
+                            {
+                                fieldObject.required = fieldXML.@required == "true";
+                            }
                             outFields.push(fieldObject);
                         }
                     }
@@ -1338,7 +1342,10 @@
                             fieldInspector.fieldName = fieldObject.name;
                             fieldInspector.label = fieldObject.alias;
                             fieldInspector.toolTip = fieldObject.tooltip;
-
+                            if (fieldObject.required != null)
+                            {   
+                                fieldInspector.required = fieldObject.required;
+                            }
                             attributeInspectorFieldInspectors.push(fieldInspector);
                         }
                         for each (var field:Field in featureLayer.layerDetails.fields)
