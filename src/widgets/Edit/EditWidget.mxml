@@ -53,6 +53,7 @@
             import com.esri.ags.layers.supportClasses.FeatureTableDetails;
             import com.esri.ags.layers.supportClasses.Field;
             import com.esri.ags.layers.supportClasses.LayerInfo;
+            import com.esri.ags.skins.fieldClasses.CalendarField;
             import com.esri.ags.skins.supportClasses.AttachmentMouseEvent;
             import com.esri.ags.tasks.GeometryServiceSingleton;
             import com.esri.ags.tasks.JSONTask;
@@ -276,6 +277,14 @@
                             if (fieldXML.@tooltip[0])
                             {
                                 fieldObject.tooltip = fieldXML.@tooltip;
+                            }
+                            if (fieldXML.@dateformat[0])
+                            {
+                                fieldObject.dateFormat = fieldXML.@dateformat;
+                            }
+                            if (fieldXML.@useutc[0])
+                            {
+                                fieldObject.useUTC = fieldXML.@useutc == "true";
                             }
                             if (fieldXML.@required[0])
                             {
@@ -1342,6 +1351,21 @@
                             fieldInspector.fieldName = fieldObject.name;
                             fieldInspector.label = fieldObject.alias;
                             fieldInspector.toolTip = fieldObject.tooltip;
+                            if (isDateField(fieldObject.name, featureLayer) && 
+                                (fieldObject.dateFormat != null || fieldObject.useUTC != null))
+                            {   
+                                var calendarFieldFactory:ClassFactory = new ClassFactory(CalendarField);
+                                calendarFieldFactory.properties = {};
+                                if (fieldObject.dateFormat != null)
+                                {
+                                    calendarFieldFactory.properties.dateFormat = fieldObject.dateFormat;
+                                }
+                                if (fieldObject.useUTC != null)
+                                {
+                                    calendarFieldFactory.properties.useUTC = fieldObject.useUTC;
+                                }
+                                fieldInspector.editor = calendarFieldFactory;                               
+                            }
                             if (fieldObject.required != null)
                             {   
                                 fieldInspector.required = fieldObject.required;
@@ -1387,6 +1411,26 @@
                         editor.attributeInspector.showGlobalID = showGlobalID == "true";
                     }
                 }
+            }
+            
+            private function isDateField(fieldName:String, featureLayer:FeatureLayer):Boolean
+            {
+                var result:Boolean;                
+               
+                var fields:Array = featureLayer.layerDetails.fields;
+                if (fields)
+                {
+                    for each(var field:Field in fields)
+                    {
+                        if (field.name == fieldName && field.type == Field.TYPE_DATE)
+                        {
+                            result = true;
+                            break;
+                        }
+                    }
+                }
+                
+                return result;
             }
 
             private function updateSelectionColor(featureLayers:Array):void
