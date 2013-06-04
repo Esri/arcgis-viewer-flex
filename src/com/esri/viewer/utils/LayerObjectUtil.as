@@ -104,15 +104,6 @@ public class LayerObjectUtil
             }
         }
 
-        var noData:Number;
-        if (obj.@nodata[0])
-        {
-            if (!isNaN(parseFloat(obj.@nodata)))
-            {
-                noData = parseFloat(obj.@nodata);
-            }
-        }
-
         var autoRefresh:Number = 0;
         if (obj.@autorefresh[0])
         {
@@ -135,6 +126,7 @@ public class LayerObjectUtil
         var icon:String = isSupportedImageType(obj.@icon[0]) ? obj.@icon : 'assets/images/defaultBasemapIcon.png';
         var layerId:String = obj.@layerid[0];
         var imageFormat:String = obj.@imageformat;
+        var noData:String = obj.@nodata[0];
         var visibleLayers:String = obj.@visiblelayers;
         var displayLevels:String = obj.@displaylevels;
         var bandIds:String = obj.@bandids;

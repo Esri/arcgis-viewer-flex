@@ -49,7 +49,7 @@ public class LayerCreationProperties
     public var minScale:Number;
     public var maxScale:Number;
     public var mode:String;
-    public var noData:Number;
+    public var noData:String;
     public var password:String;
     public var proxyUrl:String;
     public var renderer:IRenderer;
@@ -107,7 +107,7 @@ public class LayerCreationProperties
         creationProps.minScale = layerObject.minScale;
         creationProps.maxScale = layerObject.maxScale;
         creationProps.mode = layerObject.mode;
-        creationProps.noData = Number(layerObject.noData);
+        creationProps.noData = layerObject.noData;
         creationProps.password = layerObject.password;
         creationProps.proxyUrl = layerObject.proxyUrl;
         creationProps.renderer = layerObject.renderer;

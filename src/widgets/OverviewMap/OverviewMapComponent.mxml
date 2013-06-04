@@ -197,7 +197,7 @@
                             const culture:String = basemapLayerObject.culture;
                             const useamf:Boolean = basemapLayerObject.useamf;
                             const mode:String = basemapLayerObject.mode;
-                            const noData:Number = Number(basemapLayerObject.noData);
+                            const noData:String = basemapLayerObject.noData;
                             const serviceHost:String = basemapLayerObject.serviceHost;
                             const serviceName:String = basemapLayerObject.serviceName;
                             const definitionExpression:String = basemapLayerObject.definitionExpression;
