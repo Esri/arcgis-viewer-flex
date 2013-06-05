@@ -30,7 +30,9 @@
             import com.esri.ags.components.supportClasses.DirectionsRouteOptions;
             import com.esri.ags.components.supportClasses.GeocoderLocatorOptions;
             import com.esri.ags.components.supportClasses.GeocoderMapService;
+            import com.esri.ags.geometry.Extent;
             import com.esri.viewer.AppEvent;
+            import com.esri.viewer.components.toc.utils.MapUtil;
 
             import mx.collections.*;
             import mx.events.FlexEvent;
@@ -179,6 +181,12 @@
                 if (singleLineAddressField)
                 {
                     locatorOptions.singleLineAddressFieldName = singleLineAddressField;
+                }
+
+                var searchExtent:Extent = MapUtil.createExtent(locatorOptionsXML.searchextent.toString().split(" "));
+                if (searchExtent)
+                {
+                    locatorOptions.searchExtent = searchExtent;
                 }
 
                 return locatorOptions;
