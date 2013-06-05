@@ -17,6 +17,8 @@ package com.esri.viewer.components.toc.utils
 {
 
 import com.esri.ags.Map;
+import com.esri.ags.SpatialReference;
+import com.esri.ags.geometry.Extent;
 import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
 import com.esri.ags.layers.ArcGISImageServiceLayer;
 import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
@@ -143,6 +145,38 @@ public final class MapUtil
             }
         }
         return null;
+    }
+
+    public static function createExtent(textualExtentAttributes:Array):Extent
+    {
+        if (textualExtentAttributes && textualExtentAttributes.length >= 4)
+        {
+            var xMin:Number = parseFloat(textualExtentAttributes[0]);
+            var yMin:Number = parseFloat(textualExtentAttributes[1]);
+            var xMax:Number = parseFloat(textualExtentAttributes[2]);
+            var yMax:Number = parseFloat(textualExtentAttributes[3]);
+
+            if (textualExtentAttributes.length == 5)
+            {
+                var wkid:Number = parseFloat(textualExtentAttributes[4]);
+            }
+        }
+
+        var canCreateExtent:Boolean =
+            !isNaN(xMin) && !isNaN(yMin)
+            && !isNaN(xMax) && !isNaN(yMax);
+
+        var extent:Extent;
+        if (canCreateExtent)
+        {
+            extent = new Extent(xMin, yMin, xMax, yMax);
+            if (!isNaN(wkid))
+            {
+                extent.spatialReference = new SpatialReference(wkid);
+            }
+        }
+
+        return extent;
     }
 }
 
