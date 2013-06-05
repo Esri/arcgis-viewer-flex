@@ -41,7 +41,6 @@
         <![CDATA[
             import com.esri.ags.Graphic;
             import com.esri.ags.Map;
-            import com.esri.ags.SpatialReference;
             import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.layers.GraphicsLayer;
@@ -54,6 +53,7 @@
             import com.esri.ags.tasks.supportClasses.AddressToLocationsParameters;
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.ags.virtualearth.VEGeocodeResult;
+            import com.esri.viewer.components.toc.utils.MapUtil;
             import com.esri.viewer.utils.ErrorMessageUtil;
 
             import mx.collections.ArrayCollection;
@@ -168,7 +168,7 @@
 
                     minscore = Number(configXML.minscore) || 40;
                     useSearchExtent = configXML.usesearchextent == "true";
-                    searchExtent = createExtent(configXML.searchextent.toString().split(" "));
+                    searchExtent = MapUtil.createExtent(configXML.searchextent.toString().split(" "));
 
                     configureLocator();
                 }
@@ -179,38 +179,6 @@
                 setInitialView(configXML.initialview[0]);
                 fade.targets = [ addrInput, coordInput, resultsList ];
                 wTemplate.visible = true;
-            }
-
-            private function createExtent(textualExtentAttributes:Array):Extent
-            {
-                if (textualExtentAttributes && textualExtentAttributes.length >= 4)
-                {
-                    var xMin:Number = parseFloat(textualExtentAttributes[0]);
-                    var yMin:Number = parseFloat(textualExtentAttributes[1]);
-                    var xMax:Number = parseFloat(textualExtentAttributes[2]);
-                    var yMax:Number = parseFloat(textualExtentAttributes[3]);
-
-                    if (textualExtentAttributes.length == 5)
-                    {
-                        var wkid:Number = parseFloat(textualExtentAttributes[4]);
-                    }
-                }
-
-                var canCreateExtent:Boolean =
-                    !isNaN(xMin) && !isNaN(yMin)
-                    && !isNaN(xMax) && !isNaN(yMax);
-
-                var extent:Extent;
-                if (canCreateExtent)
-                {
-                    extent = new Extent(xMin, yMin, xMax, yMax);
-                    if (!isNaN(wkid))
-                    {
-                        extent.spatialReference = new SpatialReference(wkid);
-                    }
-                }
-
-                return extent;
             }
 
             private function assignLabels():void

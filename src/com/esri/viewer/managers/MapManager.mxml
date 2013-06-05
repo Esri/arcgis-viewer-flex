@@ -76,6 +76,7 @@ Class used to configure the viewer map component (including layers) and handle m
             import com.esri.viewer.IInfowindowTemplate;
             import com.esri.viewer.ViewerContainer;
             import com.esri.viewer.components.InfoPopup;
+            import com.esri.viewer.components.toc.utils.MapUtil;
             import com.esri.viewer.utils.ErrorMessageUtil;
             import com.esri.viewer.utils.LocalizationUtil;
             import com.esri.viewer.utils.MapServiceUtil;
@@ -281,12 +282,12 @@ Class used to configure the viewer map component (including layers) and handle m
                     if (id == "full")
                     {
                         var fullExtentTextCoordinates:String = m_configData.mapAttrs[i].extent;
-                        m_fullExtent = createExtent(fullExtentTextCoordinates.split(" "));
+                        m_fullExtent = MapUtil.createExtent(fullExtentTextCoordinates.split(" "));
                     }
                     else if (id == "initial")
                     {
                         var initExtentTextCoordinates:String = m_configData.mapAttrs[i].extent;
-                        m_initialExtent = createExtent(initExtentTextCoordinates.split(" "));
+                        m_initialExtent = MapUtil.createExtent(initExtentTextCoordinates.split(" "));
                         map.addEventListener(MapEvent.LOAD, map_loadHandler);
                     }
                     else if (id == "center")
@@ -398,38 +399,6 @@ Class used to configure the viewer map component (including layers) and handle m
                                             m_initialExtent.ymax,
                                             mapSpatialReference);
                 }
-            }
-
-            private function createExtent(textualExtentAttributes:Array):Extent
-            {
-                if (textualExtentAttributes && textualExtentAttributes.length >= 4)
-                {
-                    var xMin:Number = parseFloat(textualExtentAttributes[0]);
-                    var yMin:Number = parseFloat(textualExtentAttributes[1]);
-                    var xMax:Number = parseFloat(textualExtentAttributes[2]);
-                    var yMax:Number = parseFloat(textualExtentAttributes[3]);
-
-                    if (textualExtentAttributes.length == 5)
-                    {
-                        var wkid:Number = parseFloat(textualExtentAttributes[4]);
-                    }
-                }
-
-                var canCreateExtent:Boolean =
-                    !isNaN(xMin) && !isNaN(yMin)
-                    && !isNaN(xMax) && !isNaN(yMax);
-
-                var extent:Extent;
-                if (canCreateExtent)
-                {
-                    extent = new Extent(xMin, yMin, xMax, yMax);
-                    if (!isNaN(wkid))
-                    {
-                        extent.spatialReference = new SpatialReference(wkid);
-                    }
-                }
-
-                return extent;
             }
 
             private function map_loadHandler(event:MapEvent):void
