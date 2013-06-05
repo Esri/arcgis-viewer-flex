@@ -24,6 +24,7 @@
         <![CDATA[
             import com.esri.ags.Graphic;
             import com.esri.ags.Map;
+            import com.esri.ags.SpatialReference;
             import com.esri.ags.components.supportClasses.GeocoderLocatorOptions;
             import com.esri.ags.components.supportClasses.GeocoderMapService;
             import com.esri.ags.components.supportClasses.GeocoderSearchResult;
@@ -313,9 +314,47 @@
                     {
                         locatorOptions.singleLineAddressFieldName = singleLineAddressField;
                     }
+
+                    var searchExtent:Extent = createExtent(locatorOptionsXML.searchextent.toString().split(" "));
+                    if (searchExtent)
+                    {
+                        locatorOptions.searchExtent = searchExtent;
+                    }
                 }
 
                 return locatorOptions;
+            }
+
+            private function createExtent(textualExtentAttributes:Array):Extent
+            {
+                if (textualExtentAttributes && textualExtentAttributes.length >= 4)
+                {
+                    var xMin:Number = parseFloat(textualExtentAttributes[0]);
+                    var yMin:Number = parseFloat(textualExtentAttributes[1]);
+                    var xMax:Number = parseFloat(textualExtentAttributes[2]);
+                    var yMax:Number = parseFloat(textualExtentAttributes[3]);
+
+                    if (textualExtentAttributes.length == 5)
+                    {
+                        var wkid:Number = parseFloat(textualExtentAttributes[4]);
+                    }
+                }
+
+                var canCreateExtent:Boolean =
+                    !isNaN(xMin) && !isNaN(yMin)
+                    && !isNaN(xMax) && !isNaN(yMax);
+
+                var extent:Extent;
+                if (canCreateExtent)
+                {
+                    extent = new Extent(xMin, yMin, xMax, yMax);
+                    if (!isNaN(wkid))
+                    {
+                        extent.spatialReference = new SpatialReference(wkid);
+                    }
+                }
+
+                return extent;
             }
 
             private function configureMapServices():void
