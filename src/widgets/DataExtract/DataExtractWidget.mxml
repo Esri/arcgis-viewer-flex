@@ -143,7 +143,7 @@
                     geometryService.token = GeometryServiceSingleton.instance.token;
                     geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
 
-                    // TODO: check for non-existance
+                    // TODO: check for non-existence
                     gpURL = String(configXML.dataextractionservice);
                     if (String(configXML.aioselectionmethod) == "extent")
                     {

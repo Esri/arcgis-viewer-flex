@@ -54,7 +54,7 @@ public class TocMapLayerItem extends TocItem
     //
     //  Variables
     //
-    //--------------------------------------------------------------------------    
+    //--------------------------------------------------------------------------
 
     private var _isMSOnly:Boolean = false;
     private var _isVisibleLayersSet:Boolean = false;
@@ -74,13 +74,13 @@ public class TocMapLayerItem extends TocItem
     /**
      * Creates a new TocMapLayerItem
      */
-    public function TocMapLayerItem(layer:Layer, labelFunction:Function = null, isMapServiceOnly:Boolean = false, inlcudeLegendItems:Boolean = false)
+    public function TocMapLayerItem(layer:Layer, labelFunction:Function = null, isMapServiceOnly:Boolean = false, includeLegendItems:Boolean = false)
     {
         super();
 
         _layer = layer;
         _isMSOnly = isMapServiceOnly;
-        _includeLegendItems = inlcudeLegendItems;
+        _includeLegendItems = includeLegendItems;
         // Set the initial visibility without causing a layer refresh
         setVisible(layer.visible, false);
         // Indicate whether the item is in scale range without causing a layer refresh
@@ -155,9 +155,9 @@ public class TocMapLayerItem extends TocItem
 
     //--------------------------------------------------------------------------
     //
-    //  Overriden Methods
+    //  Overridden Methods
     //
-    //--------------------------------------------------------------------------    
+    //--------------------------------------------------------------------------
 
     /**
      * @private
@@ -549,7 +549,7 @@ public class TocMapLayerItem extends TocItem
             // If the parent folder exists , do not create NetworkLinkItem as it is already created
             if (!(hasParentFolder(Number(networkLink.id), layer.folders)))
             {
-                // add network link 
+                // add network link
                 parentItem.addChild(createKmlNetworkLinkTocItem(parentItem, networkLink, layer));
             }
         }

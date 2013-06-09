@@ -20,7 +20,7 @@ import flash.events.Event;
 import flash.events.EventDispatcher;
 
 /**
- * The EventBus allows centrallized communication among modules without
+ * The EventBus allows centralized communication among modules without
  * point-to-point messaging. It uses the singleton design pattern
  * to make sure one event bus is available globally. The bus itself
  * is only available to the container. Modules use the container's
@@ -33,8 +33,8 @@ public class EventBus extends EventDispatcher
 
     /**
      * Normally the EventBus is not instantiated via the <b>new</b> method directly.
-     * The constructor helps enforce only one EvenBus availiable for the application
-     * (singeton) so that it asures the communication only via a sigle event bus.
+     * The constructor helps enforce only one EventBus available for the application
+     * (singleton) so that it assures the communication only via a single event bus.
      */
     public function EventBus()
     {
@@ -42,7 +42,7 @@ public class EventBus extends EventDispatcher
 
     /**
      * The factory method is used to create a instance of the EventBus. It returns
-     * the only instanace of EventBus and makes sure no another instance is created.
+     * the only instance of EventBus and makes sure no another instance is created.
      */
     [Deprecated(replacement="instance")]
     public static function getInstance():EventBus

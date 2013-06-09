@@ -734,8 +734,8 @@
                     var featureParam:IGPFeatureParameter = (outputParam as IGPFeatureParameter);
                     var featureLayer:FeatureLayer = featureParam.layer;
                     featureLayer.infoWindowRenderer = featureParam.popUpRenderer;
-                    featureLayer.addEventListener(GraphicsLayerEvent.GRAPHICS_CLEAR, ouputGraphicsLayer_graphicsClearHandler, false, 0, true);
-                    featureLayer.addEventListener(GraphicEvent.GRAPHIC_REMOVE, ouputGraphicsLayer_graphicsRemoveHandler, false, 0, true);
+                    featureLayer.addEventListener(GraphicsLayerEvent.GRAPHICS_CLEAR, outputGraphicsLayer_graphicsClearHandler, false, 0, true);
+                    featureLayer.addEventListener(GraphicEvent.GRAPHIC_REMOVE, outputGraphicsLayer_graphicsRemoveHandler, false, 0, true);
                     outputLayers.push(featureLayer);
 
                     var resultFeatures:Array = (parameterValue.value as FeatureSet).features;
@@ -838,12 +838,12 @@
                 }
             }
 
-            private function ouputGraphicsLayer_graphicsRemoveHandler(event:GraphicEvent):void
+            private function outputGraphicsLayer_graphicsRemoveHandler(event:GraphicEvent):void
             {
                 showInputViewIfAllOutputFeaturesCleared();
             }
 
-            private function ouputGraphicsLayer_graphicsClearHandler(event:GraphicsLayerEvent):void
+            private function outputGraphicsLayer_graphicsClearHandler(event:GraphicsLayerEvent):void
             {
                 showInputViewIfAllOutputFeaturesCleared();
             }

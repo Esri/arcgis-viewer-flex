@@ -227,7 +227,7 @@
 
                     initializeFontList();
 
-                    //setting typical text since using typicalItem will set TextInput#widthInChars, which produces extra long width 
+                    //setting typical text since using typicalItem will set TextInput#widthInChars, which produces extra long width
                     fontNameSelection.textInput.typicalText = LabelUtil.findLongestLabelItem(fontList.source) as String;
 
                     defaultDrawColor = configXML.defaultdrawcolor || 0x3FAFDC;
@@ -771,7 +771,7 @@
                         lastDrawnGraphic.symbol = new SimpleFillSymbol(fillStyle.selectedItem.style, cpFill.selectedColor, numFillAlpha.value, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, cpFillOutline.selectedColor, 1, numFillOutlineWidth.value));
                         if (isMeasuringEnabled)
                         {
-                            // convert it to a polygon before project for more accururate result
+                            // convert it to a polygon before project for more accurate result
                             measureGeometry((geom as Extent).toPolygon());
                         }
                         break;

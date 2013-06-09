@@ -373,7 +373,7 @@ public class TOC extends Tree
 
     //--------------------------------------------------------------------------
     //
-    //  Overriden Methods
+    //  Overridden Methods
     //
     //--------------------------------------------------------------------------
 
@@ -490,7 +490,7 @@ public class TOC extends Tree
         var i:int;
         var currentTOCIndex:int;
         var currentItem:Object;
-        // remove hidden layes, to get the correct layerIds count
+        // remove hidden layers, to get the correct layerIds count
         var newLayerIds:Array = getNewLayerIds(map.layerIds);
         if (index <= (newLayerIds.length - _tocRoots.length)) // move this item to the bottom of toc
         {
@@ -693,7 +693,7 @@ public class TOC extends Tree
                 trueMapLayerIndex++;
             }
         }
-        // now add at the correct index 
+        // now add at the correct index
         _tocRoots.addItemAt(tocItem, _tocRoots.length - trueMapLayerIndex);
     }
 
