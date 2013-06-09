@@ -27,7 +27,7 @@
 
     <fx:Style>
         @namespace esri "http://www.esri.com/2008/ags";
-        
+
         esri|TemplatePicker
         {
             skin-class: ClassReference("widgets.Edit.EditWidgetTemplatePickerSkin");
@@ -120,7 +120,7 @@
 
             private function basewidget_widgetConfigLoaded():void
             {
-                // hide map infowindow if any               
+                // hide map infowindow if any
                 map.infoWindow.hide();
 
                 if (configXML)
@@ -209,7 +209,7 @@
 
                     if (configXML.layersettings.length() > 0)
                     {
-                        // layerSettings, overriding default settings                   
+                        // layerSettings, overriding default settings
                         configureLayerSettings(configXML.layersettings.layer);
                     }
                     else if (configXML.formfieldsorder.length() > 0)
@@ -228,7 +228,7 @@
 
                 AppEvent.dispatch(AppEvent.DATA_OPT_LAYERS, null, getOplayers);
                 mapLayers = map.layers as ArrayCollection;
-                arrLayers = getLayers(mapLayers); // get all the layers on map except basemap layers;    
+                arrLayers = getLayers(mapLayers); // get all the layers on map except basemap layers;
                 populateEditor(arrLayers);
             }
 
@@ -379,7 +379,7 @@
 
             private function getLayers(layers:ArrayCollection):Array
             {
-                // all the layers except basemaps                
+                // all the layers except basemaps
                 var result:Array = [];
                 var includeLayer:Boolean;
                 var dynamicBaseMapLayers:Array = [];
@@ -484,7 +484,7 @@
                         editor.map = map;
                         updateSelectionColor(featureLayers);
                         editor.featureLayers = featureLayers;
-                        // infowindowLabel on the AttributeInspetor
+                        // infowindowLabel on the AttributeInspector
                         editor.attributeInspector.infoWindowLabel = attributesLabel;
                     }
                     else
@@ -771,7 +771,7 @@
                         event.layer.removeEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete);
                         event.layer.addEventListener(FeatureLayerEvent.SELECTION_COMPLETE, featureLayer_selectionComplete, false, 1);
 
-                        //store the renderer info for each layer on map                        
+                        //store the renderer info for each layer on map
                         storeInfoWindowRenderer();
 
                         arrFinalLayers.unshift(event.layer);
@@ -1272,7 +1272,7 @@
                     attachmentInspector.clear();
                 }
                 if (relationshipInspector)
-                {                   
+                {
                     relationshipInspector.clear();
                 }
             }
@@ -1351,9 +1351,9 @@
                             fieldInspector.fieldName = fieldObject.name;
                             fieldInspector.label = fieldObject.alias;
                             fieldInspector.toolTip = fieldObject.tooltip;
-                            if (isDateField(fieldObject.name, featureLayer) && 
+                            if (isDateField(fieldObject.name, featureLayer) &&
                                 (fieldObject.dateFormat != null || fieldObject.useUTC != null))
-                            {   
+                            {
                                 var calendarFieldFactory:ClassFactory = new ClassFactory(CalendarField);
                                 calendarFieldFactory.properties = {};
                                 if (fieldObject.dateFormat != null)
@@ -1364,10 +1364,10 @@
                                 {
                                     calendarFieldFactory.properties.useUTC = fieldObject.useUTC;
                                 }
-                                fieldInspector.editor = calendarFieldFactory;                               
+                                fieldInspector.editor = calendarFieldFactory;
                             }
                             if (fieldObject.required != null)
-                            {   
+                            {
                                 fieldInspector.required = fieldObject.required;
                             }
                             attributeInspectorFieldInspectors.push(fieldInspector);
@@ -1412,11 +1412,11 @@
                     }
                 }
             }
-            
+
             private function isDateField(fieldName:String, featureLayer:FeatureLayer):Boolean
             {
-                var result:Boolean;                
-               
+                var result:Boolean;
+
                 var fields:Array = featureLayer.layerDetails.fields;
                 if (fields)
                 {
@@ -1429,7 +1429,7 @@
                         }
                     }
                 }
-                
+
                 return result;
             }
 

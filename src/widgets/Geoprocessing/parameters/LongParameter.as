@@ -51,7 +51,7 @@ public class LongParameter extends BaseParameter
 
     //--------------------------------------------------------------------------
     //
-    //  Overriden methods
+    //  Overridden methods
     //
     //--------------------------------------------------------------------------
 

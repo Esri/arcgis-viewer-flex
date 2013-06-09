@@ -87,13 +87,13 @@ public class TocKmlNetworkLinkItem extends TocItem
             {
                 if (parent is TocKmlFolderItem)
                 {
-                    networkLink.visible = isNetworkLinkVisibileBasedOnParentFolder();
+                    networkLink.visible = isNetworkLinkVisibleBasedOnParentFolder();
                 }
             }
         }
     }
 
-    private function isNetworkLinkVisibileBasedOnParentFolder():Boolean
+    private function isNetworkLinkVisibleBasedOnParentFolder():Boolean
     {
         var result:Boolean;
 

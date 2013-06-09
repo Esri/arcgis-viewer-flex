@@ -268,7 +268,7 @@ public class UIManager extends EventDispatcher
         */
         var cssStyleDeclarationInfoContainer:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("com.esri.ags.components.supportClasses.InfoWindow");
         /*
-        For custom skin for infoWindow, borderSkin needs to be set to null as shouwn below
+        For custom skin for infoWindow, borderSkin needs to be set to null as shown below.
         infoOffsetX and infoOffsetY can be used to change the location where infowindow will be shown.
         infoPlacement would need to be set to none in this case for preventing infowindow placement from auto adjusting.
         */

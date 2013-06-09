@@ -279,10 +279,10 @@ public class ConfigManager extends EventDispatcher
             if (value)
             {
                 var splashConfig:String = configXML.splashpage.@config;
-                var spashConfigXML:XML = null;
+                var splashConfigXML:XML = null;
                 if (splashConfig.charAt(0) === "#")
                 {
-                    spashConfigXML = configXML.configuration.(@id == splashConfig.substr(1))[0];
+                    splashConfigXML = configXML.configuration.(@id == splashConfig.substr(1))[0];
                 }
                 var splashTitle:String = configXML.splashpage.@label;
                 var splashPage:Object =
@@ -290,7 +290,7 @@ public class ConfigManager extends EventDispatcher
                         id: "splashpage",
                         value: value,
                         config: splashConfig,
-                        configXML: spashConfigXML,
+                        configXML: splashConfigXML,
                         title: splashTitle
                     };
                 configUI.push(splashPage);
@@ -517,12 +517,12 @@ public class ConfigManager extends EventDispatcher
             mapAttrs.push(esriLogoVisibility);
 
             var openHandCursorVisible:Boolean = configXML.map.@openhandcursorvisible[0] ? configXML.map.@openhandcursorvisible == "true" : false;
-            var openHandCursorVisiblility:Object =
+            var openHandCursorVisibility:Object =
                 {
                     id: "openHandCursor",
                     openHandCursorVisible: openHandCursorVisible
                 };
-            mapAttrs.push(openHandCursorVisiblility);
+            mapAttrs.push(openHandCursorVisibility);
 
             var wrapAround180:Boolean = configXML.map.@wraparound180[0] ? configXML.map.@wraparound180 == "true" : false;
             var wrapAround180Attr:Object =
@@ -801,7 +801,7 @@ public class ConfigManager extends EventDispatcher
                             label: wLabel,
                             icon: wIcon,
                             config: wConfig,
-                            configXML: wConfigXML, // reference to emdedded XML configuration (if any)
+                            configXML: wConfigXML, // reference to embedded XML configuration (if any)
                             preload: wPreload,
                             width: wWidth,
                             height: wHeight,
@@ -832,7 +832,7 @@ public class ConfigManager extends EventDispatcher
             var xmlObj:XML;
             for (i = 0; i < wContainers.length(); i++)
             {
-                //get container parameters                
+                //get container parameters
                 var wcPanelType:String = wContainers[i].@paneltype;
 
                 var wgContainer:Object;
@@ -854,7 +854,7 @@ public class ConfigManager extends EventDispatcher
                             obj: null
                         };
 
-                    //get widget for this container                 
+                    //get widget for this container
                     wid = 0;
                     for (n = 0; n < wContainers[i].children().length(); n++)
                     {
@@ -876,7 +876,7 @@ public class ConfigManager extends EventDispatcher
                                 id: wid,
                                 label: wgLabel,
                                 config: wgConfig,
-                                configXML: wgConfigXML, // reference to enbedded XML configuration (if any)
+                                configXML: wgConfigXML, // reference to embedded XML configuration (if any)
                                 width: wgWidth,
                                 height: wgHeight,
                                 url: wgUrl,
@@ -988,7 +988,7 @@ public class ConfigManager extends EventDispatcher
                                     label: wgLabel,
                                     icon: wgIcon,
                                     config: wgConfig,
-                                    configXML: wgConfigXML, // reference to enbedded XML configuration (if any)
+                                    configXML: wgConfigXML, // reference to embedded XML configuration (if any)
                                     preload: wgPreload,
                                     width: wgWidth,
                                     height: wgHeight,
