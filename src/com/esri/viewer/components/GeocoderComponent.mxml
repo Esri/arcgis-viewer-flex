@@ -23,6 +23,7 @@
         <![CDATA[
             import com.esri.ags.Graphic;
             import com.esri.ags.Map;
+            import com.esri.ags.SpatialReference;
             import com.esri.ags.components.supportClasses.GeocoderLocatorOptions;
             import com.esri.ags.components.supportClasses.GeocoderMapService;
             import com.esri.ags.components.supportClasses.GeocoderSearchResult;
@@ -317,6 +318,13 @@
                     var searchExtent:Extent = MapUtil.createExtent(locatorOptionsXML.searchextent.toString().split(" "));
                     if (searchExtent)
                     {
+                        var wkid:Number = parseFloat(locatorOptionsXML.searchextent.@wkid[0]);
+                        var wkt:String = locatorOptionsXML.searchextent.@wkt[0];
+                        if (!isNaN(wkid) || wkt)
+                        {
+                            searchExtent.spatialReference = new SpatialReference(wkid, wkt);
+                        }
+
                         locatorOptions.searchExtent = searchExtent;
                     }
                 }

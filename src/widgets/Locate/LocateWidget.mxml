@@ -41,6 +41,7 @@
         <![CDATA[
             import com.esri.ags.Graphic;
             import com.esri.ags.Map;
+            import com.esri.ags.SpatialReference;
             import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.layers.GraphicsLayer;
@@ -168,7 +169,17 @@
 
                     minscore = Number(configXML.minscore) || 40;
                     useSearchExtent = configXML.usesearchextent == "true";
+
                     searchExtent = MapUtil.createExtent(configXML.searchextent.toString().split(" "));
+                    if (searchExtent)
+                    {
+                        var wkid:Number = parseFloat(configXML.searchextent.@wkid[0]);
+                        var wkt:String = configXML.searchextent.@wkt[0];
+                        if (!isNaN(wkid) || wkt)
+                        {
+                            searchExtent.spatialReference = new SpatialReference(wkid, wkt);
+                        }
+                    }
 
                     configureLocator();
                 }

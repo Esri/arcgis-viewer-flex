@@ -25,6 +25,7 @@
                    widgetConfigLoaded="basewidget_widgetConfigLoaded()">
     <fx:Script>
         <![CDATA[
+            import com.esri.ags.SpatialReference;
             import com.esri.ags.Units;
             import com.esri.ags.components.supportClasses.DirectionsGeocoderOptions;
             import com.esri.ags.components.supportClasses.DirectionsRouteOptions;
@@ -186,6 +187,13 @@
                 var searchExtent:Extent = MapUtil.createExtent(locatorOptionsXML.searchextent.toString().split(" "));
                 if (searchExtent)
                 {
+                    var wkid:Number = parseFloat(locatorOptionsXML.searchextent.@wkid[0]);
+                    var wkt:String = locatorOptionsXML.searchextent.@wkt[0];
+                    if (!isNaN(wkid) || wkt)
+                    {
+                        searchExtent.spatialReference = new SpatialReference(wkid, wkt);
+                    }
+
                     locatorOptions.searchExtent = searchExtent;
                 }
 
