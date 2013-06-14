@@ -29,7 +29,7 @@
             import com.esri.ags.layers.ILegendSupport;
             import com.esri.ags.layers.Layer;
             import com.esri.viewer.AppEvent;
-            
+
             import mx.collections.ArrayCollection;
 
             private var legendLayers:Array;

@@ -1420,7 +1420,7 @@
                 var fields:Array = featureLayer.layerDetails.fields;
                 if (fields)
                 {
-                    for each(var field:Field in fields)
+                    for each (var field:Field in fields)
                     {
                         if (field.name == fieldName && field.type == Field.TYPE_DATE)
                         {

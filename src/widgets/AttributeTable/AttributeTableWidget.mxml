@@ -877,9 +877,9 @@
                                 fieldInspector.fieldName = fieldObject.name;
                                 fieldInspector.label = fieldObject.alias;
                                 fieldInspector.toolTip = fieldObject.tooltip;
-                                if (isDateField(fieldObject.name, featureLayer) && 
+                                if (isDateField(fieldObject.name, featureLayer) &&
                                     (fieldObject.dateFormat != null || fieldObject.useUTC != null))
-                                {   
+                                {
                                     var calendarFieldFactory:ClassFactory = new ClassFactory(CalendarField);
                                     calendarFieldFactory.properties = {};
                                     if (fieldObject.dateFormat != null)
@@ -890,7 +890,7 @@
                                     {
                                         calendarFieldFactory.properties.useUTC = fieldObject.useUTC;
                                     }
-                                    fieldInspector.editor = calendarFieldFactory;      
+                                    fieldInspector.editor = calendarFieldFactory;
                                 }
                                 attributeTableFieldInspectors.push(fieldInspector);
                             }
@@ -954,15 +954,15 @@
                     featureLayerToAttributeTable[featureLayer] = attributeTable;
                 }
             }
-            
+
             private function isDateField(fieldName:String, featureLayer:FeatureLayer):Boolean
             {
-                var result:Boolean;                
-                
+                var result:Boolean;
+
                 var fields:Array = getFields(featureLayer);
                 if (fields)
                 {
-                    for each(var field:Field in fields)
+                    for each (var field:Field in fields)
                     {
                         if (field.name == fieldName && field.type == Field.TYPE_DATE)
                         {
@@ -971,7 +971,7 @@
                         }
                     }
                 }
-                
+
                 return result;
             }
 
