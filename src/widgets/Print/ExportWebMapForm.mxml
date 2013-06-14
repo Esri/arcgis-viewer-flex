@@ -106,15 +106,9 @@
                 layoutOptions.copyright = txtCopyright.text;
                 layoutOptions.legendOptions = getLegendOptions();
 
-                var oldscale:Number;
-                var oldLODs:Array;
                 if (scaleCheckbox.selected)
                 {
-                    oldscale = hostBaseWidget.map.scale;
-                    oldLODs = hostBaseWidget.map.lods;
-
-                    hostBaseWidget.map.lods = null; //prevent LOD snapping
-                    hostBaseWidget.map.scale = Number(scaleInput.text);
+                    printParameters.outScale = Number(scaleInput.text);
                 }
 
                 if (printTask.getServiceInfoLastResult &&
@@ -125,12 +119,6 @@
                 else
                 {
                     printTask.execute(printParameters);
-                }
-
-                if (scaleCheckbox.selected)
-                {
-                    hostBaseWidget.map.scale = oldscale;
-                    hostBaseWidget.map.lods = oldLODs;
                 }
             }
 
