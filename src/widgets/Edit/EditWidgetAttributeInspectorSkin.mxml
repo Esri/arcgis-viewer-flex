@@ -42,9 +42,9 @@
         </fx:Component>
         <fx:Component id="doubleField">
             <!--
-            By default the number of digits after de decimal separator is 2, but it's customizable.
+            By default the number of digits after de decimal separator is 16, but it's customizable.
             -->
-            <fieldClasses:DoubleField fractionalDigits="2" minWidth="200"/>
+            <fieldClasses:DoubleField fractionalDigits="16" minWidth="200"/>
         </fx:Component>
         <fx:Component id="integerField">
             <fieldClasses:IntegerField minWidth="200"/>
