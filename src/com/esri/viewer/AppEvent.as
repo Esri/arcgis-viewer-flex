@@ -36,7 +36,7 @@ import flash.events.Event;
  *   AppEvent.addListener(AppEvent.DATA_PUBLISH, sharedDataUpdated);
  * </listing>
  *
- * @see EventBus
+ * @see com.esri.viewer.managers.EventBus
  */
 public class AppEvent extends Event
 {
@@ -58,7 +58,7 @@ public class AppEvent extends Event
      * AppEvent.dispatch(AppEvent.APP_ERROR, "An Error Message"));
      * </listing>
      *
-     * @see components.ErrorWindow
+     * @see com.esri.viewer.components.ErrorWindow
      */
     public static const APP_ERROR:String = "appError";
 
@@ -100,7 +100,7 @@ public class AppEvent extends Event
 
     /**
      * This event type is used by either Flex Viewer components or a widget to
-     * request set the map naviation method. The map navigation method could be
+     * request set the map navigation method. The map navigation method could be
      * pan, zoomin, zoomout, etc.
      *
      * <p>The navigation methods supported are:</p>

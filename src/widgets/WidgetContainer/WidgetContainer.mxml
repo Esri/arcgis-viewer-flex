@@ -228,7 +228,7 @@
                         {
                             if (!_transitionInProgress)
                             {
-                                // if state transition is in progress, the caculation of the scroll positions will be not correct.
+                                // if state transition is in progress, the calculation of the scroll positions will be not correct.
                                 scrollToWidget(widget);
                             }
                         }
@@ -579,7 +579,7 @@
 
             private function constrainWidget(baseWidget:IBaseWidget):void
             {
-                // if the layout is constained, override the base widget's settings,
+                // if the layout is constrained, override the base widget's settings,
                 // otherwise, the base widget's settings will be respected.
                 if (isConstrainedLayout())
                 {
