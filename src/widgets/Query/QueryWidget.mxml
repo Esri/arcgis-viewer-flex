@@ -366,7 +366,11 @@
                             {
                                 FeatureSetUtil.sortFeaturesByFieldName(featureSet, orderByFields);
                             }
-
+                            
+                            if (queryResultAC)
+                            {
+                                queryResultAC.removeAll();
+                            }
                             queryResultAC = createQueryResults(featureSet);
                             addSharedData(widgetTitle, queryResultAC);
 
