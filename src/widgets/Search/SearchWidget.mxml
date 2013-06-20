@@ -579,7 +579,11 @@
                             {
                                 FeatureSetUtil.sortFeaturesByFieldName(featureSet, orderByFields);
                             }
-
+                            
+                            if (searchResultAC)
+                            {
+                                searchResultAC.removeAll();
+                            }
                             searchResultAC = createSearchResults(featureSet, token);
 
                             addSharedData(widgetTitle, searchResultAC);
@@ -670,7 +674,11 @@
                             {
                                 FeatureSetUtil.sortFeaturesByFieldName(featureSet, orderByFields);
                             }
-
+                            
+                            if (searchResultAC)
+                            {
+                                searchResultAC.removeAll();
+                            }
                             searchResultAC = createSearchResults(featureSet, token);
 
                             addSharedData(widgetTitle, searchResultAC);
