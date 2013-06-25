@@ -24,21 +24,41 @@ import com.esri.ags.geometry.Polygon;
 import com.esri.ags.geometry.Polyline;
 import com.esri.ags.symbols.Symbol;
 
-[Bindable]
 public class ResultItem
 {
+    //--------------------------------------------------------------------------
+    //
+    //  Constructor
+    //
+    //--------------------------------------------------------------------------
+
     public function ResultItem(graphic:Graphic, attributes:ResultAttributes)
     {
         _graphic = graphic;
         _attributes = attributes;
         _center = getGeomCenter(graphic);
     }
+
+    //--------------------------------------------------------------------------
+    //
+    //  Properties
+    //
+    //--------------------------------------------------------------------------
+
+    //--------------------------------------------------------------------------
+    //  graphic
+    //--------------------------------------------------------------------------
+
     private var _graphic:Graphic;
 
     public function get graphic():Graphic
     {
         return _graphic;
     }
+
+    //--------------------------------------------------------------------------
+    //  attributes
+    //--------------------------------------------------------------------------
 
     private var _attributes:ResultAttributes;
 
@@ -47,6 +67,10 @@ public class ResultItem
         return _attributes;
     }
 
+    //--------------------------------------------------------------------------
+    //  center
+    //--------------------------------------------------------------------------
+
     private var _center:MapPoint;
 
     public function get center():MapPoint
@@ -54,15 +78,29 @@ public class ResultItem
         return _center;
     }
 
+    //--------------------------------------------------------------------------
+    //  geometry
+    //--------------------------------------------------------------------------
+
     public function get geometry():Geometry
     {
         return _graphic.geometry;
     }
 
+    //--------------------------------------------------------------------------
+    //  symbol
+    //--------------------------------------------------------------------------
+
     public function get symbol():Symbol
     {
         return _graphic.symbol;
     }
+
+    //--------------------------------------------------------------------------
+    //
+    //  Methods
+    //
+    //--------------------------------------------------------------------------
 
     private function getGeomCenter(graphic:Graphic):MapPoint
     {
