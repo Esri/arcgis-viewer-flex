@@ -133,6 +133,7 @@ public class LayerObjectUtil
         var skipGetCapabilities:String = obj.@skipgetcapabilities[0];
         var version:String = obj.@version[0];
         var url:String = obj.@url;
+        var portalURL:String = obj.@portalurl[0];
         var serviceURL:String = obj.@serviceurl[0];
         var serviceMode:String = obj.@servicemode[0];
         var tileMatrixSetId:String = obj.@tilematrixsetid[0];
@@ -248,6 +249,7 @@ public class LayerObjectUtil
                 mode: mode,
                 noData: noData,
                 password: password,
+                portalURL: portalURL,
                 proxyUrl: proxyUrl,
                 renderer: renderer,
                 serviceHost: serviceHost,

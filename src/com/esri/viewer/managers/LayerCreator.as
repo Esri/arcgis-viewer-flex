@@ -576,6 +576,10 @@ public class LayerCreator
         csvLayer.latitudeFieldName = layerCreationProperties.latitudeFieldName;
         csvLayer.longitudeFieldName = layerCreationProperties.longitudeFieldName;
         csvLayer.showInLegend = layerCreationProperties.showInLegend;
+        if (layerCreationProperties.portalURL)
+        {
+            csvLayer.portalURL = layerCreationProperties.portalURL;
+        }
         if (layerCreationProperties.copyright != null)
         {
             csvLayer.copyright = layerCreationProperties.copyright;
