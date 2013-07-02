@@ -279,7 +279,7 @@
             {
                 featureParam.layer.addEventListener(GraphicEvent.GRAPHIC_ADD, outputLayer_graphicsRemoveHandler, false, 0, true);
                 featureParam.layer.addEventListener(GraphicEvent.GRAPHIC_REMOVE, outputLayer_graphicsRemoveHandler, false, 0, true);
-                featureParam.layer.addEventListener(GraphicsLayerEvent.GRAPHICS_CLEAR, ouputLayer_graphicsClearHandler, false, 0, true);
+                featureParam.layer.addEventListener(GraphicsLayerEvent.GRAPHICS_CLEAR, outputLayer_graphicsClearHandler, false, 0, true);
                 updateFeatureCount();
                 inputParamDataGroup.addEventListener(DrawEvent.DRAW_END, map_drawEndHandler, false, 0, true);
                 setDrawSelectionMode();
@@ -290,7 +290,7 @@
                 hasFeatures = featureParam.layer.featureCollection.featureSet.features.length > 0;
             }
 
-            protected function ouputLayer_graphicsClearHandler(event:GraphicsLayerEvent):void
+            protected function outputLayer_graphicsClearHandler(event:GraphicsLayerEvent):void
             {
                 updateFeatureCount();
             }

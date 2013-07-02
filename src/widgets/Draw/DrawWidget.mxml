@@ -227,7 +227,7 @@
 
                     initializeFontList();
 
-                    //setting typical text since using typicalItem will set TextInput#widthInChars, which produces extra long width 
+                    //setting typical text since using typicalItem will set TextInput#widthInChars, which produces extra long width
                     fontNameSelection.textInput.typicalText = LabelUtil.findLongestLabelItem(fontList.source) as String;
 
                     defaultDrawColor = configXML.defaultdrawcolor || 0x3FAFDC;
@@ -771,7 +771,7 @@
                         lastDrawnGraphic.symbol = new SimpleFillSymbol(fillStyle.selectedItem.style, cpFill.selectedColor, numFillAlpha.value, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, cpFillOutline.selectedColor, 1, numFillOutlineWidth.value));
                         if (isMeasuringEnabled)
                         {
-                            // convert it to a polygon before project for more accururate result
+                            // convert it to a polygon before project for more accurate result
                             measureGeometry((geom as Extent).toPolygon());
                         }
                         break;
@@ -940,13 +940,24 @@
 
             private function map_mouseUpHandler(event:MouseEvent):void
             {
-                if (event.target !== editGraphic)
+                if (getTargetAsGraphic(event.target as DisplayObject) !== editGraphic)
                 {
                     map.removeEventListener(MouseEvent.MOUSE_UP, map_mouseUpHandler);
                     map.removeEventListener(MouseEvent.MOUSE_MOVE, map_mouseMoveHandler);
 
                     stopEditing();
                 }
+            }
+
+            private function getTargetAsGraphic(target:DisplayObject):Graphic
+            {
+                if (!target || target === map)
+                {
+                    return null;
+                }
+
+                var graphic:Graphic = target as Graphic;
+                return (graphic ? graphic : getTargetAsGraphic(target.parent));
             }
 
             private function map_mouseMoveHandler(event:MouseEvent):void

@@ -1293,7 +1293,7 @@
             }
 
             /* --------------------------------------------------------------------
-               Load Infowidnow Template Widgets
+               Load Infowindow Template Widgets
              * -------------------------------------------------------------------- */
             private var m_infoWidgetInfo:IModuleInfo;
 

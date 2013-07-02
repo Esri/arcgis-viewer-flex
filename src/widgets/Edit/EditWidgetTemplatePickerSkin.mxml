@@ -167,13 +167,13 @@ Custom skin class for the TemplatePicker component.
                         vGrp.addElement(text);
                     }
                     invalidateDisplayList();
-                    selectTemplatFromList();
+                    selectTemplateFromList();
                 }
 
                 if (_selectedTemplateChanged)
                 {
                     _selectedTemplateChanged = false;
-                    selectTemplatFromList()
+                    selectTemplateFromList()
                 }
             }
 
@@ -217,7 +217,7 @@ Custom skin class for the TemplatePicker component.
                 vGrp.invalidateSize();
             }
 
-            private function selectTemplatFromList():void
+            private function selectTemplateFromList():void
             {
                 if (!hostComponent.templateCollection)
                 {

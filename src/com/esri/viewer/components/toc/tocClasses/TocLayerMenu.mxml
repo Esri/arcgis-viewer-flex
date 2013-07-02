@@ -194,8 +194,8 @@
                 {
                     _transparencyMenuItem = new TransparencyMenuItem();
 
-                    _transparencyMenuItem.x = this.x - _transparencyMenuItem.width;
-                    _transparencyMenuItem.y = this.y; // allign with the layer option popup
+                    _transparencyMenuItem.x = this.x < _transparencyMenuItem.width ? this.x + this.width : this.x - _transparencyMenuItem.width;
+                    _transparencyMenuItem.y = this.y; // align with the layer option popup
                     _transparencyMenuItem.layer = _layer;
                     PopUpManager.addPopUp(_transparencyMenuItem, this.parent);
                 }

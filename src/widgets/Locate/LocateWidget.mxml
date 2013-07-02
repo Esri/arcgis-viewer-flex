@@ -41,6 +41,8 @@
         <![CDATA[
             import com.esri.ags.Graphic;
             import com.esri.ags.Map;
+            import com.esri.ags.SpatialReference;
+            import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.portal.PopUpRenderer;
@@ -52,6 +54,7 @@
             import com.esri.ags.tasks.supportClasses.AddressToLocationsParameters;
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.ags.virtualearth.VEGeocodeResult;
+            import com.esri.viewer.components.toc.utils.MapUtil;
             import com.esri.viewer.utils.ErrorMessageUtil;
 
             import mx.collections.ArrayCollection;
@@ -122,6 +125,7 @@
             private var zoomScale:Number = 10000;
             private var serviceWKID:Number;
             private var useSearchExtent:Boolean;
+            private var searchExtent:Extent;
 
             private var popUpRenderer:PopUpRenderer = new PopUpRenderer();
 
@@ -165,6 +169,17 @@
 
                     minscore = Number(configXML.minscore) || 40;
                     useSearchExtent = configXML.usesearchextent == "true";
+
+                    searchExtent = MapUtil.createExtent(configXML.searchextent.toString().split(" "));
+                    if (searchExtent)
+                    {
+                        var wkid:Number = parseFloat(configXML.searchextent.@wkid[0]);
+                        var wkt:String = configXML.searchextent.@wkt[0];
+                        if (!isNaN(wkid) || wkt)
+                        {
+                            searchExtent.spatialReference = new SpatialReference(wkid, wkt);
+                        }
+                    }
 
                     configureLocator();
                 }
@@ -614,7 +629,11 @@
                 showStateResults();
                 var parameters:AddressToLocationsParameters = new AddressToLocationsParameters();
                 parameters.address = data;
-                if (useSearchExtent)
+                if (searchExtent)
+                {
+                    parameters.searchExtent = searchExtent;
+                }
+                else if (useSearchExtent)
                 {
                     parameters.searchExtent = map.extent;
                 }

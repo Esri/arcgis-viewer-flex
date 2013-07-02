@@ -18,12 +18,12 @@
 -->
 <s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
          xmlns:s="library://ns.adobe.com/flex/spark"
-         xmlns:mx="library://ns.adobe.com/flex/mx"
          xmlns:esri="http://www.esri.com/2008/ags">
     <fx:Script>
         <![CDATA[
             import com.esri.ags.Graphic;
             import com.esri.ags.Map;
+            import com.esri.ags.SpatialReference;
             import com.esri.ags.components.supportClasses.GeocoderLocatorOptions;
             import com.esri.ags.components.supportClasses.GeocoderMapService;
             import com.esri.ags.components.supportClasses.GeocoderSearchResult;
@@ -47,6 +47,7 @@
             import com.esri.viewer.BaseWidget;
             import com.esri.viewer.ConfigData;
             import com.esri.viewer.ViewerContainer;
+            import com.esri.viewer.components.toc.utils.MapUtil;
             import com.esri.viewer.utils.ErrorMessageUtil;
 
             import mx.rpc.AsyncResponder;
@@ -313,6 +314,19 @@
                     {
                         locatorOptions.singleLineAddressFieldName = singleLineAddressField;
                     }
+
+                    var searchExtent:Extent = MapUtil.createExtent(locatorOptionsXML.searchextent.toString().split(" "));
+                    if (searchExtent)
+                    {
+                        var wkid:Number = parseFloat(locatorOptionsXML.searchextent.@wkid[0]);
+                        var wkt:String = locatorOptionsXML.searchextent.@wkt[0];
+                        if (!isNaN(wkid) || wkt)
+                        {
+                            searchExtent.spatialReference = new SpatialReference(wkid, wkt);
+                        }
+
+                        locatorOptions.searchExtent = searchExtent;
+                    }
                 }
 
                 return locatorOptions;
@@ -326,7 +340,6 @@
                     var mapService:GeocoderMapService;
                     var mapServices:Array = [];
                     var useMapServiceProxy:Boolean;
-                    var mapServiceProxyURL:String;
 
                     for each (var mapServiceXML:XML in configXML.mapservices.mapservice)
                     {

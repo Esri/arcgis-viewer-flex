@@ -82,7 +82,7 @@ public class TocItemRenderer extends TreeItemRenderer
 
     //--------------------------------------------------------------------------
     //
-    //  Overriden Properties
+    //  Overridden Properties
     //
     //--------------------------------------------------------------------------
 
@@ -111,7 +111,7 @@ public class TocItemRenderer extends TreeItemRenderer
 
     //--------------------------------------------------------------------------
     //
-    //  Overriden Methods
+    //  Overridden Methods
     //
     //--------------------------------------------------------------------------
 

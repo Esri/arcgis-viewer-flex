@@ -176,6 +176,9 @@ public class AutoFontLabel extends Label
             style.getStyle("textIndent"));
         textFormat.antiAliasType = flash.text.AntiAliasType.ADVANCED;
         textFormat.gridFitType = flash.text.GridFitType.PIXEL;
+        textFormat.direction = style.getStyle("direction");
+        textFormat.locale = style.getStyle("locale");
+        textFormat.useFTE = true;
 
         var textMetrics:TextLineMetrics = textFormat.measureText(text);
         return textMetrics.width;

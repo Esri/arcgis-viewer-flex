@@ -89,6 +89,9 @@
                         excludeLayersFromLegend.push(layers[n].toString());
                     }
 
+                    printTask.addEventListener(PrintEvent.GET_SERVICE_INFO_COMPLETE, printTask_getServiceInfoCompleteHandler, false, 0, true);
+                    printTask.addEventListener(FaultEvent.FAULT, printTaskInitialization_faultHandler, false, 0, true);
+
                     printTask.url = configXML.taskurl;
                     printTask.getServiceInfo();
                     printButton.label = configXML.labels.submitlabel[0] || hostBaseWidget.getDefaultString("printSubmitLabel");
@@ -103,30 +106,19 @@
                 layoutOptions.copyright = txtCopyright.text;
                 layoutOptions.legendOptions = getLegendOptions();
 
-                var oldscale:Number;
-                var oldLODs:Array;
                 if (scaleCheckbox.selected)
                 {
-                    oldscale = hostBaseWidget.map.scale;
-                    oldLODs = hostBaseWidget.map.lods;
-
-                    hostBaseWidget.map.lods = null; //prevent LOD snapping
-                    hostBaseWidget.map.scale = Number(scaleInput.text);
+                    printParameters.outScale = Number(scaleInput.text);
                 }
 
-                if (printTask.getServiceInfoLastResult.isServiceAsynchronous)
+                if (printTask.getServiceInfoLastResult &&
+                    printTask.getServiceInfoLastResult.isServiceAsynchronous)
                 {
                     printTask.submitJob(printParameters);
                 }
                 else
                 {
                     printTask.execute(printParameters);
-                }
-
-                if (scaleCheckbox.selected)
-                {
-                    hostBaseWidget.map.scale = oldscale;
-                    hostBaseWidget.map.lods = oldLODs;
                 }
             }
 
@@ -253,10 +245,11 @@
 
             protected function printTask_getServiceInfoCompleteHandler(event:PrintEvent):void
             {
-                initTitle();
-                initCopyright();
-                initAuthor();
-                initUseScale();
+                printTask.removeEventListener(PrintEvent.GET_SERVICE_INFO_COMPLETE, printTask_getServiceInfoCompleteHandler);
+                printTask.removeEventListener(FaultEvent.FAULT, printTaskInitialization_faultHandler);
+                printTask.addEventListener(FaultEvent.FAULT, printTask_faultHandler);
+
+                initNonPrintServiceProperties();
                 initLayoutTemplates(event.serviceInfo);
                 initFormats(event.serviceInfo);
 
@@ -463,15 +456,32 @@
                     hostBaseWidget.showError(jobInfo.jobStatus);
                 }
             }
+
+            protected function printTaskInitialization_faultHandler(event:FaultEvent):void
+            {
+                printTask.removeEventListener(PrintEvent.GET_SERVICE_INFO_COMPLETE, printTask_getServiceInfoCompleteHandler);
+                printTask.removeEventListener(FaultEvent.FAULT, printTaskInitialization_faultHandler);
+                printTask.addEventListener(FaultEvent.FAULT, printTask_faultHandler);
+
+                initNonPrintServiceProperties();
+
+                printButton.enabled = true;
+            }
+
+            private function initNonPrintServiceProperties():void
+            {
+                initTitle();
+                initCopyright();
+                initAuthor();
+                initUseScale();
+            }
         ]]>
     </fx:Script>
 
     <fx:Declarations>
         <esri:PrintTask id="printTask"
                         executeComplete="printTask_executeCompleteHandler(event)"
-                        fault="printTask_faultHandler(event)"
                         getResultDataComplete="printTask_getResultDataCompleteHandler(event)"
-                        getServiceInfoComplete="printTask_getServiceInfoCompleteHandler(event)"
                         jobComplete="printTask_jobCompleteHandler(event)"
                         showBusyCursor="true"/>
 

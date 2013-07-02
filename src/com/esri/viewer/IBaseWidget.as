@@ -22,8 +22,8 @@ import flash.events.IEventDispatcher;
 
 /**
  * IBaseWidget defines the messages between WidgetManager and BaseWidget. It enables
- * Dependency Injection (DI) implementation that allows loss coupling the
- * detail widget logics.
+ * Dependency Injection (DI) implementation that allows loose coupling the
+ * detail widget logic.
  *
  * <p>Once a widget module is loaded into the container, the WidgetManager will
  * cast the instance of the module into IBaseWidget.</p>
@@ -61,7 +61,7 @@ public interface IBaseWidget extends IEventDispatcher
      * A widget can have its own configuration file. The container and widget manager don't
      * have the knowledge of the configuration content. The URL of the configuration file is
      * specified in the config.xml. The widget is responsible for handling the configuration
-     * file. This file can be in any formate the widget developer perfers.
+     * file. This file can be in any format the widget developer prefer.
      *
      * @param value The URL of the configuration file.
      */

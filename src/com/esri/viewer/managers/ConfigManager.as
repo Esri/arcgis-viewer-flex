@@ -16,8 +16,6 @@
 package com.esri.viewer.managers
 {
 
-import com.esri.ags.components.IdentityManager;
-import com.esri.ags.components.supportClasses.ServerInfo;
 import com.esri.ags.events.WebMapEvent;
 import com.esri.ags.geometry.Extent;
 import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
@@ -55,7 +53,6 @@ import mx.rpc.Responder;
 import mx.rpc.events.FaultEvent;
 import mx.rpc.events.ResultEvent;
 import mx.rpc.http.HTTPService;
-import mx.utils.URLUtil;
 
 [Event(name="configLoaded", type="com.esri.viewer.AppEvent")]
 
@@ -282,10 +279,10 @@ public class ConfigManager extends EventDispatcher
             if (value)
             {
                 var splashConfig:String = configXML.splashpage.@config;
-                var spashConfigXML:XML = null;
+                var splashConfigXML:XML = null;
                 if (splashConfig.charAt(0) === "#")
                 {
-                    spashConfigXML = configXML.configuration.(@id == splashConfig.substr(1))[0];
+                    splashConfigXML = configXML.configuration.(@id == splashConfig.substr(1))[0];
                 }
                 var splashTitle:String = configXML.splashpage.@label;
                 var splashPage:Object =
@@ -293,7 +290,7 @@ public class ConfigManager extends EventDispatcher
                         id: "splashpage",
                         value: value,
                         config: splashConfig,
-                        configXML: spashConfigXML,
+                        configXML: splashConfigXML,
                         title: splashTitle
                     };
                 configUI.push(splashPage);
@@ -520,12 +517,12 @@ public class ConfigManager extends EventDispatcher
             mapAttrs.push(esriLogoVisibility);
 
             var openHandCursorVisible:Boolean = configXML.map.@openhandcursorvisible[0] ? configXML.map.@openhandcursorvisible == "true" : false;
-            var openHandCursorVisiblility:Object =
+            var openHandCursorVisibility:Object =
                 {
                     id: "openHandCursor",
                     openHandCursorVisible: openHandCursorVisible
                 };
-            mapAttrs.push(openHandCursorVisiblility);
+            mapAttrs.push(openHandCursorVisibility);
 
             var wrapAround180:Boolean = configXML.map.@wraparound180[0] ? configXML.map.@wraparound180 == "true" : false;
             var wrapAround180Attr:Object =
@@ -600,20 +597,6 @@ public class ConfigManager extends EventDispatcher
 
             var portalURL:String = configXML.map.@portalurl[0] || configXML.map.@arcgissharingurl[0];
             var addArcGISBasemaps:Boolean = configXML.map.@addarcgisbasemaps[0] == "true";
-
-            if (portalURL)
-            {
-                //workaround for named Portal instance scenario.
-                var serverURL:String = URLUtil.getProtocol(portalURL) + "://" + URLUtil.getServerName(portalURL);
-                var tokenServiceURL:String = portalURL.replace(/\/sharing.+/, "") + "/sharing/generateToken";
-                tokenServiceURL = URLUtil.replaceProtocol(tokenServiceURL, "https");
-
-                var serverInfo:ServerInfo = new ServerInfo();
-                serverInfo.server = serverURL;
-                serverInfo.tokenServiceURL = tokenServiceURL;
-
-                IdentityManager.instance.registerServers([ serverInfo ]);
-            }
 
             if (webMapItemID)
             {
@@ -818,7 +801,7 @@ public class ConfigManager extends EventDispatcher
                             label: wLabel,
                             icon: wIcon,
                             config: wConfig,
-                            configXML: wConfigXML, // reference to emdedded XML configuration (if any)
+                            configXML: wConfigXML, // reference to embedded XML configuration (if any)
                             preload: wPreload,
                             width: wWidth,
                             height: wHeight,
@@ -849,7 +832,7 @@ public class ConfigManager extends EventDispatcher
             var xmlObj:XML;
             for (i = 0; i < wContainers.length(); i++)
             {
-                //get container parameters                
+                //get container parameters
                 var wcPanelType:String = wContainers[i].@paneltype;
 
                 var wgContainer:Object;
@@ -871,7 +854,7 @@ public class ConfigManager extends EventDispatcher
                             obj: null
                         };
 
-                    //get widget for this container                 
+                    //get widget for this container
                     wid = 0;
                     for (n = 0; n < wContainers[i].children().length(); n++)
                     {
@@ -893,7 +876,7 @@ public class ConfigManager extends EventDispatcher
                                 id: wid,
                                 label: wgLabel,
                                 config: wgConfig,
-                                configXML: wgConfigXML, // reference to enbedded XML configuration (if any)
+                                configXML: wgConfigXML, // reference to embedded XML configuration (if any)
                                 width: wgWidth,
                                 height: wgHeight,
                                 url: wgUrl,
@@ -1005,7 +988,7 @@ public class ConfigManager extends EventDispatcher
                                     label: wgLabel,
                                     icon: wgIcon,
                                     config: wgConfig,
-                                    configXML: wgConfigXML, // reference to enbedded XML configuration (if any)
+                                    configXML: wgConfigXML, // reference to embedded XML configuration (if any)
                                     preload: wgPreload,
                                     width: wgWidth,
                                     height: wgHeight,

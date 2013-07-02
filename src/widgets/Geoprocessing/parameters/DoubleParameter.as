@@ -51,7 +51,7 @@ public class DoubleParameter extends BaseParameter
 
     //--------------------------------------------------------------------------
     //
-    //  Overriden methods
+    //  Overridden methods
     //
     //--------------------------------------------------------------------------
 

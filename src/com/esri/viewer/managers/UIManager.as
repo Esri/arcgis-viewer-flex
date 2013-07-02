@@ -268,7 +268,7 @@ public class UIManager extends EventDispatcher
         */
         var cssStyleDeclarationInfoContainer:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("com.esri.ags.components.supportClasses.InfoWindow");
         /*
-        For custom skin for infoWindow, borderSkin needs to be set to null as shouwn below
+        For custom skin for infoWindow, borderSkin needs to be set to null as shown below.
         infoOffsetX and infoOffsetY can be used to change the location where infowindow will be shown.
         infoPlacement would need to be set to none in this case for preventing infowindow placement from auto adjusting.
         */
@@ -331,6 +331,8 @@ public class UIManager extends EventDispatcher
         cssStyleDeclarationWidgetTitle.setStyle("fontFamily", mainFontFamily);
         cssStyleDeclarationWidgetTitle.setStyle("fontWeight", "bold");
 
+        var locale:String = cssStyleDeclarationGlobal.getStyle("locale");
+
         var cssStyleDeclarationBannerTitle:CSSStyleDeclaration = new CSSStyleDeclaration(".BannerTitle");
         if (numberOfStyleColors > 4)
         {
@@ -343,6 +345,8 @@ public class UIManager extends EventDispatcher
         cssStyleDeclarationBannerTitle.setStyle("fontFamily", titleFontFamily);
         cssStyleDeclarationBannerTitle.setStyle("paddingBottom", 2);
         cssStyleDeclarationBannerTitle.setStyle("paddingTop", 4);
+        cssStyleDeclarationBannerTitle.setStyle("direction", layoutDirection);
+        cssStyleDeclarationBannerTitle.setStyle("locale", locale);
 
         var cssStyleDeclarationBannerSubtitle:CSSStyleDeclaration = new CSSStyleDeclaration(".BannerSubtitle");
         if (numberOfStyleColors > 4)
@@ -354,6 +358,8 @@ public class UIManager extends EventDispatcher
             cssStyleDeclarationBannerSubtitle.setStyle("fontSize", subTitleFontSize);
         }
         cssStyleDeclarationBannerSubtitle.setStyle("fontFamily", subTitleFontFamily);
+        cssStyleDeclarationBannerSubtitle.setStyle("direction", layoutDirection);
+        cssStyleDeclarationBannerSubtitle.setStyle("locale", locale);
 
         // Style s|Panel
         var cssStyleDeclarationSPanel:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("spark.components.Panel");
