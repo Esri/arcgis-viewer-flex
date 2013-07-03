@@ -49,13 +49,9 @@ public class BookmarkDataGroup extends List
 
     private function focusHandler(event:FocusEvent):void
     {
-        if (event.type == FocusEvent.FOCUS_IN)
+        if (selectedIndex == -1 && event.type == FocusEvent.FOCUS_IN)
         {
             selectedIndex = 0;
-        }
-        else if (event.type == FocusEvent.FOCUS_OUT)
-        {
-            selectedIndex = -1;
         }
     }
 
