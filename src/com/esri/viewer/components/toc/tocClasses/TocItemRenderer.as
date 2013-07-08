@@ -60,7 +60,7 @@ public class TocItemRenderer extends TreeItemRenderer
 
     private var _tocLayerMenu:TocLayerMenu;
 
-    [Embed(source="assets/images/Context_menu11.png")]
+    [Embed(source="/assets/images/Context_menu11.png")]
     [Bindable]
     public var contextCls:Class;
 

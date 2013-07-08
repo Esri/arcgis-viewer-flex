@@ -51,6 +51,7 @@ public class LayerCreationProperties
     public var mode:String;
     public var noData:String;
     public var password:String;
+    public var portalURL:String;
     public var proxyUrl:String;
     public var renderer:IRenderer;
     public var serviceHost:String;
@@ -109,6 +110,7 @@ public class LayerCreationProperties
         creationProps.mode = layerObject.mode;
         creationProps.noData = layerObject.noData;
         creationProps.password = layerObject.password;
+        creationProps.portalURL = layerObject.portalURL;
         creationProps.proxyUrl = layerObject.proxyUrl;
         creationProps.renderer = layerObject.renderer;
         creationProps.serviceHost = layerObject.serviceHost;
