@@ -462,6 +462,7 @@
                     if (isImageLink)
                     {
                         var popUpMediaInfo:PopUpMediaInfo = new PopUpMediaInfo;
+                        popUpMediaInfo.type = PopUpMediaInfo.IMAGE;
                         popUpMediaInfo.imageLinkURL = link;
                         popUpMediaInfo.imageSourceURL = link;
                         popUpInfo.popUpMediaInfos = [ popUpMediaInfo ];
