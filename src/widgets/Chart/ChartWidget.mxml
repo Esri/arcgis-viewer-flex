@@ -547,9 +547,12 @@
 
             protected function layerSelection_valueCommitHandler(event:FlexEvent):void
             {
-                updateLayerSelectionMessage();
-                clearChartAndSelectionHighlights()
-                updateSelectedChartLayerDefinition();
+                if (layerSelection.selectedIndex > -1)
+                {
+                    updateLayerSelectionMessage();
+                    clearChartAndSelectionHighlights()
+                    updateSelectedChartLayerDefinition();
+                }
             }
 
             private function updateLayerSelectionMessage():void
