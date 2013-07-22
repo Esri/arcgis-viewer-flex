@@ -351,40 +351,48 @@
                 if (index < layersUsedInAttributeTable.length)
                 {
                     var layer:Layer = layersUsedInAttributeTable[index] as Layer;
-                    if (layer.loaded)
+                    if (layer.name.indexOf("hiddenLayer_") == -1)
                     {
-                        if (layer is FeatureLayer && layer.name.indexOf("hiddenLayer_") == -1)
+                        if (layer.loaded)
                         {
-                            layer.removeEventListener(FlexEvent.HIDE, featureLayer_hideShowHandler);
-                            layer.removeEventListener(FlexEvent.SHOW, featureLayer_hideShowHandler);
-
-                            layer.addEventListener(FlexEvent.HIDE, featureLayer_hideShowHandler);
-                            layer.addEventListener(FlexEvent.SHOW, featureLayer_hideShowHandler);
-
-                            arrFinalLayers.push(layer);
-                            featureLayers.push(layer);
+                            if (layer is FeatureLayer)
+                            {
+                                layer.removeEventListener(FlexEvent.HIDE, featureLayer_hideShowHandler);
+                                layer.removeEventListener(FlexEvent.SHOW, featureLayer_hideShowHandler);
+    
+                                layer.addEventListener(FlexEvent.HIDE, featureLayer_hideShowHandler);
+                                layer.addEventListener(FlexEvent.SHOW, featureLayer_hideShowHandler);
+    
+                                arrFinalLayers.push(layer);
+                                featureLayers.push(layer);
+                                index++;
+                                getAllFeatureLayers(index, featureLayers);
+                            }
+                            else if (layer is ArcGISDynamicMapServiceLayer)
+                            {
+                                createFeatureLayersFromDynamicMapService(ArcGISDynamicMapServiceLayer(layer), index);
+                            }
+                            else
+                            {
+                                index++;
+                                getAllFeatureLayers(index, featureLayers);
+                            }
+                        }
+                        else if (layer.loadFault)
+                        {
                             index++;
                             getAllFeatureLayers(index, featureLayers);
-                        }
-                        else if (layer is ArcGISDynamicMapServiceLayer && layer.name.indexOf("hiddenLayer_") == -1)
-                        {
-                            createFeatureLayersFromDynamicMapService(ArcGISDynamicMapServiceLayer(layer), index);
                         }
                         else
                         {
-                            index++;
-                            getAllFeatureLayers(index, featureLayers);
+                            // listen for load
+                            layer.addEventListener(LayerEvent.LOAD, featureLayer_loadHandler);
                         }
-                    }
-                    else if (layer.loadFault)
-                    {
-                        index++;
-                        getAllFeatureLayers(index, featureLayers);
                     }
                     else
                     {
-                        // listen for load
-                        layer.addEventListener(LayerEvent.LOAD, featureLayer_loadHandler);
+                        index++;
+                        getAllFeatureLayers(index, featureLayers);
                     }
                 }
                 else
