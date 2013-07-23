@@ -132,16 +132,17 @@ public class ResultAttributes
                 }
             }
 
-            if (titleField && fieldName.toUpperCase() == titleField.toUpperCase())
+            var upperCaseFieldName:String = fieldName.toUpperCase();
+            if (titleField && upperCaseFieldName == titleField.toUpperCase())
             {
                 title = value;
             }
-            else if (linkField && fieldName.toUpperCase() == linkField.toUpperCase())
+            else if (linkField && upperCaseFieldName == linkField.toUpperCase())
             {
                 link = value;
                 linkAlias = linkAlias;
             }
-            else if (fieldName.toUpperCase() != "SHAPE_LENGTH" && fieldName.toUpperCase() != "SHAPE_AREA")
+            else if (upperCaseFieldName != "SHAPE_LENGTH" && upperCaseFieldName != "SHAPE_AREA")
             {
                 var fieldLabel:String;
 
