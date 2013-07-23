@@ -142,26 +142,31 @@ public class ResultAttributes
                 link = value;
                 linkAlias = linkAlias;
             }
-            else if (upperCaseFieldName != "SHAPE_LENGTH" && upperCaseFieldName != "SHAPE_AREA")
+            else
             {
-                var fieldLabel:String;
+                var isShapeMeasurementField:Boolean = (upperCaseFieldName == "SHAPE_LENGTH" || upperCaseFieldName == "SHAPE_AREA");
+                var isUserDefinedField:Boolean = fields && fields.field.(@name == fieldName).length() > 0;
+                if (!isShapeMeasurementField || isUserDefinedField)
+                {
+                    var fieldLabel:String;
 
-                if (fieldXML && fieldXML.@alias[0])
-                {
-                    fieldLabel = fieldXML.@alias[0];
-                }
-                else
-                {
-                    fieldLabel = featureSet.fieldAliases[fieldName];
-                }
+                    if (fieldXML && fieldXML.@alias[0])
+                    {
+                        fieldLabel = fieldXML.@alias[0];
+                    }
+                    else
+                    {
+                        fieldLabel = featureSet.fieldAliases[fieldName];
+                    }
 
-                if (FlexGlobals.topLevelApplication.layoutDirection == LayoutDirection.RTL)
-                {
-                    content += value + " :" + fieldLabel + "\n";
-                }
-                else
-                {
-                    content += fieldLabel + ": " + value + "\n";
+                    if (FlexGlobals.topLevelApplication.layoutDirection == LayoutDirection.RTL)
+                    {
+                        content += value + " :" + fieldLabel + "\n";
+                    }
+                    else
+                    {
+                        content += fieldLabel + ": " + value + "\n";
+                    }
                 }
             }
         }
