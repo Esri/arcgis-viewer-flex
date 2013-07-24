@@ -1185,5 +1185,4 @@
             </s:Scroller>
         </s:Group>
     </viewer:WidgetTemplate>
-
 </viewer:BaseWidget>
