@@ -541,6 +541,7 @@
 
                         showLoadErrorMessage(event);
                     }
+
                     return;
                 }
 
@@ -567,46 +568,57 @@
                         query.orderByFields = orderByFields;
                     }
 
-                    queryLayer.queryFeatures(query, new AsyncResponder(onResult, onFault, queryFields));
+                    var queryOptions:Object =
+                        {
+                            supportsServerSideSorting: supportsServerSideSorting,
+                            orderByFields: orderByFields,
+                            queryFields: queryFields
+                        };
+
+                    queryLayer.queryFeatures(
+                        query, new AsyncResponder(queryFeatures_resultHandler,
+                                                  queryFeatures_faultHandler,
+                                                  queryOptions));
+
                     showMessage(loadingLabel, true);
                     showStateResults();
+                }
+            }
 
-                    function onResult(featureSet:FeatureSet, token:XMLList = null):void
+            private function queryFeatures_resultHandler(featureSet:FeatureSet, queryOptions:Object):void
+            {
+                try
+                {
+                    if (!queryOptions.supportsServerSideSorting && queryOptions.orderByFields)
                     {
-                        try
-                        {
-                            if (!supportsServerSideSorting && orderByFields)
-                            {
-                                FeatureSetUtil.sortFeaturesByFieldName(featureSet, orderByFields);
-                            }
-                            
-                            if (searchResultAC)
-                            {
-                                searchResultAC.removeAll();
-                            }
-                            searchResultAC = createSearchResults(featureSet, token);
-
-                            addSharedData(widgetTitle, searchResultAC);
-                            if (featureSet.features.length < 1)
-                            {
-                                showMessage(noResultLabel, false);
-                            }
-                            else
-                            {
-                                showMessage(selectionLabel + " " + featureSet.features.length, false);
-                            }
-                        }
-                        catch (error:Error)
-                        {
-                            showMessage(error.message, false);
-                        }
+                        FeatureSetUtil.sortFeaturesByFieldName(featureSet, queryOptions.orderByFields);
                     }
 
-                    function onFault(info:Object, token:Object = null):void
+                    if (searchResultAC)
                     {
-                        showMessage(info.toString(), false);
+                        searchResultAC.removeAll();
+                    }
+                    searchResultAC = createSearchResults(featureSet, queryOptions.queryFields);
+
+                    addSharedData(widgetTitle, searchResultAC);
+                    if (featureSet.features.length < 1)
+                    {
+                        showMessage(noResultLabel, false);
+                    }
+                    else
+                    {
+                        showMessage(selectionLabel + " " + featureSet.features.length, false);
                     }
                 }
+                catch (error:Error)
+                {
+                    showMessage(error.message, false);
+                }
+            }
+
+            private function queryFeatures_faultHandler(info:Object, queryOptions:Object):void
+            {
+                showMessage(info.toString(), false);
             }
 
             private function queryFeaturesGraphical(geom:Geometry):void
@@ -637,6 +649,7 @@
 
                         showLoadErrorMessage(event);
                     }
+
                     return;
                 }
 
@@ -662,45 +675,20 @@
                         query.orderByFields = orderByFields;
                     }
 
-                    queryLayer.queryFeatures(query, new AsyncResponder(onResult, onFault, queryFields));
+                    var queryOptions:Object =
+                        {
+                            supportsServerSideSorting: supportsServerSideSorting,
+                            orderByFields: orderByFields,
+                            queryFields: queryFields
+                        };
+
+                    queryLayer.queryFeatures(
+                        query, new AsyncResponder(queryFeatures_resultHandler,
+                                                  queryFeatures_faultHandler,
+                                                  queryOptions));
+
                     showMessage(loadingLabel, true);
                     showStateResults();
-
-                    function onResult(featureSet:FeatureSet, token:XMLList = null):void
-                    {
-                        try
-                        {
-                            if (!supportsServerSideSorting && orderByFields)
-                            {
-                                FeatureSetUtil.sortFeaturesByFieldName(featureSet, orderByFields);
-                            }
-                            
-                            if (searchResultAC)
-                            {
-                                searchResultAC.removeAll();
-                            }
-                            searchResultAC = createSearchResults(featureSet, token);
-
-                            addSharedData(widgetTitle, searchResultAC);
-                            if (featureSet.features.length < 1)
-                            {
-                                showMessage(noResultLabel, false);
-                            }
-                            else
-                            {
-                                showMessage(selectionLabel + " " + featureSet.features.length, false);
-                            }
-                        }
-                        catch (error:Error)
-                        {
-                            showMessage(error.message, false);
-                        }
-                    }
-
-                    function onFault(info:Object, token:Object = null):void
-                    {
-                        showMessage(info.toString(), false);
-                    }
                 }
             }
 
