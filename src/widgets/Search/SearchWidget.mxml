@@ -297,7 +297,6 @@
                     }
 
                     resultFeatureLayer.addEventListener(FlexEvent.HIDE, resultFeatureLayer_hideHandler);
-                    map.addLayer(resultFeatureLayer);
 
                     var userTolerance:Number = configXML.tolerance;
                     if (userTolerance > 0)
@@ -613,6 +612,11 @@
                 catch (error:Error)
                 {
                     showMessage(error.message, false);
+                }
+
+                if (!resultFeatureLayer.map)
+                {
+                    map.addLayer(resultFeatureLayer);
                 }
             }
 
