@@ -75,9 +75,11 @@
 
             import mx.collections.ArrayCollection;
             import mx.collections.ArrayList;
+            import mx.core.LayoutDirection;
             import mx.events.FlexEvent;
             import mx.rpc.AsyncResponder;
             import mx.rpc.events.FaultEvent;
+            import mx.utils.StringUtil;
 
             import spark.components.supportClasses.ItemRenderer;
 
@@ -215,6 +217,7 @@
                         layer.addEventListener(LayerEvent.LOAD, searchLayer_loadHandler);
                         layer.addEventListener(LayerEvent.LOAD_ERROR, searchLayer_faultHandler);
                         layer.url = lyrURL;
+                        layer.name = buildLayerName(lyrLabel);
 
                         if (useProxy && configData.proxyUrl)
                         {
@@ -286,9 +289,6 @@
                     resultFeatureLayer.visible = false;
                     resultFeatureLayer.isEditable = false;
 
-                    var layerName:String = configXML.layername || widgetTitle;
-                    resultFeatureLayer.name = shareResults ? layerName : "hiddenLayer_" + layerName;
-
                     var clustererParser:ClustererParser = new ClustererParser();
                     var clusterer:IClusterer = clustererParser.parseClusterer(configXML.clustering[0]);
                     if (clusterer)
@@ -297,7 +297,6 @@
                     }
 
                     resultFeatureLayer.addEventListener(FlexEvent.HIDE, resultFeatureLayer_hideHandler);
-                    map.addLayer(resultFeatureLayer);
 
                     var userTolerance:Number = configXML.tolerance;
                     if (userTolerance > 0)
@@ -324,6 +323,25 @@
                 setupTextSearch();
                 setupGraphicalSearch();
                 AppEvent.addListener(AppEvent.DATA_PUBLISH, sharedDataUpdated);
+            }
+
+            private function buildLayerName(name:String):String
+            {
+                var widgetName:String = configXML.layername || widgetTitle;
+                name = name ? name : widgetName;
+
+                if (widgetName == name)
+                {
+                    return shareResults ? widgetName : "hiddenLayer_" + widgetName;
+                }
+
+                var layerNameTemplate:String =
+                    (layoutDirection == LayoutDirection.LTR) ? "{0} - {1}" : "{1} - {0}";
+
+                layerNameTemplate =
+                    shareResults ? layerNameTemplate : "hiddenLayer_" + layerNameTemplate;
+
+                return StringUtil.substitute(layerNameTemplate, widgetName, name);
             }
 
             private function searchLayer_loadHandler(event:LayerEvent):void
@@ -541,6 +559,7 @@
 
                         showLoadErrorMessage(event);
                     }
+
                     return;
                 }
 
@@ -567,46 +586,62 @@
                         query.orderByFields = orderByFields;
                     }
 
-                    queryLayer.queryFeatures(query, new AsyncResponder(onResult, onFault, queryFields));
+                    var queryOptions:Object =
+                        {
+                            supportsServerSideSorting: supportsServerSideSorting,
+                            orderByFields: orderByFields,
+                            queryFields: queryFields
+                        };
+
+                    queryLayer.queryFeatures(
+                        query, new AsyncResponder(queryFeatures_resultHandler,
+                                                  queryFeatures_faultHandler,
+                                                  queryOptions));
+
                     showMessage(loadingLabel, true);
                     showStateResults();
+                }
+            }
 
-                    function onResult(featureSet:FeatureSet, token:XMLList = null):void
+            private function queryFeatures_resultHandler(featureSet:FeatureSet, queryOptions:Object):void
+            {
+                try
+                {
+                    if (!queryOptions.supportsServerSideSorting && queryOptions.orderByFields)
                     {
-                        try
-                        {
-                            if (!supportsServerSideSorting && orderByFields)
-                            {
-                                FeatureSetUtil.sortFeaturesByFieldName(featureSet, orderByFields);
-                            }
-                            
-                            if (searchResultAC)
-                            {
-                                searchResultAC.removeAll();
-                            }
-                            searchResultAC = createSearchResults(featureSet, token);
-
-                            addSharedData(widgetTitle, searchResultAC);
-                            if (featureSet.features.length < 1)
-                            {
-                                showMessage(noResultLabel, false);
-                            }
-                            else
-                            {
-                                showMessage(selectionLabel + " " + featureSet.features.length, false);
-                            }
-                        }
-                        catch (error:Error)
-                        {
-                            showMessage(error.message, false);
-                        }
+                        FeatureSetUtil.sortFeaturesByFieldName(featureSet, queryOptions.orderByFields);
                     }
 
-                    function onFault(info:Object, token:Object = null):void
+                    if (searchResultAC)
                     {
-                        showMessage(info.toString(), false);
+                        searchResultAC.removeAll();
+                    }
+                    searchResultAC = createSearchResults(featureSet, queryOptions.queryFields);
+
+                    addSharedData(widgetTitle, searchResultAC);
+                    if (featureSet.features.length < 1)
+                    {
+                        showMessage(noResultLabel, false);
+                    }
+                    else
+                    {
+                        showMessage(selectionLabel + " " + featureSet.features.length, false);
                     }
                 }
+                catch (error:Error)
+                {
+                    showMessage(error.message, false);
+                }
+
+                if (!resultFeatureLayer.map)
+                {
+                    map.addLayer(resultFeatureLayer);
+                }
+            }
+
+            private function queryFeatures_faultHandler(info:Object, queryOptions:Object):void
+            {
+                showMessage(info.toString(), false);
             }
 
             private function queryFeaturesGraphical(geom:Geometry):void
@@ -637,6 +672,7 @@
 
                         showLoadErrorMessage(event);
                     }
+
                     return;
                 }
 
@@ -662,45 +698,20 @@
                         query.orderByFields = orderByFields;
                     }
 
-                    queryLayer.queryFeatures(query, new AsyncResponder(onResult, onFault, queryFields));
+                    var queryOptions:Object =
+                        {
+                            supportsServerSideSorting: supportsServerSideSorting,
+                            orderByFields: orderByFields,
+                            queryFields: queryFields
+                        };
+
+                    queryLayer.queryFeatures(
+                        query, new AsyncResponder(queryFeatures_resultHandler,
+                                                  queryFeatures_faultHandler,
+                                                  queryOptions));
+
                     showMessage(loadingLabel, true);
                     showStateResults();
-
-                    function onResult(featureSet:FeatureSet, token:XMLList = null):void
-                    {
-                        try
-                        {
-                            if (!supportsServerSideSorting && orderByFields)
-                            {
-                                FeatureSetUtil.sortFeaturesByFieldName(featureSet, orderByFields);
-                            }
-                            
-                            if (searchResultAC)
-                            {
-                                searchResultAC.removeAll();
-                            }
-                            searchResultAC = createSearchResults(featureSet, token);
-
-                            addSharedData(widgetTitle, searchResultAC);
-                            if (featureSet.features.length < 1)
-                            {
-                                showMessage(noResultLabel, false);
-                            }
-                            else
-                            {
-                                showMessage(selectionLabel + " " + featureSet.features.length, false);
-                            }
-                        }
-                        catch (error:Error)
-                        {
-                            showMessage(error.message, false);
-                        }
-                    }
-
-                    function onFault(info:Object, token:Object = null):void
-                    {
-                        showMessage(info.toString(), false);
-                    }
                 }
             }
 
@@ -729,6 +740,8 @@
                 resultFeatureLayer.outFields = queryLayer.outFields;
                 resultFeatureLayer.visible = true;
                 resultFeatureLayer.featureCollection = new FeatureCollection(featureSet, layerDetails);
+                resultFeatureLayer.name = queryLayer.name;
+
                 switch (featureSet.geometryType)
                 {
                     case Geometry.MAPPOINT:
@@ -1172,5 +1185,4 @@
             </s:Scroller>
         </s:Group>
     </viewer:WidgetTemplate>
-
 </viewer:BaseWidget>
