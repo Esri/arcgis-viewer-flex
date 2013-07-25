@@ -60,6 +60,8 @@ public class TOC extends Tree
         dataProvider = _tocRoots;
         itemRenderer = new ClassFactory(TocItemRenderer);
         iconFunction = tocItemIcon;
+        dataTipField = "label";
+        showDataTips = true;
 
         this.map = map;
 
