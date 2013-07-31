@@ -25,11 +25,13 @@ import com.esri.ags.layers.ArcIMSMapServiceLayer;
 import com.esri.ags.layers.ILegendSupport;
 import com.esri.ags.layers.KMLLayer;
 import com.esri.ags.layers.Layer;
+import com.esri.ags.layers.WMSLayer;
 import com.esri.ags.layers.supportClasses.KMLFeatureInfo;
 import com.esri.ags.layers.supportClasses.KMLFolder;
 import com.esri.ags.layers.supportClasses.LayerInfo;
 import com.esri.ags.layers.supportClasses.LayerLegendInfo;
 import com.esri.ags.layers.supportClasses.LegendItemInfo;
+import com.esri.ags.layers.supportClasses.WMSLayerInfo;
 import com.esri.viewer.ViewerContainer;
 import com.esri.viewer.components.toc.utils.MapUtil;
 import com.esri.viewer.utils.MapServiceUtil;
@@ -38,6 +40,7 @@ import flash.events.Event;
 
 import mx.binding.utils.ChangeWatcher;
 import mx.collections.ArrayCollection;
+import mx.collections.ArrayList;
 import mx.events.CollectionEvent;
 import mx.events.FlexEvent;
 import mx.rpc.AsyncResponder;
@@ -414,6 +417,7 @@ public class TocMapLayerItem extends TocItem
     {
         children = null;
         var layerInfos:Array; // of LayerInfo
+        var wmsLayerInfos:Array; // of WMSLayerInfo
 
         if (layer is ArcGISTiledMapServiceLayer)
         {
@@ -457,6 +461,10 @@ public class TocMapLayerItem extends TocItem
         {
             layerInfos = ArcIMSMapServiceLayer(layer).layerInfos;
         }
+        else if (layer is WMSLayer)
+        {
+            wmsLayerInfos = WMSLayer(layer).layerInfos;
+        }
         else if (layer is KMLLayer)
         {
             createKMLLayerTocItems(this, KMLLayer(layer));
@@ -470,16 +478,26 @@ public class TocMapLayerItem extends TocItem
                 addChild(createTocLayer(this, layerInfo1, layerInfos, layerInfo1.defaultVisibility, isTocLayerInfoItemInScale(layerInfo1)));
             }
         }
+        else if (wmsLayerInfos)
+        {   
+            var wmsVisibleLayers:ArrayList = WMSLayer(layer).visibleLayers as ArrayList;             
+            for each (var wmsLayerInfo:WMSLayerInfo in wmsLayerInfos)
+            {   
+                if (wmsVisibleLayers.source.indexOf(wmsLayerInfo.name) !== -1)
+                {    
+                    addChild(createWMSTocLayer(this, wmsLayerInfo));
+                }
+            }
+        }
         else if (_layerLegendInfos && _layerLegendInfos.length)
         {
-            var layerLegendInfo:LayerLegendInfo = _layerLegendInfos[0];
-            if (layerLegendInfo)
+            for each (var layerLegendInfo:LayerLegendInfo in _layerLegendInfos)
             {
                 for each (var legendItemInfo:LegendItemInfo in layerLegendInfo.legendItemInfos)
                 {
                     addChild(new TocLegendItem(this, legendItemInfo));
                 }
-            }
+            }            
         }
     }
 
@@ -644,7 +662,23 @@ public class TocMapLayerItem extends TocItem
 
         return item;
     }
-
+    
+    private function createWMSTocLayer(parentItem:TocItem, wmsLayerInfo:WMSLayerInfo):TocWMSLayerInfoItem
+    {
+        var item:TocWMSLayerInfoItem = new TocWMSLayerInfoItem(parentItem, wmsLayerInfo);
+        
+        var layerLegendInfo:LayerLegendInfo = getWMSLayerLegendInfo(wmsLayerInfo.name);
+        if (layerLegendInfo)
+        {
+            for each (var legendItemInfo:LegendItemInfo in layerLegendInfo.legendItemInfos)
+            {
+                item.addChild(new TocLegendItem(item, legendItemInfo));
+            }
+        }
+        
+        return item;
+    }
+    
     private function getLayerLegendInfo(layerId:Number):LayerLegendInfo
     {
         var result:LayerLegendInfo;
@@ -658,6 +692,22 @@ public class TocMapLayerItem extends TocItem
             }
         }
 
+        return result;
+    }
+    
+    private function getWMSLayerLegendInfo(wmsLayerId:String):LayerLegendInfo
+    {
+        var result:LayerLegendInfo;
+        
+        for each (var layerLegendInfo:LayerLegendInfo in _layerLegendInfos)
+        {
+            if (layerLegendInfo.layerId == wmsLayerId)
+            {
+                result = layerLegendInfo;
+                break;
+            }
+        }
+        
         return result;
     }
 
