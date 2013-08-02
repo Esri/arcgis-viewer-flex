@@ -93,6 +93,11 @@
                     printTask.addEventListener(FaultEvent.FAULT, printTaskInitialization_faultHandler, false, 0, true);
 
                     printTask.url = configXML.taskurl;
+                    const useProxy:Boolean = (configXML.useproxy.length() > 0) && (configXML.useproxy == "true");
+                    if (useProxy && hostBaseWidget.configData.proxyUrl)
+                    {
+                        printTask.proxyURL = hostBaseWidget.configData.proxyUrl;
+                    }
                     printTask.getServiceInfo();
                     printButton.label = configXML.labels.submitlabel[0] || hostBaseWidget.getDefaultString("printSubmitLabel");
                 }
