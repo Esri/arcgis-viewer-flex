@@ -113,64 +113,44 @@
     <s:transitions>
         <s:Transition fromState="open" toState="minimized">
             <s:Sequence effectEnd="minimizingEnded(event)">
-                <s:Fade duration="100" target="{widgetLabel}"/>
-                <s:Fade duration="100" target="{headerToolGroup}"/>
-                <s:Fade duration="100" target="{contentGroup}"/>
-                <s:Fade duration="100" target="{widgetFrame}"/>
-                <!-- Use mx:Resize instead of s:Resize for minimize to work with Flex 4.5 sdk -->
-                <mx:Resize heightTo="30"
-                           target="{hostComponent}"
-                           widthTo="150"/>
+                <s:Fade duration="100" targets="{[headerToolGroup, contentGroup, minclose]}"/>
+                <s:Resize target="{widgetFrame}"/>
                 <s:Move duration="100" target="{header}"/>
                 <s:Move easer="{bounce}" target="{icon}"/>
             </s:Sequence>
         </s:Transition>
+
         <s:Transition fromState="minimized" toState="open">
             <s:Sequence effectEnd="openEnded(event)">
-                <s:Fade duration="100" target="{widgetFrame}"/>
                 <s:Move target="{icon}"/>
-                <!-- Use mx:Resize instead of s:Resize for minimize to work with Flex 4.5 sdk -->
-                <mx:Resize heightTo="{hostComponent.widgetHeight}"
-                           target="{hostComponent}"
-                           widthTo="{hostComponent.widgetWidth}"/>
-                <s:Fade duration="100" target="{widgetLabel}"/>
-                <s:Fade duration="100" target="{contentGroup}"/>
-                <s:Fade duration="100" target="{headerToolGroup}"/>
+                <s:Resize target="{widgetFrame}"/>
+                <s:Fade duration="100" targets="{[contentGroup, headerToolGroup, minclose]}"/>
             </s:Sequence>
         </s:Transition>
+
         <s:Transition fromState="closed" toState="open">
             <s:Sequence>
                 <s:Fade duration="100" target="{widgetFrame}"/>
                 <s:Move target="{icon}"/>
-                <s:Fade duration="100" target="{widgetLabel}"/>
-                <s:Fade duration="100" target="{contentGroup}"/>
-                <s:Fade duration="100" target="{headerToolGroup}"/>
+                <s:Fade duration="100" targets="{[widgetLabel, contentGroup, headerToolGroup]}"/>
             </s:Sequence>
         </s:Transition>
+
         <s:Transition fromState="open" toState="closed">
-            <s:Sequence>
-                <s:Fade duration="100" target="{widgetLabel}"/>
-                <s:Fade duration="100" target="{headerToolGroup}"/>
-                <s:Fade duration="100" target="{contentGroup}"/>
-                <s:Fade duration="100" target="{widgetFrame}"/>
-            </s:Sequence>
+            <s:Fade duration="100" targets="{[widgetLabel, headerToolGroup, contentGroup, widgetFrame]}"/>
         </s:Transition>
+
         <s:Transition fromState="minimized" toState="closed">
-            <s:Sequence effectEnd="effectEndHandler(event)">
-                <s:Fade duration="100" target="{widgetLabel}"/>
-                <s:Parallel duration="100">
-                    <s:Fade alphaTo="0" target="{contentBackground}"/>
-                    <s:Fade alphaTo="0" target="{border}"/>
-                    <s:Fade alphaTo="0" target="{headerBackground}"/>
-                    <s:Fade target="{widgetFrame}"/>
-                </s:Parallel>
-            </s:Sequence>
+            <s:Fade duration="100"
+                    effectEnd="effectEndHandler(event)"
+                    targets="{[widgetLabel, contentBackground, border, headerBackground, widgetFrame]}"/>
         </s:Transition>
     </s:transitions>
 
     <!-- the widget template wireframe -->
     <s:Group id="widgetFrame"
-             left="0" right="0" top="0" bottom="0"
+             width="100%" height="100%"
+             width.minimized="150" height.minimized="30"
              alpha.closed="0">
         <s:Rect width="100%" height="100%"
                 radiusX="5"
