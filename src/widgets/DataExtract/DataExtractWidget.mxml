@@ -773,7 +773,8 @@
                         <s:HGroup width="100%" height="100%"
                                   horizontalAlign="right"
                                   paddingBottom="3">
-                            <s:Label click="clear()"
+                            <s:Label buttonMode="true"
+                                     click="clear()"
                                      text="{clearLabel}"
                                      textDecoration="underline"/>
                         </s:HGroup>
