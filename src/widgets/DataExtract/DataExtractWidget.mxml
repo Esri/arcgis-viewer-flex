@@ -54,6 +54,7 @@
             import mx.rpc.AsyncResponder;
             import mx.rpc.Fault;
             import mx.rpc.events.FaultEvent;
+            import mx.utils.ObjectProxy;
 
             private var dataUrl:String = "";
             private var file:FileReference;
@@ -100,6 +101,10 @@
             private var ellipseLabel:String;
             [Bindable]
             private var clearLabel:String;
+            [Bindable]
+            private var selectAllLabel:String;
+            [Bindable]
+            private var deselectAllLabel:String;
             [Bindable]
             private var dataCurrentExtentLabel:String;
             [Bindable]
@@ -203,6 +208,8 @@
                     step2ErrorLabel = configXML.labels.step2errorlabel[0] || getDefaultString("step2ErrorLabel");
                     emptyResultsLabel = configXML.labels.emptyresultslabel[0] || getDefaultString("emptyResultsLabel");
                     saveDataFileLabel = configXML.labels.savedatafilelabel[0] || getDefaultString("saveDataFileLabel");
+                    selectAllLabel = configXML.labels.selectalllabel[0] || getDefaultString("selectAllLabel");
+                    deselectAllLabel = configXML.labels.deselectalllabel[0] || getDefaultString("deselectAllLabel");
 
                     initGraphicContextMenu();
                 }
@@ -637,7 +644,7 @@
                         {
                             if (excludeLayers.indexOf(layer) == -1)
                             {
-                                var obj:Object = { label: layer, selected: false };
+                                var obj:ObjectProxy = new ObjectProxy({ label: layer, selected: false });
                                 layers.addItem(obj);
                             }
                         }
@@ -699,6 +706,14 @@
             private function geometryService_simplifyHandler(event:GeometryServiceEvent):void
             {
                 createGPParamsAndExtract(event.result as Array);
+            }
+
+            private function toggleLayerSelection(value:Boolean):void
+            {
+                for each (var layerObject:Object in layers)
+                {
+                    layerObject.selected = value;
+                }
             }
         ]]>
     </fx:Script>
@@ -850,6 +865,18 @@
                             </s:itemRenderer>
                         </s:DataGroup>
                     </s:Scroller>
+
+                    <s:HGroup paddingTop="4" id="layerToggleGroup">
+                        <s:Label buttonMode="true"
+                                 click="toggleLayerSelection(true)"
+                                 text="{selectAllLabel}"
+                                 textDecoration="underline"/>
+
+                        <s:Label buttonMode="true"
+                                 click="toggleLayerSelection(false)"
+                                 text="{deselectAllLabel}"
+                                 textDecoration="underline"/>
+                    </s:HGroup>
                 </s:VGroup>
 
                 <s:Line width="100%"
