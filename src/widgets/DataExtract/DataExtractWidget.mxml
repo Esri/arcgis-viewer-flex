@@ -49,6 +49,7 @@
             import com.esri.viewer.utils.ErrorMessageUtil;
 
             import mx.collections.ArrayCollection;
+            import mx.collections.ArrayList;
             import mx.controls.Alert;
             import mx.events.CloseEvent;
             import mx.rpc.AsyncResponder;
@@ -68,17 +69,17 @@
             private var drawSymbol:Symbol;
             [Bindable]
             private var exposeLayers:Boolean = true; //later set to FALSE!!
-            private var formatChoiceList:ArrayCollection;
-            private var rasterFormatChoiceList:ArrayCollection;
+            private var formatChoiceList:ArrayList;
+            private var rasterFormatChoiceList:ArrayList;
             [Bindable]
             private var rasterFormatChoiceListVisible:Boolean;
-            private var spatialReferenceChoiceList:ArrayCollection;
+            private var spatialReferenceChoiceList:ArrayList;
             [Bindable]
             private var spatialReferenceChoiceListVisible:Boolean;
             [Bindable]
             private var gpURL:String;
             [Bindable]
-            private var layers:ArrayCollection;
+            private var layers:ArrayList;
             private var excludeLayers:Array = [];
             [Bindable]
             private var useCurrentExtentAsAIO:Boolean = false;
@@ -638,7 +639,7 @@
                 {
                     if (params[i].name == "Layers_to_Clip")
                     {
-                        layers = new ArrayCollection();
+                        layers = new ArrayList();
                         exposeLayers = true;
                         for each (var layer:Object in params[i].choiceList)
                         {
@@ -651,7 +652,7 @@
                     }
                     if (params[i].name == "Feature_Format")
                     {
-                        formatChoiceList = new ArrayCollection();
+                        formatChoiceList = new ArrayList();
                         for each (var format:String in params[i].choiceList)
                         {
                             const fileLabel:String = format.substring(0, format.indexOf("-") - 1);
@@ -663,7 +664,7 @@
                     if (params[i].name == "Raster_Format")
                     {
                         rasterFormatChoiceListVisible = true;
-                        rasterFormatChoiceList = new ArrayCollection();
+                        rasterFormatChoiceList = new ArrayList();
                         for each (var rasterFormat:String in params[i].choiceList)
                         {
                             const fileLabel1:String = rasterFormat.substring(0, rasterFormat.indexOf("-") - 1);
@@ -674,7 +675,7 @@
                     if (params[i].name == "Spatial_Reference")
                     {
                         spatialReferenceChoiceListVisible = true;
-                        spatialReferenceChoiceList = new ArrayCollection();
+                        spatialReferenceChoiceList = new ArrayList();
                         for each (var spatialReferenceString:String in params[i].choiceList)
                         {
                             spatialReferenceChoiceList.addItem({ data: spatialReferenceString, label: spatialReferenceString });
@@ -710,7 +711,8 @@
 
             private function toggleLayerSelection(value:Boolean):void
             {
-                for each (var layerObject:Object in layers)
+                var allLayers:Array = layers.source;
+                for each (var layerObject:Object in allLayers)
                 {
                     layerObject.selected = value;
                 }
