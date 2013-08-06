@@ -37,7 +37,6 @@
             import com.esri.ags.geometry.Polygon;
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.symbols.Symbol;
-            import com.esri.ags.tasks.GeometryService;
             import com.esri.ags.tasks.GeometryServiceSingleton;
             import com.esri.ags.tasks.JSONTask;
             import com.esri.ags.tasks.supportClasses.GPMessage;
