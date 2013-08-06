@@ -37,7 +37,6 @@
             import com.esri.ags.geometry.Polygon;
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.symbols.Symbol;
-            import com.esri.ags.tasks.GeometryService;
             import com.esri.ags.tasks.GeometryServiceSingleton;
             import com.esri.ags.tasks.JSONTask;
             import com.esri.ags.tasks.supportClasses.GPMessage;
@@ -742,7 +741,9 @@
                       gap="4"
                       verticalAlign="middle">
                 <s:Label width="100%" text="{descLabel}"/>
-                <mx:Spacer/>
+
+                <s:Spacer/>
+
                 <s:HGroup id="aioBox"
                           width="100%" height="40"
                           gap="0"
@@ -751,7 +752,9 @@
                           visible="{!useCurrentExtentAsAIO}">
                     <s:VGroup height="100%">
                         <s:Label text="{step1Label}"/>
-                        <mx:Spacer height="100%"/>
+
+                        <s:Spacer height="100%"/>
+
                         <s:HGroup width="100%" height="100%"
                                   horizontalAlign="right"
                                   paddingBottom="3">
@@ -760,6 +763,7 @@
                                      textDecoration="underline"/>
                         </s:HGroup>
                     </s:VGroup>
+
                     <components:FocusableImage name="{DrawTool.EXTENT}"
                                                width="40" height="40"
                                                buttonMode="true"
@@ -769,6 +773,7 @@
                                                source="assets/images/i_draw_rect.png"
                                                toolTip="{rectangleLabel}"
                                                useHandCursor="true"/>
+
                     <components:FocusableImage name="{DrawTool.CIRCLE}"
                                                width="40" height="40"
                                                buttonMode="true"
@@ -778,6 +783,7 @@
                                                source="assets/images/i_draw_circle.png"
                                                toolTip="{circleLabel}"
                                                useHandCursor="true"/>
+
                     <components:FocusableImage name="{DrawTool.ELLIPSE}"
                                                width="40" height="40"
                                                buttonMode="true"
@@ -787,6 +793,7 @@
                                                source="assets/images/i_draw_ellipse.png"
                                                toolTip="{ellipseLabel}"
                                                useHandCursor="true"/>
+
                     <components:FocusableImage name="{DrawTool.POLYGON}"
                                                width="40" height="40"
                                                buttonMode="true"
@@ -796,6 +803,7 @@
                                                source="assets/images/i_draw_poly.png"
                                                toolTip="{polygonLabel}"
                                                useHandCursor="true"/>
+
                     <components:FocusableImage name="{DrawTool.FREEHAND_POLYGON}"
                                                width="40" height="40"
                                                buttonMode="true"
@@ -818,11 +826,13 @@
                     </s:stroke>
                 </s:Line>
 
-                <s:VGroup width="{wTemplate.width - 40}" height="{widgetVBox.height - aioBox.height - 110}"
+                <s:VGroup width="100%" height="100%"
                           gap="4"
                           includeInLayout="{exposeLayers}"
+                          minHeight="80"
                           visible="{exposeLayers}">
                     <s:Label paddingTop="4" text="{step2Label}"/>
+
                     <s:Scroller width="100%" height="100%">
                         <s:DataGroup id="checkBoxDG" dataProvider="{layers}">
                             <s:layout>
@@ -830,6 +840,7 @@
                                                   horizontalAlign="left"
                                                   useVirtualLayout="true"/>
                             </s:layout>
+
                             <s:itemRenderer>
                                 <fx:Component>
                                     <s:DataRenderer>
@@ -851,32 +862,39 @@
 
                 <s:VGroup width="100%" height="100%">
                     <s:Label paddingTop="4" text="{step3Label}"/>
+
                     <s:DropDownList id="formatDDL"
                                     width="100%"
                                     requireSelection="true"/>
+
                     <s:Label includeInLayout="{rasterFormatChoiceListVisible}"
                              paddingTop="4"
                              text="{step4Label}"
                              visible="{rasterFormatChoiceListVisible}"/>
+
                     <s:DropDownList id="rasterFormatDDL"
                                     width="100%"
                                     includeInLayout="{rasterFormatChoiceListVisible}"
                                     requireSelection="true"
                                     visible="{rasterFormatChoiceListVisible}"/>
+
                     <s:Label includeInLayout="{spatialReferenceChoiceListVisible}"
                              paddingTop="4"
                              text="{step5Label}"
                              visible="{spatialReferenceChoiceListVisible}"/>
+
                     <s:DropDownList id="spatialReferenceDDL"
                                     width="100%"
                                     includeInLayout="{spatialReferenceChoiceListVisible}"
                                     requireSelection="true"
                                     visible="{spatialReferenceChoiceListVisible}"/>
+
                     <s:HGroup width="100%" verticalAlign="middle">
                         <s:Button id="extract"
                                   click="callGPService()"
                                   horizontalCenter="0"
                                   label="{extractButtonLabel}"/>
+
                         <mx:Image id="swfMessage"
                                   source="assets/images/loader.swf"
                                   visible="false"/>
