@@ -190,19 +190,19 @@
 
                     geocoder.autoComplete = configXML.autocomplete != "false";
 
-                    const configMaxLocations:int = parseInt(configXML.maxlocations[0])
+                    const configMaxLocations:int = parseInt(configXML.maxlocations[0]);
                     if (!isNaN(configMaxLocations) && configMaxLocations > 0)
                     {
                         geocoder.maxLocations = configMaxLocations;
                     }
 
-                    const configMinChars:int = parseInt(configXML.minchars[0])
+                    const configMinChars:int = parseInt(configXML.minchars[0]);
                     if (configMinChars && configMinChars > 0)
                     {
                         geocoder.minCharacters = configMinChars;
                     }
 
-                    const configSearchDelay:int = parseInt(configXML.searchdelay[0])
+                    const configSearchDelay:int = parseInt(configXML.searchdelay[0]);
                     if (configSearchDelay && configSearchDelay > 0)
                     {
                         geocoder.searchDelay = configSearchDelay;
@@ -403,7 +403,7 @@
 
             private function configureResultGraphic():void
             {
-                searchResultGraphic = new com.esri.ags.Graphic()
+                searchResultGraphic = new Graphic();
                 const clearFeatureLabel:String = configXML.labels.clearfeaturelabel[0] || hostBaseWidget.getDefaultString("clearLabel");
                 const customContextMenu:ContextMenu = new ContextMenu();
                 customContextMenu.hideBuiltInItems();
