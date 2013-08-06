@@ -818,9 +818,10 @@
                     </s:stroke>
                 </s:Line>
 
-                <s:VGroup width="{wTemplate.width - 40}" height="{widgetVBox.height - aioBox.height - 110}"
+                <s:VGroup width="100%" height="100%"
                           gap="4"
                           includeInLayout="{exposeLayers}"
+                          minHeight="80"
                           visible="{exposeLayers}">
                     <s:Label paddingTop="4" text="{step2Label}"/>
                     <s:Scroller width="100%" height="100%">
