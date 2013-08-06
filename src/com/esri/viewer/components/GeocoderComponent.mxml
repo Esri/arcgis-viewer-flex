@@ -68,7 +68,6 @@
             [Bindable]
             private var map:Map;
 
-            [Bindable]
             private var searchResultTitle:String;
 
             private var _mapServicesConfigured:Boolean;
