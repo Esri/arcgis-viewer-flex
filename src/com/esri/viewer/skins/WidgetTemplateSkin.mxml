@@ -112,36 +112,37 @@
 
     <s:transitions>
         <s:Transition fromState="open" toState="minimized">
-            <s:Sequence effectEnd="minimizingEnded(event)">
-                <s:Fade duration="100" targets="{[headerToolGroup, contentGroup, minclose]}"/>
-                <s:Resize target="{widgetFrame}"/>
+            <s:Parallel effectEnd="minimizingEnded(event)">
+                <s:Fade duration="80" targets="{[headerToolGroup, contentGroup, minclose]}"/>
+                <s:Resize target="{widgetFrame}" duration="200"/>
                 <s:Move duration="100" target="{header}"/>
-                <s:Move easer="{bounce}" target="{icon}"/>
-            </s:Sequence>
+                <s:Move duration="400"
+                        easer="{bounce}"
+                        target="{icon}"/>
+            </s:Parallel>
         </s:Transition>
 
         <s:Transition fromState="minimized" toState="open">
-            <s:Sequence effectEnd="openEnded(event)">
-                <s:Move target="{icon}"/>
-                <s:Resize target="{widgetFrame}"/>
-                <s:Fade duration="100" targets="{[contentGroup, headerToolGroup, minclose]}"/>
-            </s:Sequence>
+            <s:Parallel effectEnd="openEnded(event)">
+                <s:Move duration="200" target="{icon}"/>
+                <s:Resize target="{widgetFrame}" duration="200"/>
+                <s:Fade duration="100" startDelay="100" targets="{[contentGroup, headerToolGroup, minclose]}"/>
+            </s:Parallel>
         </s:Transition>
 
         <s:Transition fromState="closed" toState="open">
-            <s:Sequence>
-                <s:Fade duration="100" target="{widgetFrame}"/>
-                <s:Move target="{icon}"/>
-                <s:Fade duration="100" targets="{[widgetLabel, contentGroup, headerToolGroup]}"/>
-            </s:Sequence>
+            <s:Parallel>
+                <s:Move target="{icon}" duration="100"/>
+                <s:Fade duration="100" targets="{[widgetLabel, contentGroup, headerToolGroup, widgetFrame]}"/>
+            </s:Parallel>
         </s:Transition>
 
         <s:Transition fromState="open" toState="closed">
-            <s:Fade duration="100" targets="{[widgetLabel, headerToolGroup, contentGroup, widgetFrame]}"/>
+            <s:Fade duration="150" targets="{[widgetLabel, headerToolGroup, contentGroup, widgetFrame]}"/>
         </s:Transition>
 
         <s:Transition fromState="minimized" toState="closed">
-            <s:Fade duration="100"
+            <s:Fade duration="150"
                     effectEnd="effectEndHandler(event)"
                     targets="{[widgetLabel, contentBackground, border, headerBackground, widgetFrame]}"/>
         </s:Transition>
