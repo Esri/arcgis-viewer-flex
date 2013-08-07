@@ -103,7 +103,7 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
 
     private var _widgetId:Number;
 
-    private var _widgetState:String = WIDGET_OPENED;
+    private var _widgetState:String;
 
     private var _cursorID:int = 0;
 
