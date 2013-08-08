@@ -49,11 +49,13 @@
             import com.esri.viewer.utils.ErrorMessageUtil;
 
             import mx.collections.ArrayCollection;
+            import mx.collections.ArrayList;
             import mx.controls.Alert;
             import mx.events.CloseEvent;
             import mx.rpc.AsyncResponder;
             import mx.rpc.Fault;
             import mx.rpc.events.FaultEvent;
+            import mx.utils.ObjectProxy;
 
             private var dataUrl:String = "";
             private var file:FileReference;
@@ -67,17 +69,17 @@
             private var drawSymbol:Symbol;
             [Bindable]
             private var exposeLayers:Boolean = true; //later set to FALSE!!
-            private var formatChoiceList:ArrayCollection;
-            private var rasterFormatChoiceList:ArrayCollection;
+            private var formatChoiceList:ArrayList;
+            private var rasterFormatChoiceList:ArrayList;
             [Bindable]
             private var rasterFormatChoiceListVisible:Boolean;
-            private var spatialReferenceChoiceList:ArrayCollection;
+            private var spatialReferenceChoiceList:ArrayList;
             [Bindable]
             private var spatialReferenceChoiceListVisible:Boolean;
             [Bindable]
             private var gpURL:String;
             [Bindable]
-            private var layers:ArrayCollection;
+            private var layers:ArrayList;
             private var excludeLayers:Array = [];
             [Bindable]
             private var useCurrentExtentAsAIO:Boolean = false;
@@ -100,6 +102,10 @@
             private var ellipseLabel:String;
             [Bindable]
             private var clearLabel:String;
+            [Bindable]
+            private var selectAllLabel:String;
+            [Bindable]
+            private var deselectAllLabel:String;
             [Bindable]
             private var dataCurrentExtentLabel:String;
             [Bindable]
@@ -203,6 +209,8 @@
                     step2ErrorLabel = configXML.labels.step2errorlabel[0] || getDefaultString("step2ErrorLabel");
                     emptyResultsLabel = configXML.labels.emptyresultslabel[0] || getDefaultString("emptyResultsLabel");
                     saveDataFileLabel = configXML.labels.savedatafilelabel[0] || getDefaultString("saveDataFileLabel");
+                    selectAllLabel = configXML.labels.selectalllabel[0] || getDefaultString("selectAllLabel");
+                    deselectAllLabel = configXML.labels.deselectalllabel[0] || getDefaultString("deselectAllLabel");
 
                     initGraphicContextMenu();
                 }
@@ -631,20 +639,20 @@
                 {
                     if (params[i].name == "Layers_to_Clip")
                     {
-                        layers = new ArrayCollection();
+                        layers = new ArrayList();
                         exposeLayers = true;
                         for each (var layer:Object in params[i].choiceList)
                         {
                             if (excludeLayers.indexOf(layer) == -1)
                             {
-                                var obj:Object = { label: layer, selected: false };
+                                var obj:ObjectProxy = new ObjectProxy({ label: layer, selected: false });
                                 layers.addItem(obj);
                             }
                         }
                     }
                     if (params[i].name == "Feature_Format")
                     {
-                        formatChoiceList = new ArrayCollection();
+                        formatChoiceList = new ArrayList();
                         for each (var format:String in params[i].choiceList)
                         {
                             const fileLabel:String = format.substring(0, format.indexOf("-") - 1);
@@ -656,7 +664,7 @@
                     if (params[i].name == "Raster_Format")
                     {
                         rasterFormatChoiceListVisible = true;
-                        rasterFormatChoiceList = new ArrayCollection();
+                        rasterFormatChoiceList = new ArrayList();
                         for each (var rasterFormat:String in params[i].choiceList)
                         {
                             const fileLabel1:String = rasterFormat.substring(0, rasterFormat.indexOf("-") - 1);
@@ -667,7 +675,7 @@
                     if (params[i].name == "Spatial_Reference")
                     {
                         spatialReferenceChoiceListVisible = true;
-                        spatialReferenceChoiceList = new ArrayCollection();
+                        spatialReferenceChoiceList = new ArrayList();
                         for each (var spatialReferenceString:String in params[i].choiceList)
                         {
                             spatialReferenceChoiceList.addItem({ data: spatialReferenceString, label: spatialReferenceString });
@@ -699,6 +707,15 @@
             private function geometryService_simplifyHandler(event:GeometryServiceEvent):void
             {
                 createGPParamsAndExtract(event.result as Array);
+            }
+
+            private function toggleLayerSelection(value:Boolean):void
+            {
+                var allLayers:Array = layers.source;
+                for each (var layerObject:Object in allLayers)
+                {
+                    layerObject.selected = value;
+                }
             }
         ]]>
     </fx:Script>
@@ -758,7 +775,8 @@
                         <s:HGroup width="100%" height="100%"
                                   horizontalAlign="right"
                                   paddingBottom="3">
-                            <s:Label click="clear()"
+                            <s:Label buttonMode="true"
+                                     click="clear()"
                                      text="{clearLabel}"
                                      textDecoration="underline"/>
                         </s:HGroup>
@@ -850,6 +868,18 @@
                             </s:itemRenderer>
                         </s:DataGroup>
                     </s:Scroller>
+
+                    <s:HGroup paddingTop="4" id="layerToggleGroup">
+                        <s:Label buttonMode="true"
+                                 click="toggleLayerSelection(true)"
+                                 text="{selectAllLabel}"
+                                 textDecoration="underline"/>
+
+                        <s:Label buttonMode="true"
+                                 click="toggleLayerSelection(false)"
+                                 text="{deselectAllLabel}"
+                                 textDecoration="underline"/>
+                    </s:HGroup>
                 </s:VGroup>
 
                 <s:Line width="100%"
