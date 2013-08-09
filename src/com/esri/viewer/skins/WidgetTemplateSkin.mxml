@@ -114,7 +114,7 @@
         <s:Transition fromState="open" toState="minimized">
             <s:Parallel effectEnd="minimizingEnded(event)">
                 <s:Fade duration="80" targets="{[headerToolGroup, contentGroup, minclose]}"/>
-                <s:Resize target="{widgetFrame}" duration="200"/>
+                <s:Resize duration="200" target="{widgetFrame}"/>
                 <s:Move duration="100" target="{header}"/>
                 <s:Move duration="400"
                         easer="{bounce}"
@@ -125,14 +125,16 @@
         <s:Transition fromState="minimized" toState="open">
             <s:Parallel effectEnd="openEnded(event)">
                 <s:Move duration="200" target="{icon}"/>
-                <s:Resize target="{widgetFrame}" duration="200"/>
-                <s:Fade duration="100" startDelay="100" targets="{[contentGroup, headerToolGroup, minclose]}"/>
+                <s:Resize duration="200" target="{widgetFrame}"/>
+                <s:Fade duration="100"
+                        startDelay="100"
+                        targets="{[contentGroup, headerToolGroup, minclose]}"/>
             </s:Parallel>
         </s:Transition>
 
         <s:Transition fromState="closed" toState="open">
             <s:Parallel>
-                <s:Move target="{icon}" duration="100"/>
+                <s:Move duration="100" target="{icon}"/>
                 <s:Fade duration="100" targets="{[widgetLabel, contentGroup, headerToolGroup, widgetFrame]}"/>
             </s:Parallel>
         </s:Transition>
@@ -150,8 +152,7 @@
 
     <!-- the widget template wireframe -->
     <s:Group id="widgetFrame"
-             width="100%" height="100%"
-             width.minimized="150" height.minimized="30"
+             width="100%" width.minimized="150" height="100%" height.minimized="30"
              alpha.closed="0">
         <s:Rect width="100%" height="100%"
                 radiusX="5"
