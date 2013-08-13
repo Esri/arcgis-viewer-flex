@@ -223,14 +223,7 @@
                             {
                                 if (layer.id == basemapLabel)
                                 {
-                                    if (layer.id == selectedLabel)
-                                    {
-                                        layer.visible = true;
-                                    }
-                                    else
-                                    {
-                                        layer.visible = false;
-                                    }
+                                    layer.visible = (layer.id == selectedLabel);
                                 }
                             }
                         }
@@ -268,7 +261,6 @@
                 overviewMap.addEventListener(MouseEvent.MOUSE_UP, overviewMap_mouseUpHandler);
                 overviewMap.addEventListener(MouseEvent.MOUSE_MOVE, overviewMap_mouseMoveHandler);
 
-                var overviewCenterMapPoint:MapPoint = overviewGraphic.geometry.extent.center;
                 var mouseMapPoint:MapPoint = overviewMap.toMapFromStage(event.stageX, event.stageY);
                 lastMouseMapX = mouseMapPoint.x;
                 lastMouseMapY = mouseMapPoint.y;
@@ -279,8 +271,6 @@
                 hasOverviewGraphicBeenMoved = true;
 
                 var overviewPolygon:Polygon = overviewGraphic.geometry as Polygon;
-                var overviewCenterMapPoint:MapPoint = overviewPolygon.extent.center;
-
                 var mouseMapPoint:MapPoint = overviewMap.toMapFromStage(event.stageX, event.stageY);
                 var deltaMapX:Number = mouseMapPoint.x - lastMouseMapX;
                 var deltaMapY:Number = mouseMapPoint.y - lastMouseMapY;
