@@ -482,7 +482,7 @@ public class TOC extends Tree
         }
 
         var layer:Layer = event.layer;
-        var index:int = event.index;
+        var index:int = getEffectiveTOCIndex(layer, event.index);
 
         if (isGraphicsLayer(layer) || isHiddenLayer(layer) || isLayerExcluded(layer))
         {
@@ -565,6 +565,20 @@ public class TOC extends Tree
             }
             return result;
         }
+    }
+
+    private function getEffectiveTOCIndex(layer:Layer, index:Number):int
+    {
+        var result:int = 0;
+        for each (var layerId:String in getNewLayerIds(map.layerIds))
+        {
+            if (layer.id == layerId)
+            {
+                break;
+            }
+            result++;
+        }
+        return result;
     }
 
     private function getNewLayerIds(layerIds:Array):Array
