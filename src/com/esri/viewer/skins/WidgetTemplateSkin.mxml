@@ -114,7 +114,11 @@
         <s:Transition fromState="open" toState="minimized">
             <s:Parallel effectEnd="minimizingEnded(event)">
                 <s:Fade duration="80" targets="{[headerToolGroup, contentGroup, minclose]}"/>
-                <s:Resize duration="200" target="{widgetFrame}"/>
+                <!-- mx:Resize applies transition end properties – s:Resize does not -->
+                <mx:Resize duration="200"
+                           heightTo="30"
+                           targets="{[widgetFrame, hostComponent]}"
+                           widthTo="150"/>
                 <s:Move duration="100" target="{header}"/>
                 <s:Move duration="400"
                         easer="{bounce}"
@@ -125,7 +129,11 @@
         <s:Transition fromState="minimized" toState="open">
             <s:Parallel effectEnd="openEnded(event)">
                 <s:Move duration="200" target="{icon}"/>
-                <s:Resize duration="200" target="{widgetFrame}"/>
+                <!-- mx:Resize applies transition end properties – s:Resize does not -->
+                <mx:Resize duration="200"
+                           heightTo="{hostComponent.widgetHeight}"
+                           targets="{[widgetFrame, hostComponent]}"
+                           widthTo="{hostComponent.widgetWidth}"/>
                 <s:Fade duration="100"
                         startDelay="100"
                         targets="{[contentGroup, headerToolGroup, minclose]}"/>
