@@ -109,6 +109,8 @@ public class TOC extends Tree
 
     // include legend items
     private var _includeLegendItems:Boolean;
+    // show layer menu
+    private var _showLayerMenu:Boolean;
 
     private var _expandLayerItemsPending:Boolean;
     private var _pendingItemsToExpand:Array = [];
@@ -371,6 +373,28 @@ public class TOC extends Tree
 
         onFilterChange();
         dispatchEvent(new Event("includeLegendItemsChanged"));
+    }
+    
+    //--------------------------------------------------------------------------
+    //  showLayerMenu
+    //--------------------------------------------------------------------------
+    
+    [Bindable("showLayerMenuChanged")]
+    /**
+     * Whether to show layer menu.
+     */
+    public function get showLayerMenu():Boolean
+    {
+        return _showLayerMenu;
+    }
+    
+    /**
+     * @private
+     */
+    public function set showLayerMenu(value:Boolean):void
+    {
+        _showLayerMenu = value;        
+        dispatchEvent(new Event("showLayerMenuChanged"));
     }
 
     //--------------------------------------------------------------------------

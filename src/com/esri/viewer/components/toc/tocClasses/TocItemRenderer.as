@@ -19,7 +19,6 @@ package com.esri.viewer.components.toc.tocClasses
 import com.esri.ags.layers.Layer;
 import com.esri.ags.layers.TiledMapServiceLayer;
 import com.esri.ags.layers.supportClasses.LegendItemInfo;
-import com.esri.ags.symbols.Symbol;
 import com.esri.viewer.AppEvent;
 import com.esri.viewer.components.toc.TOC;
 import com.esri.viewer.components.toc.controls.CheckBoxIndeterminate;
@@ -188,8 +187,8 @@ public class TocItemRenderer extends TreeItemRenderer
             // show legend for TocLegendItem
             _legendSwatchContainer.visible = item is TocLegendItem;
 
-            // hide the option button if this is not a layer
-            if (!isLayerItem(item))
+            // hide the option button if this is not a layer or TOC.showLayerMenu=false
+            if (!isLayerItem(item) || !TOC(this.parent.parent).showLayerMenu)
             {
                 _layerMenuImage.visible = false;
             }

@@ -42,6 +42,7 @@
 
             private var expandLayerItems:Boolean;
             private var includeLegendItems:Boolean = true; // include legend items in the TOC
+            private var showLayerMenu:Boolean = true; // show layer menu in the TOC
             private var basemapSelectionComponent:ListBase;
             private var previousConfigBasemapsTotal:int;
 
@@ -70,6 +71,10 @@
                     if (configXML.includelegenditems.length())
                     {
                         includeLegendItems = (configXML.includelegenditems == "true");
+                    }
+                    if (configXML.showlayermenu.length())
+                    {
+                        showLayerMenu = (configXML.showlayermenu == "true");
                     }
 
                     var needToInitTOC:Boolean = (!configXML.layerlist.@visible[0] || configXML.layerlist.@visible[0] == "true");
@@ -174,7 +179,8 @@
                 toc.excludeLayers = getExcludeLayers();
                 toc.basemapLayers = getBasemapLayers();
                 toc.excludeGraphicsLayers = true;
-                toc.includeLegendItems = includeLegendItems;
+                toc.includeLegendItems = includeLegendItems;               
+                toc.showLayerMenu = showLayerMenu;
                 var tocLayers:ArrayCollection = toc.dataProvider as ArrayCollection;
                 opLayersButton.visible = tocLayers.length ? true : false;
                 tocLayers.addEventListener(CollectionEvent.COLLECTION_CHANGE, toc_collectionChangeHandler);
