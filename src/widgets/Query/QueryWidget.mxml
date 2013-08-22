@@ -407,8 +407,12 @@
                     queryTitleField = featureSet.displayFieldName;
                 }
 
+                var defaultSymbol:Symbol = getMatchingDefaultSymbol(featureSet.geometryType);
+
                 for each (var graphic:Graphic in featureSet.features)
                 {
+                    graphic.symbol = defaultSymbol;
+
                     var resultAttributes:ResultAttributes =
                         ResultAttributes.toResultAttributes(queryFields, graphic, featureSet, queryLayer, layerDetails, widgetTitle, queryTitleField, queryLinkField, queryLinkAlias);
                     graphicToResultAttributes[graphic] = resultAttributes;
@@ -422,26 +426,35 @@
                 }
                 resultFeatureLayer.visible = true;
                 resultFeatureLayer.featureCollection = new FeatureCollection(featureSet, layerDetails);
-                switch (featureSet.geometryType)
+                resultFeatureLayer.renderer = new SimpleRenderer(defaultSymbol);
+
+                return result;
+            }
+
+            private function getMatchingDefaultSymbol(geometryType:String):Symbol
+            {
+                var defaultSymbol:Symbol;
+
+                switch (geometryType)
                 {
                     case Geometry.MAPPOINT:
                     {
-                        resultFeatureLayer.renderer = new SimpleRenderer(resultMarkerSymbol);
+                        defaultSymbol = resultMarkerSymbol;
                         break;
                     }
                     case Geometry.POLYLINE:
                     {
-                        resultFeatureLayer.renderer = new SimpleRenderer(resultLineSymbol);
+                        defaultSymbol = resultLineSymbol;
                         break;
                     }
                     case Geometry.POLYGON:
                     {
-                        resultFeatureLayer.renderer = new SimpleRenderer(resultFillSymbol);
+                        defaultSymbol = resultFillSymbol;
                         break;
                     }
                 }
 
-                return result;
+                return defaultSymbol;
             }
 
             private function configurePopUpInfo(resultAttributes:ResultAttributes):PopUpInfo
