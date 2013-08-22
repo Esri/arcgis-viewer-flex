@@ -726,21 +726,25 @@
                 }
 
                 var defaultSymbol:Symbol = getMatchingDefaultSymbol(featureSet.geometryType);
+                var resultAttributes:ResultAttributes;
+                var infoWindowRenderer:ClassFactory;
 
                 for each (var graphic:Graphic in featureSet.features)
                 {
                     graphic.symbol = defaultSymbol;
 
-                    var resultAttributes:ResultAttributes =
-                        ResultAttributes.toResultAttributes(queryFields, graphic, featureSet, queryLayer, layerDetails, widgetTitle, queryTitleField, queryLinkField, queryLinkAlias);
+                    resultAttributes =
+                        ResultAttributes.toResultAttributes(queryFields, graphic, featureSet,
+                                                            queryLayer, layerDetails, widgetTitle,
+                                                            queryTitleField, queryLinkField, queryLinkAlias);
 
-                    var searchResult:ResultItem = new ResultItem(graphic, resultAttributes);
-                    result.addItem(searchResult);
+                    result.addItem(new ResultItem(graphic, resultAttributes));
 
-                    var infoWindowRenderer:ClassFactory = new ClassFactory(PopUpRenderer);
+                    infoWindowRenderer = new ClassFactory(PopUpRenderer);
                     infoWindowRenderer.properties = { popUpInfo: configurePopUpInfo(resultAttributes)};
                     graphic.infoWindowRenderer = infoWindowRenderer;
                 }
+
                 resultFeatureLayer.outFields = queryLayer.outFields;
                 resultFeatureLayer.visible = true;
                 resultFeatureLayer.featureCollection = new FeatureCollection(featureSet, layerDetails);
