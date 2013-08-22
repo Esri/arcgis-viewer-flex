@@ -512,8 +512,8 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
         if ((stage.mouseX < stage.width - 20) && (stage.mouseY < stage.height - 20))
         {
             if ((stage.mouseX - parent.x) > minimumResizeWidth)
-            {
-                width = (stage.mouseX - parent.x);
+            {                 
+                width = (stage.mouseX - (stage.stageWidth - parent.parent.width + parent.x));
             }
             if ((stage.mouseY - parent.y) > minimumResizeHeight)
             {
