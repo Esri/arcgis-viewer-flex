@@ -725,45 +725,60 @@
                     queryTitleField = featureSet.displayFieldName;
                 }
 
+                var defaultSymbol:Symbol = getMatchingDefaultSymbol(featureSet.geometryType);
+                var resultAttributes:ResultAttributes;
+                var infoWindowRenderer:ClassFactory;
+
                 for each (var graphic:Graphic in featureSet.features)
                 {
-                    var resultAttributes:ResultAttributes =
-                        ResultAttributes.toResultAttributes(queryFields, graphic, featureSet, queryLayer, layerDetails, widgetTitle, queryTitleField, queryLinkField, queryLinkAlias);
+                    graphic.symbol = defaultSymbol;
 
-                    var searchResult:ResultItem = new ResultItem(graphic, resultAttributes);
-                    result.addItem(searchResult);
+                    resultAttributes =
+                        ResultAttributes.toResultAttributes(queryFields, graphic, featureSet,
+                                                            queryLayer, layerDetails, widgetTitle,
+                                                            queryTitleField, queryLinkField, queryLinkAlias);
 
-                    var infoWindowRenderer:ClassFactory = new ClassFactory(PopUpRenderer);
+                    result.addItem(new ResultItem(graphic, resultAttributes));
+
+                    infoWindowRenderer = new ClassFactory(PopUpRenderer);
                     infoWindowRenderer.properties = { popUpInfo: configurePopUpInfo(resultAttributes)};
                     graphic.infoWindowRenderer = infoWindowRenderer;
                 }
+
                 resultFeatureLayer.outFields = queryLayer.outFields;
                 resultFeatureLayer.visible = true;
                 resultFeatureLayer.featureCollection = new FeatureCollection(featureSet, layerDetails);
                 resultFeatureLayer.name = queryLayer.name;
-
-                switch (featureSet.geometryType)
-                {
-                    case Geometry.MAPPOINT:
-                    {
-                        resultFeatureLayer.renderer = new SimpleRenderer(resultMarkerSymbol);
-                        break;
-                    }
-                    case Geometry.POLYLINE:
-                    {
-                        resultFeatureLayer.renderer = new SimpleRenderer(resultLineSymbol);
-                        break;
-                    }
-                    case Geometry.POLYGON:
-                    {
-                        resultFeatureLayer.renderer = new SimpleRenderer(resultFillSymbol);
-                        break;
-                    }
-                }
+                resultFeatureLayer.renderer = new SimpleRenderer(defaultSymbol);
 
                 return result;
             }
 
+            private function getMatchingDefaultSymbol(geometryType:String):Symbol
+            {
+                var defaultSymbol:Symbol;
+
+                switch (geometryType)
+                {
+                    case Geometry.MAPPOINT:
+                    {
+                        defaultSymbol = resultMarkerSymbol;
+                        break;
+                    }
+                    case Geometry.POLYLINE:
+                    {
+                        defaultSymbol = resultLineSymbol;
+                        break;
+                    }
+                    case Geometry.POLYGON:
+                    {
+                        defaultSymbol = resultFillSymbol;
+                        break;
+                    }
+                }
+
+                return defaultSymbol;
+            }
 
             private function configurePopUpInfo(resultAttributes:ResultAttributes):PopUpInfo
             {
