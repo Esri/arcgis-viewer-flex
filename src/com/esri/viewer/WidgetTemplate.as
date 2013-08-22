@@ -492,7 +492,10 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
     }
 
     private function resize_moveHandler(event:MouseEvent):void
-    {
+    {   
+        // clear constraints
+        var widget:UIComponent = parent as UIComponent;
+        widget.left = widget.right = widget.top = widget.bottom = undefined;
         if (isRtl())
         {
             resize_moveHandler_rtl();
