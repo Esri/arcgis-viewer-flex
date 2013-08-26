@@ -100,12 +100,28 @@
                     focusManager.getNextFocusManagerComponent().setFocus();
                 }
             }
+
+            private function minimized_enterStateHandler(event:FlexEvent):void
+            {
+                hostComponent.width = 150;
+                hostComponent.height = 30;
+                widgetFrame.width = 150;
+                widgetFrame.height = 30;
+            }
+
+            private function open_enterStateHandler(event:FlexEvent):void
+            {
+                hostComponent.width = hostComponent.widgetWidth;
+                hostComponent.height = hostComponent.widgetHeight;
+                widgetFrame.width = hostComponent.widgetWidth;
+                widgetFrame.height = hostComponent.widgetHeight;
+            }
         ]]>
     </fx:Script>
     <s:states>
         <s:State name="normal"/>
-        <s:State name="open"/>
-        <s:State name="minimized"/>
+        <s:State name="open" enterState="open_enterStateHandler(event)"/>
+        <s:State name="minimized" enterState="minimized_enterStateHandler(event)"/>
         <s:State name="closed"/>
         <s:State name="disabled"/>
     </s:states>
@@ -114,11 +130,8 @@
         <s:Transition fromState="open" toState="minimized">
             <s:Parallel effectEnd="minimizingEnded(event)">
                 <s:Fade duration="80" targets="{[headerToolGroup, contentGroup, minclose]}"/>
-                <!-- mx:Resize applies transition end properties – s:Resize does not -->
-                <mx:Resize duration="200"
-                           heightTo="30"
-                           targets="{[widgetFrame, hostComponent]}"
-                           widthTo="150"/>
+                <!-- mx:Resize's default easing looks better -->
+                <mx:Resize duration="200" targets="{[widgetFrame, hostComponent]}"/>
                 <s:Move duration="100" target="{header}"/>
                 <s:Move duration="400"
                         easer="{bounce}"
@@ -129,11 +142,8 @@
         <s:Transition fromState="minimized" toState="open">
             <s:Parallel effectEnd="openEnded(event)">
                 <s:Move duration="200" target="{icon}"/>
-                <!-- mx:Resize applies transition end properties – s:Resize does not -->
-                <mx:Resize duration="200"
-                           heightTo="{hostComponent.widgetHeight}"
-                           targets="{[widgetFrame, hostComponent]}"
-                           widthTo="{hostComponent.widgetWidth}"/>
+                <!-- mx:Resize's default easing looks better -->
+                <mx:Resize duration="200" targets="{[widgetFrame, hostComponent]}"/>
                 <s:Fade duration="100"
                         startDelay="100"
                         targets="{[contentGroup, headerToolGroup, minclose]}"/>
