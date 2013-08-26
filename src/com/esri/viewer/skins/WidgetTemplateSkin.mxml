@@ -25,14 +25,10 @@
              xmlns:components="com.esri.viewer.components.*"
              creationComplete="init()"
              preinitialize="preinitializeHandler(event)">
-
-    <fx:Declarations>
-        <s:Bounce id="bounce"/>
-    </fx:Declarations>
-
     <fx:Metadata>
         [HostComponent("com.esri.viewer.WidgetTemplate")]
     </fx:Metadata>
+
     <fx:Script>
         <![CDATA[
             import com.esri.viewer.utils.LocalizationUtil;
@@ -118,6 +114,11 @@
             }
         ]]>
     </fx:Script>
+
+    <fx:Declarations>
+        <s:Bounce id="bounce"/>
+    </fx:Declarations>
+
     <s:states>
         <s:State name="normal"/>
         <s:State name="open" enterState="open_enterStateHandler(event)"/>
