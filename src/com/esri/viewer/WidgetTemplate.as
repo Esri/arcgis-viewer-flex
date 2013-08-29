@@ -118,11 +118,19 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
 
     private var _baseWidget:IBaseWidget;
 
+    private var _isPartOfPanel:Boolean;
+
+    public function get isPartOfPanel():Boolean
+    {
+        return _isPartOfPanel;
+    }
+
     public function set baseWidget(value:IBaseWidget):void
     {
         _baseWidget = value;
 
-        if (value.isPartOfPanel)
+        _isPartOfPanel = value.isPartOfPanel;
+        if (_isPartOfPanel)
         {
             this.enableIcon = this.enableCloseButton = this.enableMinimizeButton = this.enableDraging = false;
         }

@@ -358,7 +358,7 @@
                     return;
                 }
 
-                var boxRect:Rectangle = widgetContainer.getRect(this);
+                var boxRect:Rectangle = widgetContainer.getVisibleRect(this);
 
                 var screenW:Number = boxRect.width;
                 var screenH:Number = boxRect.height;

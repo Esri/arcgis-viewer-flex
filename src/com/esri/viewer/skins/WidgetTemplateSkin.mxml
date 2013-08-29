@@ -99,18 +99,20 @@
 
             private function minimized_enterStateHandler(event:FlexEvent):void
             {
-                hostComponent.width = 150;
-                hostComponent.height = 30;
-                widgetFrame.width = 150;
-                widgetFrame.height = 30;
+                if(!hostComponent.isPartOfPanel)
+                {
+                    hostComponent.width = 150;
+                    hostComponent.height = 30;
+                }
             }
 
             private function open_enterStateHandler(event:FlexEvent):void
             {
-                hostComponent.width = hostComponent.widgetWidth;
-                hostComponent.height = hostComponent.widgetHeight;
-                widgetFrame.width = hostComponent.widgetWidth;
-                widgetFrame.height = hostComponent.widgetHeight;
+                if(!hostComponent.isPartOfPanel)
+                {
+                    hostComponent.width = hostComponent.widgetWidth;
+                    hostComponent.height = hostComponent.widgetHeight;
+                }
             }
         ]]>
     </fx:Script>
