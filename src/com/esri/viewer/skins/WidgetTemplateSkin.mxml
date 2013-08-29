@@ -176,8 +176,8 @@
              width="100%" width.minimized="150" height="100%" height.minimized="30"
              alpha.closed="0">
         <s:Rect width="100%" height="100%"
-                radiusX="5"
-                radiusY="5">
+                radiusX="{hostComponent.isPartOfPanel ? 0 : 5}"
+                radiusY="{hostComponent.isPartOfPanel ? 0 : 5}">
             <s:fill>
                 <s:SolidColor id="contentBackground"
                               alpha="{getStyle('contentBackgroundAlpha')}"
@@ -186,14 +186,15 @@
             </s:fill>
             <s:stroke>
                 <s:SolidColorStroke id="border"
+                                    alpha="{hostComponent.isPartOfPanel ? getStyle('contentBackgroundAlpha') : 1}"
                                     alpha.minimized="0.5"
-                                    color="{getStyle('borderColor')}"/>
+                                    color="{hostComponent.isPartOfPanel ? getStyle('contentBackgroundColor') : getStyle('borderColor')}"/>
             </s:stroke>
         </s:Rect>
         <s:Rect width="100%" height="{header.height}"
                 left="1" right="1" top="1"
-                topLeftRadiusX="5"
-                topRightRadiusX="5">
+                topLeftRadiusX="{hostComponent.isPartOfPanel ? 0 : 5}"
+                topRightRadiusX="{hostComponent.isPartOfPanel ? 0 : 5}">
             <s:fill>
                 <s:SolidColor id="headerBackground"
                               alpha="{getStyle('contentBackgroundAlpha')}"
