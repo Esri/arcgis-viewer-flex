@@ -120,6 +120,7 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
 
     private var _isPartOfPanel:Boolean;
 
+    [Bindable(event="isPartOfPanelChanged")]
     public function get isPartOfPanel():Boolean
     {
         return _isPartOfPanel;
@@ -128,8 +129,9 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
     public function set baseWidget(value:IBaseWidget):void
     {
         _baseWidget = value;
-
         _isPartOfPanel = value.isPartOfPanel;
+        dispatchEvent(new Event("isPartOfPanelChanged"));
+
         if (_isPartOfPanel)
         {
             this.enableIcon = this.enableCloseButton = this.enableMinimizeButton = this.enableDraging = false;
