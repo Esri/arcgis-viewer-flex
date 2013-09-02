@@ -47,8 +47,30 @@
             private const lineSym:SimpleLineSymbol = new SimpleLineSymbol("solid", 0xFF0000, 0.7, 2);
             private const currentExtentSym:SimpleFillSymbol = new SimpleFillSymbol("solid", 0xFF0000, 0.2, lineSym);
 
+            private var _map:Map;
+
             [Bindable]
-            public var map:Map;
+            public function get map():Map
+            {
+                return _map;
+            }
+
+            public function set map(value:Map):void
+            {
+                _map = value;
+                if (_map)
+                {
+                    if (map.loaded)
+                    {
+                        startTrackingIfMapsLoaded();
+                    }
+                    else
+                    {
+                        map.addEventListener(MapEvent.LOAD, map_loadHandler);
+                    }
+                }
+            }
+
             public var configData:ConfigData;
             public var openDefaultToolTip:String;
             public var closeDefaultToolTip:String;
@@ -233,26 +255,27 @@
 
             private function overviewMap_loadHandler(event:MapEvent):void
             {
+                startTrackingIfMapsLoaded();
+            }
+
+            private function startTrackingIfMapsLoaded():void
+            {
+                if (map && map.loaded && overviewMap && overviewMap.loaded)
+                {
+                    map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
+                    overviewMap.addEventListener(MouseEvent.ROLL_OUT, overviewMap_mouseRollOutHandler);
+                    overviewGraphic.addEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
+                    updateOverviewExtentFromMap();
+                    initOverviewMapGraphic();
+                }
+            }
+
+            private function initOverviewMapGraphic():void
+            {
                 graphicsLayer.name = "overviewMapGraphicsLayer";
                 graphicsLayer.symbol = currentExtentSym;
                 overviewMap.addLayer(graphicsLayer);
-
-                overviewGraphic.geometry = map.extent;
-                overviewGraphic.addEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
-
-                //update map extent when mouse moves out of the overview map
-                overviewMap.addEventListener(MouseEvent.ROLL_OUT, overviewMap_mouseRollOutHandler);
-
                 graphicsLayer.add(overviewGraphic);
-
-                if (map.loaded)
-                {
-                    trackMapExtent();
-                }
-                else
-                {
-                    map.addEventListener(MapEvent.LOAD, map_loadHandler);
-                }
             }
 
             private function overviewGraphic_mouseDownHandler(event:MouseEvent):void
@@ -293,7 +316,6 @@
                 overviewMap.removeEventListener(MouseEvent.MOUSE_MOVE, overviewMap_mouseMoveHandler);
                 overviewMap.removeEventListener(MouseEvent.MOUSE_UP, overviewMap_mouseUpHandler);
                 overviewGraphic.addEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
-
                 if (hasOverviewGraphicBeenMoved)
                 {
                     hasOverviewGraphicBeenMoved = false;
@@ -319,12 +341,6 @@
                 }
             }
 
-            private function trackMapExtent():void
-            {
-                map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
-                updateOverviewExtentFromMap();
-            }
-
             private function updateOverviewExtentFromMap():void
             {
                 overviewMap.extent = map.extent.expand(3);
@@ -341,7 +357,7 @@
             private function map_loadHandler(event:MapEvent):void
             {
                 map.removeEventListener(MapEvent.LOAD, map_loadHandler);
-                trackMapExtent();
+                startTrackingIfMapsLoaded();
             }
 
             private function sequence_effectStartHandler(event:EffectEvent):void
