@@ -159,7 +159,7 @@
                         layerToAdd =
                             LayerCreator.createLayerFromLayerObject(
                             LayerObjectUtil.getLayerObject(configXML.layer[0], -1,
-                                                           true, configData.bingKey,
+                                                           false, configData.bingKey,
                                                            null, configData.proxyUrl));
 
                         if (layerToAdd)
