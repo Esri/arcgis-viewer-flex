@@ -148,7 +148,6 @@
 
                 if (configXML)
                 {
-                    // overviewmap open/close tooltip label
                     openToolTip = configXML.labels.opentooltip || openDefaultToolTip;
                     closeToolTip = configXML.labels.closetooltip || closeDefaultToolTip;
 
@@ -184,7 +183,6 @@
                         }
                         AppEvent.addListener(AppEvent.BASEMAP_SWITCH, viewContainer_basemapSwitchHandler);
                     }
-                    // collapsible
                     if (configXML.collapsible.length() > 0)
                     {
                         isCollapsible = configXML.collapsible == "true";
@@ -197,7 +195,7 @@
                     {
                         currentState = "noncollapsible";
                     }
-                    if (currentState == "collapsed") // turn layer(s) off if component is collapsed
+                    if (currentState == "collapsed")
                     {
                         for each (var layer:Layer in overviewMap.layers)
                         {
@@ -386,7 +384,7 @@
 
             private function sequence_effectEndHandler(event:EffectEvent):void
             {
-                if (currentState == "collapsed") // turn layer(s) off if component is collapsed
+                if (currentState == "collapsed")
                 {
                     for each (var layer:Layer in overviewMap.layers)
                     {
