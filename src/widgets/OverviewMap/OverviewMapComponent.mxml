@@ -43,9 +43,6 @@
             import mx.core.FlexGlobals;
             import mx.events.EffectEvent;
 
-            private const lineSym:SimpleLineSymbol = new SimpleLineSymbol("solid", 0xFF0000, 0.7, 2);
-            private const currentExtentSym:SimpleFillSymbol = new SimpleFillSymbol("solid", 0xFF0000, 0.2, lineSym);
-
             private var _map:Map;
 
             [Bindable]
@@ -95,7 +92,12 @@
                 viewBox.visible = false;
                 borderRect1.visible = false;
 
+                const outlineSym:SimpleLineSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, 0xFF0000, 0.7, 2);
+                const extentSym:SimpleFillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, 0xFF0000, 0.2, outlineSym);
+
+                overviewGraphic.symbol = extentSym;
                 overviewGraphic.buttonMode = true;
+
                 toggleIcon.addEventListener(MouseEvent.CLICK, toggleIcon_clickHandler);
                 viewBox.setStyle("backgroundColor", FlexGlobals.topLevelApplication.getStyle("backgroundColor"));
             }
@@ -146,7 +148,6 @@
 
                 if (configXML)
                 {
-                    // overviewmap open/close tooltip label
                     openToolTip = configXML.labels.opentooltip || openDefaultToolTip;
                     closeToolTip = configXML.labels.closetooltip || closeDefaultToolTip;
 
@@ -182,7 +183,6 @@
                         }
                         AppEvent.addListener(AppEvent.BASEMAP_SWITCH, viewContainer_basemapSwitchHandler);
                     }
-                    // collapsible
                     if (configXML.collapsible.length() > 0)
                     {
                         isCollapsible = configXML.collapsible == "true";
@@ -195,7 +195,7 @@
                     {
                         currentState = "noncollapsible";
                     }
-                    if (currentState == "collapsed") // turn layer(s) off if component is collapsed
+                    if (currentState == "collapsed")
                     {
                         for each (var layer:Layer in overviewMap.layers)
                         {
@@ -266,7 +266,6 @@
 
                     updateOverviewExtentFromMap();
 
-                    overviewMap.defaultGraphicsLayer.symbol = currentExtentSym;
                     overviewMap.defaultGraphicsLayer.add(overviewGraphic);
                 }
             }
@@ -385,14 +384,11 @@
 
             private function sequence_effectEndHandler(event:EffectEvent):void
             {
-                if (currentState == "collapsed") // turn layer(s) off if component is collapsed
+                if (currentState == "collapsed")
                 {
                     for each (var layer:Layer in overviewMap.layers)
                     {
-                        if (layer != overviewMap.defaultGraphicsLayer)
-                        {
-                            layer.visible = false;
-                        }
+                        layer.visible = false;
                     }
                 }
             }
