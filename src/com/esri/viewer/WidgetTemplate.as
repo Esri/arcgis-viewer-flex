@@ -353,6 +353,10 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
     }
 
     private var widgetMoveStarted:Boolean = false;
+    private var xResizeStart:Number;
+    private var yResizeStart:Number;
+    private var xResizeEnd:Number;
+    private var yResizeEnd:Number;
 
     private function mouse_moveHandler(event:MouseEvent):void
     {
@@ -481,6 +485,9 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
     {
         if (_resizable)
         {
+            xResizeStart = event.stageX
+            yResizeStart = event.stageY;
+
             /*TODO: for now, it can't be resized when is not basic layout*/
             stage.addEventListener(MouseEvent.MOUSE_MOVE, resize_moveHandler);
             stage.addEventListener(MouseEvent.MOUSE_UP, resize_upHandler);
@@ -506,6 +513,10 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
         // clear constraints
         var widget:UIComponent = parent as UIComponent;
         widget.left = widget.right = widget.top = widget.bottom = undefined;
+
+        xResizeEnd = event.stageX
+        yResizeEnd = event.stageY;
+
         if (isRtl())
         {
             resize_moveHandler_rtl();
@@ -524,13 +535,19 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
 
         if ((stage.mouseX < stage.width - 20) && (stage.mouseY < stage.height - 20))
         {
-            if ((stage.mouseX - parent.x) > minimumResizeWidth)
-            {                 
-                width = (stage.mouseX - (stage.stageWidth - parent.parent.width + parent.x));
-            }
-            if ((stage.mouseY - parent.y) > minimumResizeHeight)
+            var deltaX:Number = xResizeEnd - xResizeStart;
+            var deltaY:Number = yResizeEnd - yResizeStart;
+
+            var futureWidth:Number = widgetWidth + deltaX;
+            var futureHeight:Number = widgetHeight + deltaY;
+
+            if (futureWidth > minimumResizeWidth)
             {
-                height = (stage.mouseY - parent.y);
+                width = futureWidth;
+            }
+            if (futureHeight > minimumResizeHeight)
+            {
+                height = futureHeight;
             }
         }
     }
@@ -541,18 +558,21 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
         const minimumResizeWidth:Number = minWidth ? minWidth : 200;
         const minimumResizeHeight:Number = minHeight ? minHeight : 100;
 
-        var nextWidth:Number = stage.stageWidth - (stage.mouseX + parent.x);
-        var nextHeight:Number = (stage.mouseY - parent.y);
-
         if (stage.mouseX > 20 && (stage.mouseY < stage.height - 20))
         {
-            if (nextWidth > minimumResizeWidth)
+            var deltaX:Number = xResizeEnd - xResizeStart;
+            var deltaY:Number = yResizeEnd - yResizeStart;
+
+            var calculatedWidth:Number = widgetWidth + deltaX;
+            var calculatedHeight:Number = widgetHeight + deltaY;
+
+            if (calculatedWidth > minimumResizeWidth)
             {
-                width = nextWidth;
+                width = calculatedWidth;
             }
-            if (nextHeight > minimumResizeHeight)
+            if (calculatedHeight > minimumResizeHeight)
             {
-                height = nextHeight;
+                height = calculatedHeight;
             }
         }
     }
