@@ -31,7 +31,6 @@
             import com.esri.ags.events.MapEvent;
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.geometry.Polygon;
-            import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.layers.Layer;
             import com.esri.ags.symbols.SimpleFillSymbol;
             import com.esri.ags.symbols.SimpleLineSymbol;
@@ -75,7 +74,6 @@
             public var openDefaultToolTip:String;
             public var closeDefaultToolTip:String;
 
-            private var graphicsLayer:GraphicsLayer = new GraphicsLayer();
             private var overviewGraphic:Graphic = new Graphic();
             private var useBaseMapLayer:Boolean;
             private var baseMapSwitched:Boolean;
@@ -265,17 +263,12 @@
                     map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
                     overviewMap.addEventListener(MouseEvent.ROLL_OUT, overviewMap_mouseRollOutHandler);
                     overviewGraphic.addEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
-                    updateOverviewExtentFromMap();
-                    initOverviewMapGraphic();
-                }
-            }
 
-            private function initOverviewMapGraphic():void
-            {
-                graphicsLayer.name = "overviewMapGraphicsLayer";
-                graphicsLayer.symbol = currentExtentSym;
-                overviewMap.addLayer(graphicsLayer);
-                graphicsLayer.add(overviewGraphic);
+                    updateOverviewExtentFromMap();
+
+                    overviewMap.defaultGraphicsLayer.symbol = currentExtentSym;
+                    overviewMap.defaultGraphicsLayer.add(overviewGraphic);
+                }
             }
 
             private function overviewGraphic_mouseDownHandler(event:MouseEvent):void
@@ -396,7 +389,7 @@
                 {
                     for each (var layer:Layer in overviewMap.layers)
                     {
-                        if (!(layer is GraphicsLayer && layer.name == "overviewMapGraphicsLayer"))
+                        if (layer != overviewMap.defaultGraphicsLayer)
                         {
                             layer.visible = false;
                         }
