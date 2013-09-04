@@ -424,7 +424,7 @@
                 }
 
                 var scrollInterval:uint = setInterval(
-                    function()
+                    function():void
                     {
                         scrollToWidgetAction(scrollInterval);
                     },
