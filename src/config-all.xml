@@ -29,7 +29,7 @@
         <operationallayers>
             <!-- Example of editable feature layer -->
             <layer label="San Francisco 3-1-1 Incidents" type="feature" visible="false" alpha="1.0"
-                   popupconfig="popups/PopUp_311.xml"
+                   popupconfig="http://resources.arcgis.com/en/help/flex-viewer/live/popups/PopUp_311.xml"
                    url="http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/SanFrancisco/311Incidents/FeatureServer/0"/>
             <!-- Example time-aware feature layer -->
             <layer label="Earthquakes" type="feature" visible="true"
@@ -85,23 +85,23 @@
             left="80" bottom="80"/>
         <widgetgroup label="Geoprocessing tasks">
         <widget label="Calculate viewshed"
-                config="widgets/Geoprocessing/GeoprocessingWidget_CalculateViewshed.xml"
+                config="http://resources.arcgis.com/en/help/flex-viewer/live/widgets/Geoprocessing/GeoprocessingWidget_CalculateViewshed.xml"
                 icon="assets/images/i_options.png"
                 url="widgets/Geoprocessing/GeoprocessingWidget.swf"/>
         <widget label="Drive times"
-                config="widgets/Geoprocessing/GeoprocessingWidget_DriveTimes.xml"
+                config="http://resources.arcgis.com/en/help/flex-viewer/live/widgets/Geoprocessing/GeoprocessingWidget_DriveTimes.xml"
                 icon="assets/images/i_servicearea.png"
                 url="widgets/Geoprocessing/GeoprocessingWidget.swf"/>
         <widget label="Extract Data"
-                config="widgets/Geoprocessing/GeoprocessingWidget_ExtractData.xml"
+                config="http://resources.arcgis.com/en/help/flex-viewer/live/widgets/Geoprocessing/GeoprocessingWidget_ExtractData.xml"
                 icon="assets/images/i_layers.png"
                 url="widgets/Geoprocessing/GeoprocessingWidget.swf"/>
         <widget label="Message in a bottle"
-                config="widgets/Geoprocessing/GeoprocessingWidget_MessageInABottle.xml"
+                config="http://resources.arcgis.com/en/help/flex-viewer/live/widgets/Geoprocessing/GeoprocessingWidget_MessageInABottle.xml"
                 icon="assets/images/i_hydro.png"
                 url="widgets/Geoprocessing/GeoprocessingWidget.swf"/>
         <widget label="Population summary"
-                config="widgets/Geoprocessing/GeoprocessingWidget_PopulationSummary.xml"
+                config="http://resources.arcgis.com/en/help/flex-viewer/live/widgets/Geoprocessing/GeoprocessingWidget_PopulationSummary.xml"
                 icon="assets/images/i_demographics.png"
                 url="widgets/Geoprocessing/GeoprocessingWidget.swf"/>
         </widgetgroup>
