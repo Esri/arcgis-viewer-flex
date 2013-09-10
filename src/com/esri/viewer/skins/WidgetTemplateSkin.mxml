@@ -204,8 +204,10 @@
         </s:Rect>
         <s:filters>
             <s:DropShadowFilter alpha="0.5"
-                                blurX="10"
-                                blurY="10"/>
+                                angle="{hostComponent.isPartOfPanel ? 0 : 45}"
+                                blurX="{hostComponent.isPartOfPanel ? 0 : 10}"
+                                blurY="{hostComponent.isPartOfPanel ? 0 : 10}"
+                                distance="{hostComponent.isPartOfPanel ? 0 : 4}"/>
         </s:filters>
     </s:Group>
 
