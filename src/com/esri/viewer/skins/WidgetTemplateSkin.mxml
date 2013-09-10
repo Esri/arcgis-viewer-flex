@@ -192,7 +192,7 @@
             </s:stroke>
         </s:Rect>
         <s:Rect width="100%" height="{header.height}"
-                left="1" right="1" top="1"
+                left="{hostComponent.isPartOfPanel ? 0 : 1}" right="{hostComponent.isPartOfPanel ? 0 : 1}" top="{hostComponent.isPartOfPanel ? 0 : 1}"
                 topLeftRadiusX="{hostComponent.isPartOfPanel ? 0 : 5}"
                 topRightRadiusX="{hostComponent.isPartOfPanel ? 0 : 5}">
             <s:fill>
@@ -204,8 +204,10 @@
         </s:Rect>
         <s:filters>
             <s:DropShadowFilter alpha="0.5"
-                                blurX="10"
-                                blurY="10"/>
+                                angle="{hostComponent.isPartOfPanel ? 0 : 45}"
+                                blurX="{hostComponent.isPartOfPanel ? 0 : 10}"
+                                blurY="{hostComponent.isPartOfPanel ? 0 : 10}"
+                                distance="{hostComponent.isPartOfPanel ? 0 : 4}"/>
         </s:filters>
     </s:Group>
 
