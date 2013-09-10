@@ -192,7 +192,7 @@
             </s:stroke>
         </s:Rect>
         <s:Rect width="100%" height="{header.height}"
-                left="1" right="1" top="1"
+                left="{hostComponent.isPartOfPanel ? 0 : 1}" right="{hostComponent.isPartOfPanel ? 0 : 1}" top="{hostComponent.isPartOfPanel ? 0 : 1}"
                 topLeftRadiusX="{hostComponent.isPartOfPanel ? 0 : 5}"
                 topRightRadiusX="{hostComponent.isPartOfPanel ? 0 : 5}">
             <s:fill>
