@@ -62,15 +62,15 @@
             url="widgets/Print/PrintWidget.swf"/>
         <widget label="Traffic Camera (QueryWidget)"
             icon="assets/images/i_camera.png"
-            config="widgets/Query/QueryWidget_Louisville_TrafficCams.xml"
+            config="http://resources.arcgis.com/en/help/flex-viewer/live/widgets/Query/QueryWidget_Louisville_TrafficCams.xml"
             url="widgets/Query/QueryWidget.swf"/>
         <widget label="Louisville Police (QueryWidget)"
             icon="assets/images/i_policestation.png"
-            config="widgets/Query/QueryWidget_Louisville_PoliceStations.xml"
+            config="http://resources.arcgis.com/en/help/flex-viewer/live/widgets/Query/QueryWidget_Louisville_PoliceStations.xml"
             url="widgets/Query/QueryWidget.swf"/>
         <widget label="Search"
             icon="assets/images/i_search.png"
-            config="widgets/Search/SearchWidget_Louisville.xml"
+            config="http://resources.arcgis.com/en/help/flex-viewer/live/widgets/Search/SearchWidget_Louisville.xml"
             url="widgets/Search/SearchWidget.swf"/>
         <widget label="Legend"
             preload="open"
@@ -120,7 +120,7 @@
                 url="widgets/LayerList/LayerListWidget.swf"/>
             <widget label="Filter by Time"
                 icon="assets/images/i_clock.png"
-                config="widgets/Time/TimeWidget_QuakesSince1970.xml"
+                config="http://resources.arcgis.com/en/help/flex-viewer/live/widgets/Time/TimeWidget_QuakesSince1970.xml"
                 url="widgets/Time/TimeWidget.swf"/>
         </widgetgroup>
     </widgetcontainer>
