@@ -199,25 +199,32 @@
                 return result;
             }
 
-            private function map_zoomEndHandler(event:ZoomEvent):void
-            {
-                if (!scaleCheckbox.selected)
-                {
-                    updatePrintScale();
-                }
-            }
-
-            private function updatePrintScale():void
-            {
-                scaleInput.text = Math.round(hostBaseWidget.map.scale).toString();
-            }
-
             private function printTask_executeCompleteHandler(event:PrintEvent):void
             {
                 swfMessage.visible = false;
                 var paramValue:ParameterValue = event.executeResult.results[0];
                 var dataFile:DataFile = paramValue.value as DataFile;
                 navigateToURL(new URLRequest(dataFile.url));
+            }
+
+            private function printTask_getResultDataCompleteHandler(event:PrintEvent):void
+            {
+                swfMessage.visible = false;
+                var dataFile:DataFile = event.parameterValue.value as DataFile;
+                navigateToURL(new URLRequest(dataFile.url));
+            }
+
+            protected function printTask_getServiceInfoCompleteHandler(event:PrintEvent):void
+            {
+                printTask.removeEventListener(PrintEvent.GET_SERVICE_INFO_COMPLETE, printTask_getServiceInfoCompleteHandler);
+                printTask.removeEventListener(FaultEvent.FAULT, printTaskInitialization_faultHandler);
+                printTask.addEventListener(FaultEvent.FAULT, printTask_faultHandler);
+
+                initNonPrintServiceProperties();
+                initLayoutTemplates(event.serviceInfo);
+                initFormats(event.serviceInfo);
+
+                printButton.enabled = true;
             }
 
             protected function printTask_faultHandler(event:FaultEvent):void
@@ -241,24 +248,13 @@
                                                        ErrorMessageUtil.makeHTMLSafe(fault.toString()));
             }
 
-            private function printTask_getResultDataCompleteHandler(event:PrintEvent):void
+            private function initNonPrintServiceProperties():void
             {
-                swfMessage.visible = false;
-                var dataFile:DataFile = event.parameterValue.value as DataFile;
-                navigateToURL(new URLRequest(dataFile.url));
-            }
-
-            protected function printTask_getServiceInfoCompleteHandler(event:PrintEvent):void
-            {
-                printTask.removeEventListener(PrintEvent.GET_SERVICE_INFO_COMPLETE, printTask_getServiceInfoCompleteHandler);
-                printTask.removeEventListener(FaultEvent.FAULT, printTaskInitialization_faultHandler);
-                printTask.addEventListener(FaultEvent.FAULT, printTask_faultHandler);
-
-                initNonPrintServiceProperties();
-                initLayoutTemplates(event.serviceInfo);
-                initFormats(event.serviceInfo);
-
-                printButton.enabled = true;
+                initTitle();
+                initCopyright();
+                initAuthor();
+                initUseScale();
+                initDPI();
             }
 
             private function initTitle():void
@@ -327,6 +323,28 @@
                     {
                         shouldShowUseScale = false;
                     }
+                }
+            }
+
+            private function map_zoomEndHandler(event:ZoomEvent):void
+            {
+                if (!scaleCheckbox.selected)
+                {
+                    updatePrintScale();
+                }
+            }
+
+            private function updatePrintScale():void
+            {
+                scaleInput.text = Math.round(hostBaseWidget.map.scale).toString();
+            }
+
+            private function initDPI():void
+            {
+                var parsedDPI:Number = parseFloat(configXML.dpi[0]);
+                if (!isNaN(parsedDPI))
+                {
+                    exportOptions.dpi = parsedDPI;
                 }
             }
 
@@ -471,24 +489,6 @@
                 initNonPrintServiceProperties();
 
                 printButton.enabled = true;
-            }
-
-            private function initNonPrintServiceProperties():void
-            {
-                initTitle();
-                initCopyright();
-                initAuthor();
-                initUseScale();
-                initDPI();
-            }
-
-            private function initDPI():void
-            {
-                var parsedDPI:Number = parseFloat(configXML.dpi[0]);
-                if (!isNaN(parsedDPI))
-                {
-                    exportOptions.dpi = parsedDPI;
-                }
             }
         ]]>
     </fx:Script>
