@@ -479,6 +479,16 @@
                 initCopyright();
                 initAuthor();
                 initUseScale();
+                initDPI();
+            }
+
+            private function initDPI():void
+            {
+                var parsedDPI:Number = parseFloat(configXML.dpi[0]);
+                if (!isNaN(parsedDPI))
+                {
+                    exportOptions.dpi = parsedDPI;
+                }
             }
         ]]>
     </fx:Script>
@@ -498,6 +508,10 @@
             <esri:layoutOptions>
                 <esri:LayoutOptions id="layoutOptions"/>
             </esri:layoutOptions>
+
+            <esri:exportOptions>
+                <esri:ExportOptions id="exportOptions"/>
+            </esri:exportOptions>
         </esri:PrintParameters>
     </fx:Declarations>
 
