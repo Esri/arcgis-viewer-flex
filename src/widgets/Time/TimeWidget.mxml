@@ -58,8 +58,8 @@
                 }
                 else
                 {
-                    wTemplate.width = wTemplate.minWidth = 335;
-                    wTemplate.height = wTemplate.minHeight = 115;
+                    wTemplate.width = 335;
+                    wTemplate.height = 115;
                 }
             }
 

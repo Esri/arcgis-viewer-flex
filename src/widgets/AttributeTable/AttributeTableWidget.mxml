@@ -89,8 +89,7 @@
                 else
                 {
                     wTemplate.width = map.width - map.width / 100 - Number(this.left);
-                    wTemplate.minWidth = 800;
-                    wTemplate.height = wTemplate.minHeight = 300;
+                    wTemplate.height = 300;
                 }
             }
 
