@@ -101,9 +101,9 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
 
     private static const WIDGET_STOP_DRAG:String = "stopDrag";
 
-    private static const DEFAULT_MIN_WIDTH:Number = 200;
+    private static const DEFAULT_MIN_WIDTH:Number = 150;
 
-    private static const DEFAULT_MIN_HEIGHT:Number = 100;
+    private static const DEFAULT_MIN_HEIGHT:Number = 75;
 
     private var _widgetId:Number;
 
