@@ -101,6 +101,10 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
 
     private static const WIDGET_STOP_DRAG:String = "stopDrag";
 
+    private static const DEFAULT_MIN_WIDTH:Number = 200;
+
+    private static const DEFAULT_MIN_HEIGHT:Number = 100;
+
     private var _widgetId:Number;
 
     private var _widgetState:String;
@@ -522,8 +526,8 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
         if (isWithinHorizontalBoundaries && isWithinVerticalBoundaries)
         {
             // if there is minWidth and minHeight specified on the container, use them while resizing
-            const minimumResizeWidth:Number = minWidth ? minWidth : 200;
-            const minimumResizeHeight:Number = minHeight ? minHeight : 100;
+            const minimumResizeWidth:Number = minWidth ? minWidth : DEFAULT_MIN_WIDTH;
+            const minimumResizeHeight:Number = minHeight ? minHeight : DEFAULT_MIN_HEIGHT;
 
             var deltaX:Number = xResizeEnd - xResizeStart;
             var deltaY:Number = yResizeEnd - yResizeStart;
