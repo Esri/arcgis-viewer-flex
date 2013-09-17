@@ -55,7 +55,7 @@
                 }
                 else
                 {
-                    wTemplate.width = wTemplate.height = wTemplate.minWidth = wTemplate.minHeight = 300;
+                    wTemplate.width = wTemplate.height = 300;
                 }
             }
 

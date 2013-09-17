@@ -88,9 +88,9 @@
                 }
                 else
                 {
-                    wTemplate.width = map.width - map.width / 100 - Number(this.left);
-                    wTemplate.minWidth = 800;
-                    wTemplate.height = wTemplate.minHeight = 300;
+                    var iconOffset:Number = wTemplate.icon ? (wTemplate.icon.width * 0.5) : 0;
+                    wTemplate.width = map.width - map.width / 100 - Number(this.left) - Number(this.right) - iconOffset;
+                    wTemplate.height = 300;
                 }
             }
 

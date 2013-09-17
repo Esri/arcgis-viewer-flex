@@ -47,9 +47,8 @@
                 }
                 else
                 {
-                    wTemplate.height = map.height - map.height / 100 - Number(this.top);
-                    wTemplate.minHeight = 800;
-                    wTemplate.width = wTemplate.minWidth = 300;
+                    wTemplate.height = map.height - map.height / 100 - Number(this.top) - Number(this.bottom);
+                    wTemplate.width = 300;
                 }
             }
 
