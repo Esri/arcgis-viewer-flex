@@ -25,14 +25,10 @@
              xmlns:components="com.esri.viewer.components.*"
              creationComplete="init()"
              preinitialize="preinitializeHandler(event)">
-
-    <fx:Declarations>
-        <s:Bounce id="bounce"/>
-    </fx:Declarations>
-
     <fx:Metadata>
         [HostComponent("com.esri.viewer.WidgetTemplate")]
     </fx:Metadata>
+
     <fx:Script>
         <![CDATA[
             import com.esri.viewer.utils.LocalizationUtil;
@@ -100,81 +96,88 @@
                     focusManager.getNextFocusManagerComponent().setFocus();
                 }
             }
+
+            private function minimized_enterStateHandler(event:FlexEvent):void
+            {
+                if (!hostComponent.isPartOfPanel)
+                {
+                    hostComponent.width = 150;
+                    hostComponent.height = 30;
+                }
+            }
+
+            private function open_enterStateHandler(event:FlexEvent):void
+            {
+                if (!hostComponent.isPartOfPanel)
+                {
+                    hostComponent.width = hostComponent.widgetWidth;
+                    hostComponent.height = hostComponent.widgetHeight;
+                }
+            }
         ]]>
     </fx:Script>
+
+    <fx:Declarations>
+        <s:Bounce id="bounce"/>
+    </fx:Declarations>
+
     <s:states>
         <s:State name="normal"/>
-        <s:State name="open"/>
-        <s:State name="minimized"/>
+        <s:State name="open" enterState="open_enterStateHandler(event)"/>
+        <s:State name="minimized" enterState="minimized_enterStateHandler(event)"/>
         <s:State name="closed"/>
         <s:State name="disabled"/>
     </s:states>
 
     <s:transitions>
         <s:Transition fromState="open" toState="minimized">
-            <s:Sequence effectEnd="minimizingEnded(event)">
-                <s:Fade duration="100" target="{widgetLabel}"/>
-                <s:Fade duration="100" target="{headerToolGroup}"/>
-                <s:Fade duration="100" target="{contentGroup}"/>
-                <s:Fade duration="100" target="{widgetFrame}"/>
-                <!-- Use mx:Resize instead of s:Resize for minimize to work with Flex 4.5 sdk -->
-                <mx:Resize heightTo="30"
-                           target="{hostComponent}"
-                           widthTo="150"/>
+            <s:Parallel effectEnd="minimizingEnded(event)">
+                <s:Fade duration="80" targets="{[headerToolGroup, contentGroup, minclose]}"/>
+                <!-- mx:Resize's default easing looks better -->
+                <mx:Resize duration="200" targets="{[widgetFrame, hostComponent]}"/>
                 <s:Move duration="100" target="{header}"/>
-                <s:Move easer="{bounce}" target="{icon}"/>
-            </s:Sequence>
+                <s:Move duration="400"
+                        easer="{bounce}"
+                        target="{icon}"/>
+            </s:Parallel>
         </s:Transition>
+
         <s:Transition fromState="minimized" toState="open">
-            <s:Sequence effectEnd="openEnded(event)">
-                <s:Fade duration="100" target="{widgetFrame}"/>
-                <s:Move target="{icon}"/>
-                <!-- Use mx:Resize instead of s:Resize for minimize to work with Flex 4.5 sdk -->
-                <mx:Resize heightTo="{hostComponent.widgetHeight}"
-                           target="{hostComponent}"
-                           widthTo="{hostComponent.widgetWidth}"/>
-                <s:Fade duration="100" target="{widgetLabel}"/>
-                <s:Fade duration="100" target="{contentGroup}"/>
-                <s:Fade duration="100" target="{headerToolGroup}"/>
-            </s:Sequence>
+            <s:Parallel effectEnd="openEnded(event)">
+                <s:Move duration="200" target="{icon}"/>
+                <!-- mx:Resize's default easing looks better -->
+                <mx:Resize duration="200" targets="{[widgetFrame, hostComponent]}"/>
+                <s:Fade duration="100"
+                        startDelay="100"
+                        targets="{[contentGroup, headerToolGroup, minclose]}"/>
+            </s:Parallel>
         </s:Transition>
+
         <s:Transition fromState="closed" toState="open">
-            <s:Sequence>
-                <s:Fade duration="100" target="{widgetFrame}"/>
-                <s:Move target="{icon}"/>
-                <s:Fade duration="100" target="{widgetLabel}"/>
-                <s:Fade duration="100" target="{contentGroup}"/>
-                <s:Fade duration="100" target="{headerToolGroup}"/>
-            </s:Sequence>
+            <s:Parallel>
+                <s:Move duration="100" target="{icon}"/>
+                <s:Fade duration="100" targets="{[widgetLabel, contentGroup, headerToolGroup, widgetFrame]}"/>
+            </s:Parallel>
         </s:Transition>
+
         <s:Transition fromState="open" toState="closed">
-            <s:Sequence>
-                <s:Fade duration="100" target="{widgetLabel}"/>
-                <s:Fade duration="100" target="{headerToolGroup}"/>
-                <s:Fade duration="100" target="{contentGroup}"/>
-                <s:Fade duration="100" target="{widgetFrame}"/>
-            </s:Sequence>
+            <s:Fade duration="150" targets="{[widgetLabel, headerToolGroup, contentGroup, widgetFrame]}"/>
         </s:Transition>
+
         <s:Transition fromState="minimized" toState="closed">
-            <s:Sequence effectEnd="effectEndHandler(event)">
-                <s:Fade duration="100" target="{widgetLabel}"/>
-                <s:Parallel duration="100">
-                    <s:Fade alphaTo="0" target="{contentBackground}"/>
-                    <s:Fade alphaTo="0" target="{border}"/>
-                    <s:Fade alphaTo="0" target="{headerBackground}"/>
-                    <s:Fade target="{widgetFrame}"/>
-                </s:Parallel>
-            </s:Sequence>
+            <s:Fade duration="150"
+                    effectEnd="effectEndHandler(event)"
+                    targets="{[widgetLabel, contentBackground, border, headerBackground, widgetFrame]}"/>
         </s:Transition>
     </s:transitions>
 
     <!-- the widget template wireframe -->
     <s:Group id="widgetFrame"
-             left="0" right="0" top="0" bottom="0"
+             width="100%" width.minimized="150" height="100%" height.minimized="30"
              alpha.closed="0">
         <s:Rect width="100%" height="100%"
-                radiusX="5"
-                radiusY="5">
+                radiusX="{hostComponent.isPartOfPanel ? 0 : 5}"
+                radiusY="{hostComponent.isPartOfPanel ? 0 : 5}">
             <s:fill>
                 <s:SolidColor id="contentBackground"
                               alpha="{getStyle('contentBackgroundAlpha')}"
@@ -183,14 +186,15 @@
             </s:fill>
             <s:stroke>
                 <s:SolidColorStroke id="border"
+                                    alpha="{hostComponent.isPartOfPanel ? getStyle('contentBackgroundAlpha') : 1}"
                                     alpha.minimized="0.5"
-                                    color="{getStyle('borderColor')}"/>
+                                    color="{hostComponent.isPartOfPanel ? getStyle('contentBackgroundColor') : getStyle('borderColor')}"/>
             </s:stroke>
         </s:Rect>
         <s:Rect width="100%" height="{header.height}"
-                left="1" right="1" top="1"
-                topLeftRadiusX="5"
-                topRightRadiusX="5">
+                left="{hostComponent.isPartOfPanel ? 0 : 1}" right="{hostComponent.isPartOfPanel ? 0 : 1}" top="{hostComponent.isPartOfPanel ? 0 : 1}"
+                topLeftRadiusX="{hostComponent.isPartOfPanel ? 0 : 5}"
+                topRightRadiusX="{hostComponent.isPartOfPanel ? 0 : 5}">
             <s:fill>
                 <s:SolidColor id="headerBackground"
                               alpha="{getStyle('contentBackgroundAlpha')}"
@@ -200,8 +204,10 @@
         </s:Rect>
         <s:filters>
             <s:DropShadowFilter alpha="0.5"
-                                blurX="10"
-                                blurY="10"/>
+                                angle="{hostComponent.isPartOfPanel ? 0 : 45}"
+                                blurX="{hostComponent.isPartOfPanel ? 0 : 10}"
+                                blurY="{hostComponent.isPartOfPanel ? 0 : 10}"
+                                distance="{hostComponent.isPartOfPanel ? 0 : 4}"/>
         </s:filters>
     </s:Group>
 

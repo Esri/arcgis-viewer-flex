@@ -18,7 +18,6 @@
 -->
 <viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
                    xmlns:s="library://ns.adobe.com/flex/spark"
-                   xmlns:mx="library://ns.adobe.com/flex/mx"
                    xmlns:viewer="com.esri.viewer.*"
                    xmlns:esri="http://www.esri.com/2008/ags"
                    xmlns:Chart="widgets.Chart.*"
@@ -39,7 +38,6 @@
             import com.esri.ags.symbols.SimpleFillSymbol;
             import com.esri.ags.symbols.SimpleLineSymbol;
             import com.esri.ags.symbols.Symbol;
-            import com.esri.ags.tasks.supportClasses.Query;
             import com.esri.ags.tools.DrawTool;
             import com.esri.viewer.utils.LabelUtil;
             import com.esri.viewer.utils.PopUpInfoParser;
@@ -48,8 +46,6 @@
             import mx.collections.ArrayList;
             import mx.events.FlexEvent;
             import mx.rpc.events.FaultEvent;
-
-            import spark.filters.GlowFilter;
 
             private const ICON_URL:String = "assets/images/";
 
@@ -547,9 +543,12 @@
 
             protected function layerSelection_valueCommitHandler(event:FlexEvent):void
             {
-                updateLayerSelectionMessage();
-                clearChartAndSelectionHighlights()
-                updateSelectedChartLayerDefinition();
+                if (layerSelection.selectedIndex > -1)
+                {
+                    updateLayerSelectionMessage();
+                    clearChartAndSelectionHighlights()
+                    updateSelectedChartLayerDefinition();
+                }
             }
 
             private function updateLayerSelectionMessage():void

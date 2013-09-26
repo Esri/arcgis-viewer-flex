@@ -1,3 +1,6 @@
+Esri welcomes contributions from anyone and everyone. Please see our
+[guidelines for contributing](https://github.com/esri/contributing).
+
 # Contributing to ArcGIS Viewer for Flex
 
 There are many ways you can contribute to the [ArcGIS Viewer for Flex](http://links.esri.com/flexviewer).
@@ -26,9 +29,8 @@ The [ArcGIS Viewer for Flex](http://links.esri.com/flexviewer) is built by the F
 7. Test your code.
 
 ### Submitting changes
-1. Read the License section below.
-2. Push the changes in your feature branch to your repo.
-3. Submit a [pull request](https://help.github.com/articles/using-pull-requests) against the "develop" branch.  Submitting a pull request will open a GitHub issue.
+1. Push the changes in your feature branch to your repo.
+2. Submit a [pull request](https://help.github.com/articles/using-pull-requests) against the "develop" branch.  Submitting a pull request will open a GitHub issue.
     * Clearly describe the issue including steps to reproduce; or if an enhancement, indicate the functionality you built.
 
 ## License

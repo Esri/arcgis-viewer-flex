@@ -449,6 +449,13 @@ public class UIManager extends EventDispatcher
             topLevelStyleManager.setStyleDeclaration("mx.charts.chartClasses.DataTip", cssStyleDeclarationChartDataTips, false);
         }
 
+        // Style the divider used when using widgetcontainers
+        var cssStyleDeclarationMxDividedBox:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("mx.containers.DividedBox");
+        if (numberOfStyleColors > 4)
+        {
+            cssStyleDeclarationMxDividedBox.setStyle("_dividerFillColors", [titleColor,titleColor]);
+        }
+
         var cssStyleDeclarationModal:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("global")
         cssStyleDeclarationModal.setStyle("modalTransparencyColor", 0x777777);
         cssStyleDeclarationModal.setStyle("modalTransparencyBlur", 1);

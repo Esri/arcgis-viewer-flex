@@ -31,35 +31,46 @@
             import com.esri.ags.events.MapEvent;
             import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.geometry.Polygon;
-            import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
-            import com.esri.ags.layers.ArcGISImageServiceLayer;
-            import com.esri.ags.layers.ArcGISTiledMapServiceLayer;
-            import com.esri.ags.layers.ArcIMSMapServiceLayer;
-            import com.esri.ags.layers.FeatureLayer;
-            import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.layers.Layer;
-            import com.esri.ags.layers.OpenStreetMapLayer;
             import com.esri.ags.symbols.SimpleFillSymbol;
             import com.esri.ags.symbols.SimpleLineSymbol;
-            import com.esri.ags.virtualearth.VETiledLayer;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.ConfigData;
+            import com.esri.viewer.managers.LayerCreator;
+            import com.esri.viewer.utils.LayerObjectUtil;
 
             import mx.collections.ArrayCollection;
             import mx.core.FlexGlobals;
             import mx.events.EffectEvent;
 
-            private const lineSym:SimpleLineSymbol = new SimpleLineSymbol("solid", 0xFF0000, 0.7, 2);
-            private const currentExtentSym:SimpleFillSymbol = new SimpleFillSymbol("solid", 0xFF0000, 0.2, lineSym);
+            private var _map:Map;
 
             [Bindable]
-            public var map:Map;
+            public function get map():Map
+            {
+                return _map;
+            }
+
+            public function set map(value:Map):void
+            {
+                _map = value;
+                if (_map)
+                {
+                    if (map.loaded)
+                    {
+                        startTrackingIfMapsLoaded();
+                    }
+                    else
+                    {
+                        map.addEventListener(MapEvent.LOAD, map_loadHandler);
+                    }
+                }
+            }
+
             public var configData:ConfigData;
             public var openDefaultToolTip:String;
             public var closeDefaultToolTip:String;
 
-            private var graphicsLayer:GraphicsLayer = new GraphicsLayer();
-            private var proxyUrl:String;
             private var overviewGraphic:Graphic = new Graphic();
             private var useBaseMapLayer:Boolean;
             private var baseMapSwitched:Boolean;
@@ -81,7 +92,12 @@
                 viewBox.visible = false;
                 borderRect1.visible = false;
 
+                const outlineSym:SimpleLineSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, 0xFF0000, 0.7, 2);
+                const extentSym:SimpleFillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, 0xFF0000, 0.2, outlineSym);
+
+                overviewGraphic.symbol = extentSym;
                 overviewGraphic.buttonMode = true;
+
                 toggleIcon.addEventListener(MouseEvent.CLICK, toggleIcon_clickHandler);
                 viewBox.setStyle("backgroundColor", FlexGlobals.topLevelApplication.getStyle("backgroundColor"));
             }
@@ -132,45 +148,22 @@
 
                 if (configXML)
                 {
-                    // overviewmap open/close tooltip label
                     openToolTip = configXML.labels.opentooltip || openDefaultToolTip;
                     closeToolTip = configXML.labels.closetooltip || closeDefaultToolTip;
 
-                    // proxyURL
-                    proxyUrl = configData.proxyUrl;
-
-                    var url:String = configXML.layer.@url;
-                    var type:String;
-                    var useProxy:Boolean;
-                    if (url)
+                    var layerToAdd:Layer;
+                    if (configXML.layer[0])
                     {
                         useBaseMapLayer = false;
-                        type = configXML.layer.@type;
-                        useProxy = configXML.layer.@useproxy[0] && configXML.layer.@useproxy == "true";
-                        switch (type.toLowerCase())
+                        layerToAdd =
+                            LayerCreator.createLayerFromLayerObject(
+                            LayerObjectUtil.getLayerObject(configXML.layer[0], -1,
+                                                           false, configData.bingKey,
+                                                           null, configData.proxyUrl));
+
+                        if (layerToAdd)
                         {
-                            case "tiled":
-                            {
-                                var tiledlayer:ArcGISTiledMapServiceLayer = new ArcGISTiledMapServiceLayer(url);
-                                tiledlayer.alpha = alpha;
-                                if (proxyUrl && useProxy)
-                                {
-                                    tiledLayer.proxyURL = proxyUrl;
-                                }
-                                overviewMap.addLayer(tiledlayer);
-                                break;
-                            }
-                            case "dynamic":
-                            {
-                                var dynlayer:ArcGISDynamicMapServiceLayer = new ArcGISDynamicMapServiceLayer(url);
-                                dynlayer.alpha = alpha;
-                                if (proxyUrl && useProxy)
-                                {
-                                    dynlayer.proxyURL = proxyUrl;
-                                }
-                                overviewMap.addLayer(dynlayer);
-                                break;
-                            }
+                            overviewMap.addLayer(layerToAdd);
                         }
                     }
                     else
@@ -181,161 +174,7 @@
                         // get the base map layers
                         for each (var basemapLayerObject:Object in configData.basemaps)
                         {
-                            type = basemapLayerObject.type;
-                            useProxy = basemapLayerObject.useProxy;
-                            proxyUrl = configData.proxyUrl;
-
-                            const alpha:Number = Number(basemapLayerObject.alpha);
-                            const autoRefresh:Number = Number(basemapLayerObject.autoRefresh);
-                            const label:String = basemapLayerObject.label;
-                            const token:String = basemapLayerObject.token;
-                            const urlBaseMap:String = basemapLayerObject.url;
-                            const bingMapKey:String = basemapLayerObject.key;
-                            const style:String = basemapLayerObject.style;
-                            const visible:Boolean = basemapLayerObject.visible;
-                            const visibleLayers:String = basemapLayerObject.visibleLayers;
-                            const culture:String = basemapLayerObject.culture;
-                            const useamf:Boolean = basemapLayerObject.useamf;
-                            const mode:String = basemapLayerObject.mode;
-                            const noData:String = basemapLayerObject.noData;
-                            const serviceHost:String = basemapLayerObject.serviceHost;
-                            const serviceName:String = basemapLayerObject.serviceName;
-                            const definitionExpression:String = basemapLayerObject.definitionExpression;
-
-                            var layerToAdd:Layer = null;
-                            switch (type.toLowerCase())
-                            {
-                                case "tiled":
-                                {
-                                    var tiledLayer:ArcGISTiledMapServiceLayer = new ArcGISTiledMapServiceLayer(urlBaseMap);
-                                    tiledLayer.alpha = alpha;
-                                    tiledLayer.id = label;
-                                    tiledLayer.visible = visible;
-                                    tiledLayer.token = token;
-                                    if (proxyUrl && useProxy)
-                                    {
-                                        tiledLayer.proxyURL = proxyUrl;
-                                    }
-
-                                    layerToAdd = tiledLayer;
-                                    break;
-                                }
-                                case "dynamic":
-                                {
-                                    var dynLayer:ArcGISDynamicMapServiceLayer = new ArcGISDynamicMapServiceLayer(urlBaseMap);
-                                    dynLayer.alpha = alpha;
-                                    dynLayer.id = label;
-                                    dynLayer.visible = visible;
-                                    dynLayer.token = token;
-                                    if (autoRefresh > 0)
-                                    {
-                                        setInterval(dynLayer.refresh, autoRefresh * 1000);
-                                    }
-                                    if (visibleLayers)
-                                    {
-                                        var vizLayers:Array = visibleLayers.split(",");
-                                        dynLayer.visibleLayers = new ArrayCollection(vizLayers);
-                                    }
-                                    if (proxyUrl && useProxy)
-                                    {
-                                        dynLayer.proxyURL = proxyUrl;
-                                    }
-                                    layerToAdd = dynlayer;
-                                    break;
-                                }
-                                case "feature":
-                                {
-                                    var featureLayer:FeatureLayer = new FeatureLayer(urlBaseMap);
-                                    featureLayer.alpha = alpha;
-                                    featureLayer.id = label;
-                                    featureLayer.visible = visible;
-                                    featureLayer.outFields = [ '*' ];
-                                    featureLayer.token = token;
-                                    featureLayer.useAMF = useamf;
-                                    if (mode)
-                                    {
-                                        featureLayer.mode = mode;
-                                    }
-                                    if (proxyUrl && useProxy)
-                                    {
-                                        featureLayer.proxyURL = proxyUrl;
-                                    }
-                                    if (definitionExpression && definitionExpression != "")
-                                    {
-                                        featureLayer.definitionExpression = definitionExpression;
-                                    }
-                                    layerToAdd = featureLayer;
-                                    break;
-                                }
-                                case "bing":
-                                {
-                                    var veTiledLayer:VETiledLayer = new VETiledLayer();
-                                    veTiledLayer.alpha = alpha;
-                                    veTiledLayer.id = label;
-                                    veTiledLayer.visible = visible;
-                                    veTiledLayer.key = bingMapKey;
-                                    if (style)
-                                    {
-                                        veTiledLayer.mapStyle = style;
-                                    }
-                                    if (culture)
-                                    {
-                                        veTiledLayer.culture = culture;
-                                    }
-                                    layerToAdd = veTiledLayer;
-                                    break;
-                                }
-                                case "image":
-                                {
-                                    var imgLayer:ArcGISImageServiceLayer = new ArcGISImageServiceLayer(urlBaseMap);
-                                    imgLayer.alpha = alpha;
-                                    imgLayer.id = label;
-                                    imgLayer.visible = visible;
-                                    imgLayer.noData = noData;
-                                    imgLayer.token = token;
-                                    if (proxyUrl && useProxy)
-                                    {
-                                        imgLayer.proxyURL = proxyUrl;
-                                    }
-                                    layerToAdd = imgLayer;
-                                    break;
-                                }
-                                case "arcims":
-                                {
-                                    var arcimsLayer:ArcIMSMapServiceLayer = new ArcIMSMapServiceLayer();
-                                    arcimsLayer.alpha = alpha;
-                                    arcimsLayer.id = label;
-                                    arcimsLayer.visible = visible;
-                                    arcimsLayer.serviceHost = serviceHost;
-                                    arcimsLayer.serviceName = serviceName;
-                                    if (autoRefresh > 0)
-                                    {
-                                        setInterval(arcimsLayer.refresh, autoRefresh * 1000);
-                                    }
-                                    if (visibleLayers)
-                                    {
-                                        var visLayers:Array = visibleLayers.split(",");
-                                        arcimsLayer.visibleLayers = new ArrayCollection(visLayers);
-                                    }
-                                    if (proxyUrl && useProxy)
-                                    {
-                                        arcimsLayer.proxyURL = proxyUrl;
-                                    }
-                                    layerToAdd = arcimsLayer;
-                                    break;
-                                }
-                                case "osm":
-                                {
-                                    var osmLayer:OpenStreetMapLayer = new OpenStreetMapLayer();
-                                    osmLayer.alpha = alpha;
-                                    osmLayer.id = label;
-                                    osmLayer.name = label;
-                                    osmLayer.visible = visible;
-                                    layerToAdd = osmLayer;
-                                    break;
-                                }
-                            }
-
+                            layerToAdd = LayerCreator.createLayerFromLayerObject(basemapLayerObject);
                             if (layerToAdd)
                             {
                                 overviewMap.addLayer(layerToAdd);
@@ -344,7 +183,6 @@
                         }
                         AppEvent.addListener(AppEvent.BASEMAP_SWITCH, viewContainer_basemapSwitchHandler);
                     }
-                    // collapsible
                     if (configXML.collapsible.length() > 0)
                     {
                         isCollapsible = configXML.collapsible == "true";
@@ -357,7 +195,7 @@
                     {
                         currentState = "noncollapsible";
                     }
-                    if (currentState == "collapsed") // turn layer(s) off if component is collapsed
+                    if (currentState == "collapsed")
                     {
                         for each (var layer:Layer in overviewMap.layers)
                         {
@@ -405,14 +243,7 @@
                             {
                                 if (layer.id == basemapLabel)
                                 {
-                                    if (layer.id == selectedLabel)
-                                    {
-                                        layer.visible = true;
-                                    }
-                                    else
-                                    {
-                                        layer.visible = false;
-                                    }
+                                    layer.visible = (layer.id == selectedLabel);
                                 }
                             }
                         }
@@ -422,25 +253,20 @@
 
             private function overviewMap_loadHandler(event:MapEvent):void
             {
-                graphicsLayer.name = "overviewMapGraphicsLayer";
-                graphicsLayer.symbol = currentExtentSym;
-                overviewMap.addLayer(graphicsLayer);
+                startTrackingIfMapsLoaded();
+            }
 
-                overviewGraphic.geometry = map.extent;
-                overviewGraphic.addEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
-
-                //update map extent when mouse moves out of the overview map
-                overviewMap.addEventListener(MouseEvent.ROLL_OUT, overviewMap_mouseRollOutHandler);
-
-                graphicsLayer.add(overviewGraphic);
-
-                if (map.loaded)
+            private function startTrackingIfMapsLoaded():void
+            {
+                if (map && map.loaded && overviewMap && overviewMap.loaded)
                 {
-                    trackMapExtent();
-                }
-                else
-                {
-                    map.addEventListener(MapEvent.LOAD, map_loadHandler);
+                    map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
+                    overviewMap.addEventListener(MouseEvent.ROLL_OUT, overviewMap_mouseRollOutHandler);
+                    overviewGraphic.addEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
+
+                    updateOverviewExtentFromMap();
+
+                    overviewMap.defaultGraphicsLayer.add(overviewGraphic);
                 }
             }
 
@@ -450,7 +276,6 @@
                 overviewMap.addEventListener(MouseEvent.MOUSE_UP, overviewMap_mouseUpHandler);
                 overviewMap.addEventListener(MouseEvent.MOUSE_MOVE, overviewMap_mouseMoveHandler);
 
-                var overviewCenterMapPoint:MapPoint = overviewGraphic.geometry.extent.center;
                 var mouseMapPoint:MapPoint = overviewMap.toMapFromStage(event.stageX, event.stageY);
                 lastMouseMapX = mouseMapPoint.x;
                 lastMouseMapY = mouseMapPoint.y;
@@ -461,8 +286,6 @@
                 hasOverviewGraphicBeenMoved = true;
 
                 var overviewPolygon:Polygon = overviewGraphic.geometry as Polygon;
-                var overviewCenterMapPoint:MapPoint = overviewPolygon.extent.center;
-
                 var mouseMapPoint:MapPoint = overviewMap.toMapFromStage(event.stageX, event.stageY);
                 var deltaMapX:Number = mouseMapPoint.x - lastMouseMapX;
                 var deltaMapY:Number = mouseMapPoint.y - lastMouseMapY;
@@ -485,7 +308,6 @@
                 overviewMap.removeEventListener(MouseEvent.MOUSE_MOVE, overviewMap_mouseMoveHandler);
                 overviewMap.removeEventListener(MouseEvent.MOUSE_UP, overviewMap_mouseUpHandler);
                 overviewGraphic.addEventListener(MouseEvent.MOUSE_DOWN, overviewGraphic_mouseDownHandler);
-
                 if (hasOverviewGraphicBeenMoved)
                 {
                     hasOverviewGraphicBeenMoved = false;
@@ -511,12 +333,6 @@
                 }
             }
 
-            private function trackMapExtent():void
-            {
-                map.addEventListener(ExtentEvent.EXTENT_CHANGE, map_extentChangeHandler);
-                updateOverviewExtentFromMap();
-            }
-
             private function updateOverviewExtentFromMap():void
             {
                 overviewMap.extent = map.extent.expand(3);
@@ -533,7 +349,7 @@
             private function map_loadHandler(event:MapEvent):void
             {
                 map.removeEventListener(MapEvent.LOAD, map_loadHandler);
-                trackMapExtent();
+                startTrackingIfMapsLoaded();
             }
 
             private function sequence_effectStartHandler(event:EffectEvent):void
@@ -568,14 +384,11 @@
 
             private function sequence_effectEndHandler(event:EffectEvent):void
             {
-                if (currentState == "collapsed") // turn layer(s) off if component is collapsed
+                if (currentState == "collapsed")
                 {
                     for each (var layer:Layer in overviewMap.layers)
                     {
-                        if (!(layer is GraphicsLayer && layer.name == "overviewMapGraphicsLayer"))
-                        {
-                            layer.visible = false;
-                        }
+                        layer.visible = false;
                     }
                 }
             }

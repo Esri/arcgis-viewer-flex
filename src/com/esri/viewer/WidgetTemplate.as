@@ -101,9 +101,13 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
 
     private static const WIDGET_STOP_DRAG:String = "stopDrag";
 
+    private static const DEFAULT_MIN_WIDTH:Number = 150;
+
+    private static const DEFAULT_MIN_HEIGHT:Number = 75;
+
     private var _widgetId:Number;
 
-    private var _widgetState:String = WIDGET_OPENED;
+    private var _widgetState:String;
 
     private var _cursorID:int = 0;
 
@@ -118,11 +122,21 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
 
     private var _baseWidget:IBaseWidget;
 
+    private var _isPartOfPanel:Boolean;
+
+    [Bindable(event="isPartOfPanelChanged")]
+    public function get isPartOfPanel():Boolean
+    {
+        return _isPartOfPanel;
+    }
+
     public function set baseWidget(value:IBaseWidget):void
     {
         _baseWidget = value;
+        _isPartOfPanel = value.isPartOfPanel;
+        dispatchEvent(new Event("isPartOfPanelChanged"));
 
-        if (value.isPartOfPanel)
+        if (_isPartOfPanel)
         {
             this.enableIcon = this.enableCloseButton = this.enableMinimizeButton = this.enableDraging = false;
         }
@@ -343,6 +357,8 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
     }
 
     private var widgetMoveStarted:Boolean = false;
+    private var xResizeStart:Number;
+    private var yResizeStart:Number;
 
     private function mouse_moveHandler(event:MouseEvent):void
     {
@@ -471,6 +487,9 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
     {
         if (_resizable)
         {
+            xResizeStart = event.stageX
+            yResizeStart = event.stageY;
+
             /*TODO: for now, it can't be resized when is not basic layout*/
             stage.addEventListener(MouseEvent.MOUSE_MOVE, resize_moveHandler);
             stage.addEventListener(MouseEvent.MOUSE_UP, resize_upHandler);
@@ -493,53 +512,36 @@ public class WidgetTemplate extends SkinnableContainer implements IWidgetTemplat
 
     private function resize_moveHandler(event:MouseEvent):void
     {
-        if (isRtl())
-        {
-            resize_moveHandler_rtl();
-        }
-        else
-        {
-            resize_moveHandler_normal();
-        }
-    }
+        // clear constraints
+        var widget:UIComponent = parent as UIComponent;
+        widget.left = widget.right = widget.top = widget.bottom = undefined;
 
-    private function resize_moveHandler_normal():void
-    {
-        // if there is minWidth and minHeight specified on the container, use them while resizing
-        const minimumResizeWidth:Number = minWidth ? minWidth : 200;
-        const minimumResizeHeight:Number = minHeight ? minHeight : 100;
+        var xResizeEnd:Number = event.stageX;
+        var yResizeEnd:Number = event.stageY;
 
-        if ((stage.mouseX < stage.width - 20) && (stage.mouseY < stage.height - 20))
+        var isWithinVerticalBoundaries:Boolean = (stage.mouseY < stage.height - 20);
+        var isWithinHorizontalBoundaries:Boolean = isRtl() ?
+            stage.mouseX > 20 : stage.mouseX < stage.width - 20;
+
+        if (isWithinHorizontalBoundaries && isWithinVerticalBoundaries)
         {
-            if ((stage.mouseX - parent.x) > minimumResizeWidth)
+            // if there is minWidth and minHeight specified on the container, use them while resizing
+            const minimumResizeWidth:Number = minWidth ? minWidth : DEFAULT_MIN_WIDTH;
+            const minimumResizeHeight:Number = minHeight ? minHeight : DEFAULT_MIN_HEIGHT;
+
+            var deltaX:Number = xResizeEnd - xResizeStart;
+            var deltaY:Number = yResizeEnd - yResizeStart;
+
+            var calculatedWidth:Number = isRtl() ? widgetWidth - deltaX : widgetWidth + deltaX;
+            var calculatedHeight:Number = widgetHeight + deltaY;
+
+            if (calculatedWidth > minimumResizeWidth)
             {
-                width = (stage.mouseX - parent.x);
+                width = calculatedWidth;
             }
-            if ((stage.mouseY - parent.y) > minimumResizeHeight)
+            if (calculatedHeight > minimumResizeHeight)
             {
-                height = (stage.mouseY - parent.y);
-            }
-        }
-    }
-
-    private function resize_moveHandler_rtl():void
-    {
-        // if there is minWidth and minHeight specified on the container, use them while resizing
-        const minimumResizeWidth:Number = minWidth ? minWidth : 200;
-        const minimumResizeHeight:Number = minHeight ? minHeight : 100;
-
-        var nextWidth:Number = stage.stageWidth - (stage.mouseX + parent.x);
-        var nextHeight:Number = (stage.mouseY - parent.y);
-
-        if (stage.mouseX > 20 && (stage.mouseY < stage.height - 20))
-        {
-            if (nextWidth > minimumResizeWidth)
-            {
-                width = nextWidth;
-            }
-            if (nextHeight > minimumResizeHeight)
-            {
-                height = nextHeight;
+                height = calculatedHeight;
             }
         }
     }

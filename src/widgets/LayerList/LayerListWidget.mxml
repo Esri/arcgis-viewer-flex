@@ -32,6 +32,7 @@
             [Bindable]
             private var title:String;
             private var includeLegendItems:Boolean = true; // include legend items in the TOC
+            private var showLayerMenu:Boolean = true; // show layer menu in the TOC
 
             private function basewidget_initializeHandler():void
             {
@@ -59,6 +60,10 @@
                     {
                         includeLegendItems = configXML.includelegenditems == "true";
                     }
+                    if (configXML.showlayermenu.length())
+                    {
+                        showLayerMenu = configXML.showlayermenu == "true";
+                    }
                 }
 
                 if (configData && configData.opLayers.length > 0) // do not initialize TOC if there are no operational layers
@@ -75,6 +80,7 @@
                 toc.basemapLayers = getBasemapLayers();
                 toc.excludeGraphicsLayers = true;
                 toc.includeLegendItems = includeLegendItems;
+                toc.showLayerMenu = showLayerMenu;
                 toc.expandLayerItems = expandLayerItems;
             }
 

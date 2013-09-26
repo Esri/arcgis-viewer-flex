@@ -47,9 +47,8 @@
                 }
                 else
                 {
-                    wTemplate.height = map.height - map.height / 100 - Number(this.top);
-                    wTemplate.minHeight = 800;
-                    wTemplate.width = wTemplate.minWidth = 300;
+                    wTemplate.height = map.height - map.height / 100 - Number(this.top) - Number(this.bottom);
+                    wTemplate.width = 300;
                 }
             }
 
@@ -116,8 +115,8 @@
                             directionsGeocoderOptions.searchDelay = configSearchDelay;
                         }
                         if (geocoderOptionsXML.locatoroptions.length() > 0 && !locatorDisabled)
-                        {
-                            directionsGeocoderOptions.locatorOptions = parseLocatorOptions(configXML.locatoroptions[0]);
+                        {       
+                            directionsGeocoderOptions.locatorOptions = parseLocatorOptions(geocoderOptionsXML.locatoroptions[0]);
                         }
                         if (geocoderOptionsXML.mapservices.length() > 0 && geocoderOptionsXML.mapservices.@enabled != "false")
                         {

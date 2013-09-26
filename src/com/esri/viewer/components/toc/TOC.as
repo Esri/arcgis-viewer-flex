@@ -60,6 +60,8 @@ public class TOC extends Tree
         dataProvider = _tocRoots;
         itemRenderer = new ClassFactory(TocItemRenderer);
         iconFunction = tocItemIcon;
+        dataTipField = "label";
+        showDataTips = true;
 
         this.map = map;
 
@@ -107,6 +109,8 @@ public class TOC extends Tree
 
     // include legend items
     private var _includeLegendItems:Boolean;
+    // show layer menu
+    private var _showLayerMenu:Boolean;
 
     private var _expandLayerItemsPending:Boolean;
     private var _pendingItemsToExpand:Array = [];
@@ -370,6 +374,28 @@ public class TOC extends Tree
         onFilterChange();
         dispatchEvent(new Event("includeLegendItemsChanged"));
     }
+    
+    //--------------------------------------------------------------------------
+    //  showLayerMenu
+    //--------------------------------------------------------------------------
+    
+    [Bindable("showLayerMenuChanged")]
+    /**
+     * Whether to show layer menu.
+     */
+    public function get showLayerMenu():Boolean
+    {
+        return _showLayerMenu;
+    }
+    
+    /**
+     * @private
+     */
+    public function set showLayerMenu(value:Boolean):void
+    {
+        _showLayerMenu = value;        
+        dispatchEvent(new Event("showLayerMenuChanged"));
+    }
 
     //--------------------------------------------------------------------------
     //
@@ -480,7 +506,7 @@ public class TOC extends Tree
         }
 
         var layer:Layer = event.layer;
-        var index:int = event.index;
+        var index:int = getEffectiveTOCIndex(layer, event.index);
 
         if (isGraphicsLayer(layer) || isHiddenLayer(layer) || isLayerExcluded(layer))
         {
@@ -563,6 +589,20 @@ public class TOC extends Tree
             }
             return result;
         }
+    }
+
+    private function getEffectiveTOCIndex(layer:Layer, index:Number):int
+    {
+        var result:int = 0;
+        for each (var layerId:String in getNewLayerIds(map.layerIds))
+        {
+            if (layer.id == layerId)
+            {
+                break;
+            }
+            result++;
+        }
+        return result;
     }
 
     private function getNewLayerIds(layerIds:Array):Array

@@ -42,6 +42,8 @@
             import com.esri.ags.symbols.Symbol;
             import com.esri.ags.tasks.GeometryServiceSingleton;
             import com.esri.ags.tasks.JSONTask;
+            import com.esri.ags.tasks.supportClasses.AddressCandidate;
+            import com.esri.ags.tasks.supportClasses.FindResult;
             import com.esri.ags.tasks.supportClasses.ProjectParameters;
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.BaseWidget;
@@ -68,8 +70,9 @@
             [Bindable]
             private var map:Map;
 
-            [Bindable]
-            private var searchResultTitleLabel:String;
+            private var searchResultTitle:String;
+
+            private var searchResultDescription:String;
 
             private var _mapServicesConfigured:Boolean;
 
@@ -190,26 +193,27 @@
 
                     geocoder.autoComplete = configXML.autocomplete != "false";
 
-                    const configMaxLocations:int = parseInt(configXML.maxlocations[0])
+                    const configMaxLocations:int = parseInt(configXML.maxlocations[0]);
                     if (!isNaN(configMaxLocations) && configMaxLocations > 0)
                     {
                         geocoder.maxLocations = configMaxLocations;
                     }
 
-                    const configMinChars:int = parseInt(configXML.minchars[0])
+                    const configMinChars:int = parseInt(configXML.minchars[0]);
                     if (configMinChars && configMinChars > 0)
                     {
                         geocoder.minCharacters = configMinChars;
                     }
 
-                    const configSearchDelay:int = parseInt(configXML.searchdelay[0])
+                    const configSearchDelay:int = parseInt(configXML.searchdelay[0]);
                     if (configSearchDelay && configSearchDelay > 0)
                     {
                         geocoder.searchDelay = configSearchDelay;
                     }
 
                     geocoder.prompt = configXML.labels.searchprompt[0] || hostBaseWidget.getDefaultString("searchPrompt");
-                    searchResultTitleLabel = configXML.labels.searchresulttitle[0] || hostBaseWidget.getDefaultString("searchResultTitleLabel");
+                    searchResultTitle = configXML.result.title[0] || configXML.labels.searchresulttitle[0] || hostBaseWidget.getDefaultString("searchResultTitleLabel");
+                    searchResultDescription = configXML.result.description[0];
 
                     configureResultSymbols();
                     configureResultGraphic();
@@ -368,10 +372,10 @@
             {
                 if (configXML.symbols[0])
                 {
-                    const smsColor:uint = configXML.symbols.simplemarkersymbol.@color || 0xFF0000;
+                    const smsColor:uint = (configXML.symbols.simplemarkersymbol.@color[0] != null) ? configXML.symbols.simplemarkersymbol.@color : 0xFF0000;
                     const smsAlpha:Number = (configXML.symbols.simplemarkersymbol.@alpha[0] != null) ? configXML.symbols.simplemarkersymbol.@alpha : 0.8;
                     const smsSize:Number = (configXML.symbols.simplemarkersymbol.@size[0] != null) ? configXML.symbols.simplemarkersymbol.@size : 15;
-                    const smsOutlineColor:uint = configXML.symbols.simplefillsymbol.outline.@color || 0xFF0000;
+                    const smsOutlineColor:uint = (configXML.symbols.simplefillsymbol.outline.@color[0] != null) ? configXML.symbols.simplefillsymbol.outline.@color : 0xFF0000;
                     const smsOutlineAlpha:Number = (configXML.symbols.simplefillsymbol.outline.@alpha[0] != null) ? configXML.symbols.simplefillsymbol.outline.@alpha : 0.8;
                     const smsOutlineWidth:Number = (configXML.symbols.simplefillsymbol.outline.@width[0] != null) ? configXML.symbols.simplefillsymbol.outline.@width : 2;
 
@@ -381,15 +385,15 @@
                                                                                            smsOutlineAlpha,
                                                                                            smsOutlineWidth));
 
-                    const slsColor:uint = configXML.symbols.simplelinesymbol.@color || 0xFF0000;
+                    const slsColor:uint = (configXML.symbols.simplelinesymbol.@color[0] != null) ? configXML.symbols.simplelinesymbol.@color : 0xFF0000;
                     const slsAlpha:Number = (configXML.symbols.simplelinesymbol.@alpha[0] != null) ? configXML.symbols.simplelinesymbol.@alpha : 0.8;
                     const slsWidth:Number = (configXML.symbols.simplelinesymbol.@width[0] != null) ? configXML.symbols.simplelinesymbol.@width : 2;
 
                     resultSimpleLineSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, slsColor, slsAlpha, slsWidth);
 
-                    const sfsColor:uint = configXML.symbols.simplefillsymbol.@color || 0xFF0000;
+                    const sfsColor:uint = (configXML.symbols.simplefillsymbol.@color[0] != null) ? configXML.symbols.simplefillsymbol.@color : 0xFF0000;
                     const sfsAlpha:Number = (configXML.symbols.simplefillsymbol.@alpha[0] != null) ? configXML.symbols.simplefillsymbol.@alpha : 0.5;
-                    const sfsOutlineColor:uint = configXML.symbols.simplefillsymbol.outline.@color || 0xFF0000;
+                    const sfsOutlineColor:uint = (configXML.symbols.simplefillsymbol.outline.@color[0] != null) ? configXML.symbols.simplefillsymbol.outline.@color : 0xFF0000;
                     const sfsOutlineAlpha:Number = (configXML.symbols.simplefillsymbol.outline.@alpha[0] != null) ? configXML.symbols.simplefillsymbol.outline.@alpha : 0.8;
                     const sfsOutlineWidth:Number = (configXML.symbols.simplefillsymbol.outline.@width[0] != null) ? configXML.symbols.simplefillsymbol.outline.@width : 2;
 
@@ -403,7 +407,7 @@
 
             private function configureResultGraphic():void
             {
-                searchResultGraphic = new com.esri.ags.Graphic()
+                searchResultGraphic = new Graphic();
                 const clearFeatureLabel:String = configXML.labels.clearfeaturelabel[0] || hostBaseWidget.getDefaultString("clearLabel");
                 const customContextMenu:ContextMenu = new ContextMenu();
                 customContextMenu.hideBuiltInItems();
@@ -452,12 +456,13 @@
 
                 searchResultGraphic.geometry = searchResult.geometry;
                 searchResultGraphic.symbol = getSymbolForGeometryType(searchResultGraphic.geometry.type);
+                searchResultGraphic.attributes = getAttributes(searchResult.data);
                 var resultExtent:Extent = searchResult.extent;
 
                 const popUpInfo:PopUpInfo = new PopUpInfo();
-                popUpInfo.description = searchResult.label;
-                popUpInfo.title = searchResultTitleLabel;
-                popUpInfo.showZoomToButton = false; //hide the zoom to button as map would be zoomed-in 
+                popUpInfo.description = searchResultDescription ? searchResultDescription : searchResult.label;
+                popUpInfo.title = searchResultTitle;
+                popUpInfo.showZoomToButton = false; //hide the zoom to button as map would be zoomed-in
 
                 const infoWindowRenderer:ClassFactory = new ClassFactory(PopUpRenderer);
                 infoWindowRenderer.properties = { popUpInfo: popUpInfo };
@@ -492,6 +497,23 @@
                 }
 
                 infoWindowShow(resultPoint);
+            }
+
+            private function getAttributes(data:Object):Object
+            {
+                var findResult:FindResult = data as FindResult;
+                if (findResult && findResult.feature)
+                {
+                    return findResult.feature.attributes;
+                }
+
+                var addressCandidate:AddressCandidate = data as AddressCandidate;
+                if (addressCandidate)
+                {
+                    return addressCandidate.attributes;
+                }
+
+                return null;
             }
 
             private function getSymbolForGeometryType(geometryType:String):Symbol

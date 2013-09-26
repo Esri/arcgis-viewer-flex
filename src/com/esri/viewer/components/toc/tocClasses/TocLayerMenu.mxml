@@ -32,8 +32,8 @@
             import com.esri.ags.Map;
             import com.esri.ags.events.GeometryServiceEvent;
             import com.esri.ags.geometry.Extent;
+            import com.esri.ags.layers.ArcGISDynamicMapServiceLayer;
             import com.esri.ags.layers.FeatureLayer;
-            import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.layers.KMLLayer;
             import com.esri.ags.layers.Layer;
             import com.esri.ags.layers.OpenStreetMapLayer;
@@ -208,72 +208,159 @@
 
             private function moveUpLabel_clickHandler(event:MouseEvent):void
             {
-                var currentIndex:Number = 0;
-                for each (var layer:Layer in getLayersAfterRemovingHiddenLayers(_map.layers as ArrayCollection))
+                var mapLayers:ArrayCollection = _map.layers as ArrayCollection;
+                var currentIndex:int = mapLayers.getItemIndex(_layer);
+                var layer:Layer;
+                var arrOfFeatureLayers:Array;
+                if (_layer is ArcGISDynamicMapServiceLayer)
                 {
-                    if (_layer == layer)
+                    arrOfFeatureLayers = [];
+                    var dynamicMapServiceLayer:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(_layer);
+                    for each (layer in mapLayers)
                     {
-                        break;
+                        if (layer is FeatureLayer && layer.name.indexOf("hiddenLayer_") != -1)
+                        {
+                            var featureServiceURL:String = FeatureLayer(layer).url.substring(0, FeatureLayer(layer).url.lastIndexOf("/"));
+                            var mapServiceURL:String = featureServiceURL.replace("FeatureServer", "MapServer");
+                            if (mapServiceURL == dynamicMapServiceLayer.url)
+                            {
+                                arrOfFeatureLayers.push(layer);
+                            }
+                        }
                     }
-                    currentIndex++;
+                }  
+                var nextIndex:int = currentIndex + 1; 
+                if (arrOfFeatureLayers && arrOfFeatureLayers.length > 0)
+                {
+                    nextIndex += arrOfFeatureLayers.length;
                 }
-                _map.reorderLayer(_layer.id, currentIndex + 1);
+                if (mapLayers.getItemAt(nextIndex) && mapLayers.getItemAt(nextIndex) is ArcGISDynamicMapServiceLayer)
+                {
+                    var arr:Array = [];
+                    var dynamicMapServiceLayer1:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(mapLayers.getItemAt(nextIndex));
+                    for each (layer in mapLayers)
+                    {
+                        if (layer is FeatureLayer && layer.name.indexOf("hiddenLayer_") != -1)
+                        {
+                            var featureServiceURL1:String = FeatureLayer(layer).url.substring(0, FeatureLayer(layer).url.lastIndexOf("/"));
+                            var mapServiceURL1:String = featureServiceURL1.replace("FeatureServer", "MapServer");
+                            if (mapServiceURL1 == dynamicMapServiceLayer1.url)
+                            {
+                                arr.push(layer);
+                            }
+                        }
+                    }
+                    nextIndex += arr.length;
+                }
+                if (arrOfFeatureLayers && arrOfFeatureLayers.length > 0)
+                {                      
+                    for each (var featureLayer:FeatureLayer in arrOfFeatureLayers)
+                    {   
+                        _map.reorderLayer(featureLayer.id, nextIndex);
+                    } 
+                    _map.reorderLayer(_layer.id, nextIndex - 1);
+                }
+                else
+                {   
+                    _map.reorderLayer(_layer.id, nextIndex);
+                }
                 remove();
             }
 
             private function moveDownLabel_clickHandler(event:MouseEvent):void
             {
-                var currentIndex:Number = 0;
-                for each (var layer:Layer in getLayersAfterRemovingHiddenLayers(_map.layers as ArrayCollection))
-                {
-                    if (_layer == layer)
+                var mapLayers:ArrayCollection = _map.layers as ArrayCollection;
+                var currentIndex:int = mapLayers.getItemIndex(_layer);                
+                var layer:Layer;
+                var arrOfFeatureLayers:Array;
+                if (mapLayers.getItemAt(currentIndex - 1) is FeatureLayer && FeatureLayer(mapLayers.getItemAt(currentIndex - 1)).name.indexOf("hiddenLayer_") != -1)
+                {   
+                    if (_layer is ArcGISDynamicMapServiceLayer)
                     {
-                        break;
-                    }
-                    currentIndex++;
-                }
-                _map.reorderLayer(_layer.id, currentIndex - 1);
-                remove();
-            }
-
-            private function getLayersAfterRemovingHiddenLayers(layers:ArrayCollection):Array
-            {
-                var result:Array = [];
-                for (var i:int = 0; i < layers.length; i++)
-                {
-                    const layer:Layer = layers.getItemAt(i) as Layer;
-                    if (layer.name.indexOf("hiddenLayer_") != -1 || (layer is GraphicsLayer && !(layer is FeatureLayer)) || islayerExcludedAndNotBaseMap(layer))
-                    {
-                        continue;
-                    }
-                    result.push(layers.getItemAt(i));
-                }
-                return result;
-            }
-
-            private function islayerExcludedAndNotBaseMap(layer:Layer):Boolean
-            {
-                var exclude:Boolean;
-                for each (var item:* in _toc.excludeLayers)
-                {
-                    if ((item === layer || item == layer.name) || (item == layer.id))
-                    {
-                        exclude = true;
-                        for each (var item1:* in _toc.basemapLayers)
+                        arrOfFeatureLayers = [];
+                        var dynamicMapServiceLayer:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(_layer);                      
+                        for each (layer in mapLayers)
                         {
-                            if (item1 === item)
+                            if (layer is FeatureLayer && layer.name.indexOf("hiddenLayer_") != -1)
                             {
-                                exclude = false;
-                                break;
+                                var featureServiceURL:String = FeatureLayer(layer).url.substring(0, FeatureLayer(layer).url.lastIndexOf("/"));
+                                var mapServiceURL:String = featureServiceURL.replace("FeatureServer", "MapServer");
+                                if (mapServiceURL == dynamicMapServiceLayer.url)
+                                {
+                                    arrOfFeatureLayers.push(layer);
+                                }
                             }
                         }
-                        if (!exclude)
+                    }
+                    
+                    var index:Number = currentIndex - 1;
+                    var arr:Array = [];
+                    while(mapLayers.getItemAt(index) is FeatureLayer && FeatureLayer(mapLayers.getItemAt(index)).name.indexOf("hiddenLayer_") != -1)
+                    {
+                        arr.push(FeatureLayer(mapLayers.getItemAt(index)));
+                        index--;
+                    }
+                    if (mapLayers.getItemAt(index) && mapLayers.getItemAt(index) is ArcGISDynamicMapServiceLayer)
+                    {                        
+                        var dynamicMapServiceLayer1:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(mapLayers.getItemAt(index));
+                        var featureLayersAddedFromMapService:Boolean = true;
+                        for each (var featureLayer:FeatureLayer in arr)
                         {
-                            break;
+                            var featureServiceURL1:String = featureLayer.url.substring(0, featureLayer.url.lastIndexOf("/"));
+                            var mapServiceURL1:String = featureServiceURL1.replace("FeatureServer", "MapServer");
+                            if (mapServiceURL1 != dynamicMapServiceLayer1.url)
+                            {
+                                featureLayersAddedFromMapService = false;
+                                break;
+                            }                           
+                        }
+                        if (featureLayersAddedFromMapService)
+                        {   
+                            if (arrOfFeatureLayers && arrOfFeatureLayers.length > 0)
+                            {   
+                                for each (var featureLayer1:FeatureLayer in arrOfFeatureLayers)
+                                {   
+                                    _map.reorderLayer(featureLayer1.id, index);
+                                }                        
+                            }   
+                            _map.reorderLayer(_layer.id, index);      
                         }
                     }
+                    else
+                    {
+                        _map.reorderLayer(_layer.id, index);
+                    }
                 }
-                return exclude;
+                else if (_layer is ArcGISDynamicMapServiceLayer)
+                {   
+                    arrOfFeatureLayers = [];
+                    var dynamicMapServiceLayer2:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(_layer);                      
+                    for each (layer in mapLayers)
+                    {
+                        if (layer is FeatureLayer && layer.name.indexOf("hiddenLayer_") != -1)
+                        {
+                            var featureServiceURL2:String = FeatureLayer(layer).url.substring(0, FeatureLayer(layer).url.lastIndexOf("/"));
+                            var mapServiceURL2:String = featureServiceURL2.replace("FeatureServer", "MapServer");
+                            if (mapServiceURL2 == dynamicMapServiceLayer2.url)
+                            {
+                                arrOfFeatureLayers.push(layer);
+                            }
+                        }
+                    }
+                    if (arrOfFeatureLayers && arrOfFeatureLayers.length > 0)
+                    {
+                        for each (var featureLayer2:FeatureLayer in arrOfFeatureLayers.reverse())
+                        {
+                            _map.reorderLayer(featureLayer2.id, currentIndex - 1);
+                        }                        
+                    }    
+                    _map.reorderLayer(_layer.id, currentIndex - 1);          
+                }
+                else
+                {
+                    _map.reorderLayer(_layer.id, currentIndex - 1);    
+                }               
+                remove();
             }
 
             private function descriptionOrDownloadLabel_clickHandler(event:MouseEvent):void

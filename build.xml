@@ -154,6 +154,8 @@
             //flashvars.resourceModuleURLs = "assets/locale/es_ES.swf";
             //flashvars.localeChain = "et_EE";
             //flashvars.resourceModuleURLs = "assets/locale/et_EE.swf";
+            //flashvars.localeChain = "fi_FI";
+            //flashvars.resourceModuleURLs = "assets/locale/fi_FI.swf";
             //flashvars.localeChain = "fr_FR";
             //flashvars.resourceModuleURLs = "assets/locale/fr_FR.swf";
             //flashvars.localeChain = "he_IL";

@@ -132,35 +132,41 @@ public class ResultAttributes
                 }
             }
 
-            if (titleField && fieldName.toUpperCase() == titleField.toUpperCase())
+            var upperCaseFieldName:String = fieldName.toUpperCase();
+            if (titleField && upperCaseFieldName == titleField.toUpperCase())
             {
                 title = value;
             }
-            else if (linkField && fieldName.toUpperCase() == linkField.toUpperCase())
+            else if (linkField && upperCaseFieldName == linkField.toUpperCase())
             {
                 link = value;
                 linkAlias = linkAlias;
             }
-            else if (fieldName.toUpperCase() != "SHAPE_LENGTH" && fieldName.toUpperCase() != "SHAPE_AREA")
+            else
             {
-                var fieldLabel:String;
+                var isShapeMeasurementField:Boolean = (upperCaseFieldName == "SHAPE_LENGTH" || upperCaseFieldName == "SHAPE_AREA");
+                var isUserDefinedField:Boolean = fields && fields.field.(@name == fieldName).length() > 0;
+                if (!isShapeMeasurementField || isUserDefinedField)
+                {
+                    var fieldLabel:String;
 
-                if (fieldXML && fieldXML.@alias[0])
-                {
-                    fieldLabel = fieldXML.@alias[0];
-                }
-                else
-                {
-                    fieldLabel = featureSet.fieldAliases[fieldName];
-                }
+                    if (fieldXML && fieldXML.@alias[0])
+                    {
+                        fieldLabel = fieldXML.@alias[0];
+                    }
+                    else
+                    {
+                        fieldLabel = featureSet.fieldAliases[fieldName];
+                    }
 
-                if (FlexGlobals.topLevelApplication.layoutDirection == LayoutDirection.RTL)
-                {
-                    content += value + " :" + fieldLabel + "\n";
-                }
-                else
-                {
-                    content += fieldLabel + ": " + value + "\n";
+                    if (FlexGlobals.topLevelApplication.layoutDirection == LayoutDirection.RTL)
+                    {
+                        content += value + " :" + fieldLabel + "\n";
+                    }
+                    else
+                    {
+                        content += fieldLabel + ": " + value + "\n";
+                    }
                 }
             }
         }

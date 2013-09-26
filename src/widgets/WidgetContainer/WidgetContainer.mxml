@@ -249,7 +249,6 @@
              ** --------------------------------------------------*/
 
             private var scrollint:uint;
-            private var scrollinterval:uint;
             private var scrolldist:Number;
             private var dist:Number = 10;
             private var scrolldir:String;
@@ -346,6 +345,12 @@
 
             private function scrollToWidgetStart(params:Array):void
             {
+                if (widgetlayout != HORIZONTAL &&
+                    widgetlayout != VERTICAL)
+                {
+                    return;
+                }
+
                 var wObj:DisplayObject = params[0];
                 if (containWidget(wObj as IVisualElement) < 0)
                 {
@@ -353,7 +358,7 @@
                     return;
                 }
 
-                var boxRect:Rectangle = widgetContainer.getRect(this);
+                var boxRect:Rectangle = widgetContainer.getVisibleRect(this);
 
                 var screenW:Number = boxRect.width;
                 var screenH:Number = boxRect.height;
@@ -385,7 +390,26 @@
                 var topDelta:Number = verticalY - wTop;
                 var bottomDelta:Number = wBottom - (screenH + verticalY);
 
-                if ((rightDelta > 0) || (leftDelta > 0) || (topDelta > 0) || (bottomDelta > 0))
+                if (rightDelta <= 0 && leftDelta <= 0 &&
+                    topDelta <= 0 && bottomDelta <= 0)
+                {
+                    return;
+                }
+
+                if (widgetlayout == HORIZONTAL)
+                {
+                    if (leftDelta > 0)
+                    {
+                        scrolldist = leftDelta;
+                        scrolldir = RIGHT;
+                    }
+                    else if (rightDelta > 0)
+                    {
+                        scrolldist = rightDelta;
+                        scrolldir = LEFT;
+                    }
+                }
+                else if (widgetlayout == VERTICAL)
                 {
                     if (topDelta > 0)
                     {
@@ -397,22 +421,19 @@
                         scrolldist = bottomDelta;
                         scrolldir = DOWN;
                     }
-                    else if (leftDelta > 0)
-                    {
-                        scrolldist = leftDelta;
-                        scrolldir = RIGHT;
-                    }
-                    else if (rightDelta > 0)
-                    {
-                        scrolldist = rightDelta;
-                        scrolldir = LEFT;
-                    }
-                    scrollinterval = setInterval(scrollToWidgetAction, 30, params);
-                    dist = 0;
                 }
+
+                var scrollInterval:uint = setInterval(
+                    function():void
+                    {
+                        scrollToWidgetAction(scrollInterval);
+                    },
+                    30);
+
+                dist = 0;
             }
 
-            private function scrollToWidgetAction(params:Array):void
+            private function scrollToWidgetAction(interval:uint):void
             {
                 if (dist < scrolldist)
                 {
@@ -436,7 +457,7 @@
                 }
                 else
                 {
-                    clearInterval(scrollinterval);
+                    clearInterval(interval);
                 }
             }
 

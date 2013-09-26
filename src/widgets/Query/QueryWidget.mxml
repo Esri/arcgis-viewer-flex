@@ -183,15 +183,15 @@
                     resultMarkerSymbol = new PictureMarkerSymbol(resultMarkerSymbolURL, resultMarkerSymbolWidth, resultMarkerSymbolHeight, resultMarkerSymbolXOffset, resultMarkerSymbolYOffset);
 
                     //line symbol
-                    const resultLineSymbolColor:uint = configXML.symbols.simplelinesymbol.@color || 0xFF0000;
+                    const resultLineSymbolColor:uint = (configXML.symbols.simplelinesymbol.@color[0] != null) ? configXML.symbols.simplelinesymbol.@color : 0xFF0000;
                     const resultLineSymbolAlpha:Number = (configXML.symbols.simplelinesymbol.@alpha[0] != null) ? configXML.symbols.simplelinesymbol.@alpha : 0.8;
                     const resultLineSymbolWidth:Number = (configXML.symbols.simplelinesymbol.@width[0] != null) ? configXML.symbols.simplelinesymbol.@width : 2;
                     resultLineSymbol = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, resultLineSymbolColor, resultLineSymbolAlpha, resultLineSymbolWidth);
 
                     // fill symbol
-                    const resultFillSymbolColor:uint = configXML.symbols.simplefillsymbol.@color || 0xFF0000;
+                    const resultFillSymbolColor:uint = (configXML.symbols.simplefillsymbol.@color[0] != null) ? configXML.symbols.simplefillsymbol.@color : 0xFF0000;
                     const resultFillSymbolAlpha:Number = (configXML.symbols.simplefillsymbol.@alpha[0] != null) ? configXML.symbols.simplefillsymbol.@alpha : 0.5;
-                    const resultFillSymbolOutlineColor:uint = configXML.symbols.simplefillsymbol.outline.@color || 0xFF0000;
+                    const resultFillSymbolOutlineColor:uint = (configXML.symbols.simplefillsymbol.outline.@color[0] != null) ? configXML.symbols.simplefillsymbol.outline.@color : 0xFF0000;
                     const resultFillSymbolOutlineAlpha:Number = (configXML.symbols.simplefillsymbol.outline.@alpha[0] != null) ? configXML.symbols.simplefillsymbol.outline.@alpha : 0.8;
                     const resultFillSymbolOutlineWidth:Number = (configXML.symbols.simplefillsymbol.outline.@width[0] != null) ? configXML.symbols.simplefillsymbol.outline.@width : 2;
                     resultFillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, resultFillSymbolColor, resultFillSymbolAlpha, new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, resultFillSymbolOutlineColor, resultFillSymbolOutlineAlpha, resultFillSymbolOutlineWidth));
@@ -366,7 +366,7 @@
                             {
                                 FeatureSetUtil.sortFeaturesByFieldName(featureSet, orderByFields);
                             }
-                            
+
                             if (queryResultAC)
                             {
                                 queryResultAC.removeAll();
@@ -407,41 +407,59 @@
                     queryTitleField = featureSet.displayFieldName;
                 }
 
+                var defaultSymbol:Symbol = getMatchingDefaultSymbol(featureSet.geometryType);
+                var resultAttributes:ResultAttributes;
+                var infoWindowRenderer:ClassFactory;
+
                 for each (var graphic:Graphic in featureSet.features)
                 {
-                    var resultAttributes:ResultAttributes =
-                        ResultAttributes.toResultAttributes(queryFields, graphic, featureSet, queryLayer, layerDetails, widgetTitle, queryTitleField, queryLinkField, queryLinkAlias);
+                    graphic.symbol = defaultSymbol;
+
+                    resultAttributes =
+                        ResultAttributes.toResultAttributes(queryFields, graphic, featureSet,
+                                                            queryLayer, layerDetails, widgetTitle,
+                                                            queryTitleField, queryLinkField, queryLinkAlias);
+
                     graphicToResultAttributes[graphic] = resultAttributes;
 
-                    var searchResult:ResultItem = new ResultItem(graphic, resultAttributes);
-                    result.addItem(searchResult);
+                    result.addItem(new ResultItem(graphic, resultAttributes));
 
-                    var infoWindowRenderer:ClassFactory = new ClassFactory(PopUpRenderer);
+                    infoWindowRenderer = new ClassFactory(PopUpRenderer);
                     infoWindowRenderer.properties = { popUpInfo: configurePopUpInfo(resultAttributes)};
                     graphic.infoWindowRenderer = infoWindowRenderer;
                 }
+
                 resultFeatureLayer.visible = true;
                 resultFeatureLayer.featureCollection = new FeatureCollection(featureSet, layerDetails);
-                switch (featureSet.geometryType)
+                resultFeatureLayer.renderer = new SimpleRenderer(defaultSymbol);
+
+                return result;
+            }
+
+            private function getMatchingDefaultSymbol(geometryType:String):Symbol
+            {
+                var defaultSymbol:Symbol;
+
+                switch (geometryType)
                 {
                     case Geometry.MAPPOINT:
                     {
-                        resultFeatureLayer.renderer = new SimpleRenderer(resultMarkerSymbol);
+                        defaultSymbol = resultMarkerSymbol;
                         break;
                     }
                     case Geometry.POLYLINE:
                     {
-                        resultFeatureLayer.renderer = new SimpleRenderer(resultLineSymbol);
+                        defaultSymbol = resultLineSymbol;
                         break;
                     }
                     case Geometry.POLYGON:
                     {
-                        resultFeatureLayer.renderer = new SimpleRenderer(resultFillSymbol);
+                        defaultSymbol = resultFillSymbol;
                         break;
                     }
                 }
 
-                return result;
+                return defaultSymbol;
             }
 
             private function configurePopUpInfo(resultAttributes:ResultAttributes):PopUpInfo
@@ -462,6 +480,7 @@
                     if (isImageLink)
                     {
                         var popUpMediaInfo:PopUpMediaInfo = new PopUpMediaInfo;
+                        popUpMediaInfo.type = PopUpMediaInfo.IMAGE;
                         popUpMediaInfo.imageLinkURL = link;
                         popUpMediaInfo.imageSourceURL = link;
                         popUpInfo.popUpMediaInfos = [ popUpMediaInfo ];

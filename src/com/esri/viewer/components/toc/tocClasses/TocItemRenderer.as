@@ -18,7 +18,7 @@ package com.esri.viewer.components.toc.tocClasses
 
 import com.esri.ags.layers.Layer;
 import com.esri.ags.layers.TiledMapServiceLayer;
-import com.esri.ags.symbols.Symbol;
+import com.esri.ags.layers.supportClasses.LegendItemInfo;
 import com.esri.viewer.AppEvent;
 import com.esri.viewer.components.toc.TOC;
 import com.esri.viewer.components.toc.controls.CheckBoxIndeterminate;
@@ -33,6 +33,7 @@ import mx.core.FlexGlobals;
 import mx.core.UIComponent;
 
 import spark.components.Group;
+import spark.primitives.BitmapImage;
 
 /**
  * A custom tree item renderer for a map Table of Contents.
@@ -60,7 +61,7 @@ public class TocItemRenderer extends TreeItemRenderer
 
     private var _tocLayerMenu:TocLayerMenu;
 
-    [Embed(source="assets/images/Context_menu11.png")]
+    [Embed(source="/assets/images/Context_menu11.png")]
     [Bindable]
     public var contextCls:Class;
 
@@ -96,16 +97,22 @@ public class TocItemRenderer extends TreeItemRenderer
         if (value is TocLegendItem)
         {
             _legendSwatchContainer.removeAllElements();
-
-            var symbol:Symbol = TocLegendItem(value).legendItemInfo.symbol;
-            if (symbol)
+            
+            var legendItemInfo:LegendItemInfo = TocLegendItem(value).legendItemInfo;
+            if (legendItemInfo.imageURL) // WMS
             {
-                var swatch:UIComponent = symbol.createSwatch(LEGEND_SWATCH_SIZE, LEGEND_SWATCH_SIZE);
+                var legendImg:BitmapImage = new BitmapImage();
+                legendImg.source = legendItemInfo.imageURL;                
+                _legendSwatchContainer.addElement(legendImg);              
+            }
+            else if (legendItemInfo.symbol)
+            {   
+                var swatch:UIComponent = legendItemInfo.symbol.createSwatch(LEGEND_SWATCH_SIZE, LEGEND_SWATCH_SIZE);
                 if (swatch)
                 {
                     _legendSwatchContainer.addElement(swatch);
                 }
-            }
+            }            
         }
     }
 
@@ -171,7 +178,7 @@ public class TocItemRenderer extends TreeItemRenderer
 
             // Hide the checkbox for child items of tiled map services
             var checkboxVisible:Boolean = true;
-            if (isTiledLayerChild(item) || (item is TocLegendItem))
+            if (isTiledLayerChild(item) || (item is TocLegendItem) || (item is TocWMSLayerInfoItem))
             {
                 checkboxVisible = false;
             }
@@ -180,8 +187,8 @@ public class TocItemRenderer extends TreeItemRenderer
             // show legend for TocLegendItem
             _legendSwatchContainer.visible = item is TocLegendItem;
 
-            // hide the option button if this is not a layer
-            if (!isLayerItem(item))
+            // hide the option button if this is not a layer or TOC.showLayerMenu=false
+            if (!isLayerItem(item) || !TOC(this.parent.parent).showLayerMenu)
             {
                 _layerMenuImage.visible = false;
             }

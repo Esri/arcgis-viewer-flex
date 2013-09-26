@@ -140,8 +140,6 @@
                 {
                     wTemplate.width = 290;
                     wTemplate.height = 240;
-                    wTemplate.minWidth = 210
-                    wTemplate.minHeight = 160;
                 }
             }
 
