@@ -321,12 +321,13 @@ public class TocItemRenderer extends TreeItemRenderer
             AppEvent.dispatch(AppEvent.LAUNCHING_TOC_LAYER_MENU);
             _tocLayerMenu = new TocLayerMenu();
             var originPoint:Point = new Point(this.x + this.width, this.label.y);
-            if (FlexGlobals.topLevelApplication.layoutDirection != "rtl") // fix for RTL
-            {
-                originPoint.x -= _tocLayerMenu.width;
-            }
             var globalPoint:Point = localToGlobal(originPoint);
             _tocLayerMenu.popUpForItem(this.parent.parent, data, TOC(this.parent.parent).map, globalPoint.x, globalPoint.y + this.height);
+            if (FlexGlobals.topLevelApplication.layoutDirection != "rtl") // fix for RTL
+            {
+                _tocLayerMenu.validateNow();
+                _tocLayerMenu.x -= _tocLayerMenu.width;
+            }
 
             AppEvent.addListener(AppEvent.TOC_HIDDEN, onRemovalFromStage);
         }

@@ -21,7 +21,10 @@ package com.esri.viewer
 
 import com.esri.ags.tasks.PrintTask;
 
+import spark.utils.DataItem;
+
 PrintTask;
+DataItem;
 
 public class ForcedImports
 {
