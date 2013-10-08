@@ -179,7 +179,7 @@
                 toc.excludeLayers = getExcludeLayers();
                 toc.basemapLayers = getBasemapLayers();
                 toc.excludeGraphicsLayers = true;
-                toc.includeLegendItems = includeLegendItems;               
+                toc.includeLegendItems = includeLegendItems;
                 toc.showLayerMenu = showLayerMenu;
                 var tocLayers:ArrayCollection = toc.dataProvider as ArrayCollection;
                 opLayersButton.visible = tocLayers.length ? true : false;

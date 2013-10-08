@@ -97,22 +97,22 @@ public class TocItemRenderer extends TreeItemRenderer
         if (value is TocLegendItem)
         {
             _legendSwatchContainer.removeAllElements();
-            
+
             var legendItemInfo:LegendItemInfo = TocLegendItem(value).legendItemInfo;
             if (legendItemInfo.imageURL) // WMS
             {
                 var legendImg:BitmapImage = new BitmapImage();
-                legendImg.source = legendItemInfo.imageURL;                
-                _legendSwatchContainer.addElement(legendImg);              
+                legendImg.source = legendItemInfo.imageURL;
+                _legendSwatchContainer.addElement(legendImg);
             }
             else if (legendItemInfo.symbol)
-            {   
+            {
                 var swatch:UIComponent = legendItemInfo.symbol.createSwatch(LEGEND_SWATCH_SIZE, LEGEND_SWATCH_SIZE);
                 if (swatch)
                 {
                     _legendSwatchContainer.addElement(swatch);
                 }
-            }            
+            }
         }
     }
 

@@ -228,8 +228,8 @@
                             }
                         }
                     }
-                }  
-                var nextIndex:int = currentIndex + 1; 
+                }
+                var nextIndex:int = currentIndex + 1;
                 if (arrOfFeatureLayers && arrOfFeatureLayers.length > 0)
                 {
                     nextIndex += arrOfFeatureLayers.length;
@@ -253,15 +253,15 @@
                     nextIndex += arr.length;
                 }
                 if (arrOfFeatureLayers && arrOfFeatureLayers.length > 0)
-                {                      
+                {
                     for each (var featureLayer:FeatureLayer in arrOfFeatureLayers)
-                    {   
+                    {
                         _map.reorderLayer(featureLayer.id, nextIndex);
-                    } 
+                    }
                     _map.reorderLayer(_layer.id, nextIndex - 1);
                 }
                 else
-                {   
+                {
                     _map.reorderLayer(_layer.id, nextIndex);
                 }
                 remove();
@@ -270,15 +270,15 @@
             private function moveDownLabel_clickHandler(event:MouseEvent):void
             {
                 var mapLayers:ArrayCollection = _map.layers as ArrayCollection;
-                var currentIndex:int = mapLayers.getItemIndex(_layer);                
+                var currentIndex:int = mapLayers.getItemIndex(_layer);
                 var layer:Layer;
                 var arrOfFeatureLayers:Array;
                 if (mapLayers.getItemAt(currentIndex - 1) is FeatureLayer && FeatureLayer(mapLayers.getItemAt(currentIndex - 1)).name.indexOf("hiddenLayer_") != -1)
-                {   
+                {
                     if (_layer is ArcGISDynamicMapServiceLayer)
                     {
                         arrOfFeatureLayers = [];
-                        var dynamicMapServiceLayer:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(_layer);                      
+                        var dynamicMapServiceLayer:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(_layer);
                         for each (layer in mapLayers)
                         {
                             if (layer is FeatureLayer && layer.name.indexOf("hiddenLayer_") != -1)
@@ -292,16 +292,16 @@
                             }
                         }
                     }
-                    
+
                     var index:Number = currentIndex - 1;
                     var arr:Array = [];
-                    while(mapLayers.getItemAt(index) is FeatureLayer && FeatureLayer(mapLayers.getItemAt(index)).name.indexOf("hiddenLayer_") != -1)
+                    while (mapLayers.getItemAt(index) is FeatureLayer && FeatureLayer(mapLayers.getItemAt(index)).name.indexOf("hiddenLayer_") != -1)
                     {
                         arr.push(FeatureLayer(mapLayers.getItemAt(index)));
                         index--;
                     }
                     if (mapLayers.getItemAt(index) && mapLayers.getItemAt(index) is ArcGISDynamicMapServiceLayer)
-                    {                        
+                    {
                         var dynamicMapServiceLayer1:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(mapLayers.getItemAt(index));
                         var featureLayersAddedFromMapService:Boolean = true;
                         for each (var featureLayer:FeatureLayer in arr)
@@ -312,18 +312,18 @@
                             {
                                 featureLayersAddedFromMapService = false;
                                 break;
-                            }                           
+                            }
                         }
                         if (featureLayersAddedFromMapService)
-                        {   
+                        {
                             if (arrOfFeatureLayers && arrOfFeatureLayers.length > 0)
-                            {   
+                            {
                                 for each (var featureLayer1:FeatureLayer in arrOfFeatureLayers)
-                                {   
+                                {
                                     _map.reorderLayer(featureLayer1.id, index);
-                                }                        
-                            }   
-                            _map.reorderLayer(_layer.id, index);      
+                                }
+                            }
+                            _map.reorderLayer(_layer.id, index);
                         }
                     }
                     else
@@ -332,9 +332,9 @@
                     }
                 }
                 else if (_layer is ArcGISDynamicMapServiceLayer)
-                {   
+                {
                     arrOfFeatureLayers = [];
-                    var dynamicMapServiceLayer2:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(_layer);                      
+                    var dynamicMapServiceLayer2:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(_layer);
                     for each (layer in mapLayers)
                     {
                         if (layer is FeatureLayer && layer.name.indexOf("hiddenLayer_") != -1)
@@ -352,14 +352,14 @@
                         for each (var featureLayer2:FeatureLayer in arrOfFeatureLayers.reverse())
                         {
                             _map.reorderLayer(featureLayer2.id, currentIndex - 1);
-                        }                        
-                    }    
-                    _map.reorderLayer(_layer.id, currentIndex - 1);          
+                        }
+                    }
+                    _map.reorderLayer(_layer.id, currentIndex - 1);
                 }
                 else
                 {
-                    _map.reorderLayer(_layer.id, currentIndex - 1);    
-                }               
+                    _map.reorderLayer(_layer.id, currentIndex - 1);
+                }
                 remove();
             }
 

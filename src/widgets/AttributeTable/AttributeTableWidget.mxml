@@ -359,10 +359,10 @@
                             {
                                 layer.removeEventListener(FlexEvent.HIDE, featureLayer_hideShowHandler);
                                 layer.removeEventListener(FlexEvent.SHOW, featureLayer_hideShowHandler);
-    
+
                                 layer.addEventListener(FlexEvent.HIDE, featureLayer_hideShowHandler);
                                 layer.addEventListener(FlexEvent.SHOW, featureLayer_hideShowHandler);
-    
+
                                 arrFinalLayers.push(layer);
                                 featureLayers.push(layer);
                                 index++;

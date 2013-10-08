@@ -869,7 +869,7 @@
                         </s:DataGroup>
                     </s:Scroller>
 
-                    <s:HGroup paddingTop="4" id="layerToggleGroup">
+                    <s:HGroup id="layerToggleGroup" paddingTop="4">
                         <s:Label buttonMode="true"
                                  click="toggleLayerSelection(true)"
                                  text="{selectAllLabel}"

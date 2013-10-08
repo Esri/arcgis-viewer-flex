@@ -374,11 +374,11 @@ public class TOC extends Tree
         onFilterChange();
         dispatchEvent(new Event("includeLegendItemsChanged"));
     }
-    
+
     //--------------------------------------------------------------------------
     //  showLayerMenu
     //--------------------------------------------------------------------------
-    
+
     [Bindable("showLayerMenuChanged")]
     /**
      * Whether to show layer menu.
@@ -387,13 +387,13 @@ public class TOC extends Tree
     {
         return _showLayerMenu;
     }
-    
+
     /**
      * @private
      */
     public function set showLayerMenu(value:Boolean):void
     {
-        _showLayerMenu = value;        
+        _showLayerMenu = value;
         dispatchEvent(new Event("showLayerMenuChanged"));
     }
 

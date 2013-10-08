@@ -453,7 +453,7 @@ public class UIManager extends EventDispatcher
         var cssStyleDeclarationMxDividedBox:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("mx.containers.DividedBox");
         if (numberOfStyleColors > 4)
         {
-            cssStyleDeclarationMxDividedBox.setStyle("_dividerFillColors", [titleColor,titleColor]);
+            cssStyleDeclarationMxDividedBox.setStyle("_dividerFillColors", [ titleColor, titleColor ]);
         }
 
         var cssStyleDeclarationModal:CSSStyleDeclaration = topLevelStyleManager.getStyleDeclaration("global")
