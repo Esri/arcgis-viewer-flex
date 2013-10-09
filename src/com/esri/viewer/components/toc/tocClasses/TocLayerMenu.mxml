@@ -19,14 +19,14 @@
 <!---
 @private
 -->
-<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
-                   xmlns:s="library://ns.adobe.com/flex/spark"
-                   xmlns:mx="library://ns.adobe.com/flex/mx"
-                   xmlns:esri="http://www.esri.com/2008/ags"
-                   width="150" height="105"
-                   initialize="bordercontainer1_initializeHandler(event)"
-                   rollOut="bordercontainer1_rollOutHandler(event)"
-                   rollOver="bordercontainer1_rollOverHandler(event)">
+<s:List xmlns:fx="http://ns.adobe.com/mxml/2009"
+        xmlns:s="library://ns.adobe.com/flex/spark"
+        xmlns:esri="http://www.esri.com/2008/ags"
+        dataProvider="{options}"
+        initialize="this_initializeHandler(event)"
+        itemRenderer="com.esri.viewer.components.toc.tocClasses.TocLayerMenuOptionRenderer"
+        rollOut="this_rollOutHandler(event)"
+        rollOver="this_rollOverHandler(event)">
     <fx:Script>
         <![CDATA[
             import com.esri.ags.Map;
@@ -43,6 +43,7 @@
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.components.toc.TOC;
+            import com.esri.viewer.utils.LabelUtil;
             import com.esri.viewer.utils.LocalizationUtil;
 
             import mx.collections.ArrayCollection;
@@ -55,7 +56,7 @@
             private var _toc:TOC;
             private var _transparencyMenuItem:TransparencyMenuItem;
 
-            private function bordercontainer1_initializeHandler(event:FlexEvent):void
+            private function this_initializeHandler(event:FlexEvent):void
             {
                 setStyle("backgroundColor", getStyle("contentBackgroundColor"));
                 setStyle("borderColor", getStyle("accentColor"));
@@ -77,54 +78,34 @@
                     this.x = atX;
                     this.y = atY;
                     PopUpManager.addPopUp(this, parent);
-
-                    if (_layer)
-                    {
-                        addOptionsForLayerByType(_layer, parent);
-                    }
+                    addOptionsForLayerByType(_layer, parent);
+                    typicalItem = LabelUtil.findLongestLabelItem(options.source, "label");
                 }
             }
 
             private function addOptionsForLayerByType(layer:Layer, parent:DisplayObject):void
             {
-                if (parent is TOC)
+                _toc = parent as TOC;
+                if (!_toc || !layer)
                 {
-                    _toc = TOC(parent);
-                    var tocMapLayerItems:ArrayCollection = _toc.dataProvider as ArrayCollection;
-
-                    if (tocMapLayerItems.length == 1)
-                    {
-                        this.moveUpGroup.enabled = false;
-                        this.moveDownGroup.enabled = false;
-                    }
-                    else
-                    {
-                        if (TocMapLayerItem(tocMapLayerItems.getItemAt(0)).layer.id == layer.id)
-                        {
-                            this.moveDownGroup.enabled = true;
-                            this.moveUpGroup.enabled = false;
-                        }
-                        else if (TocMapLayerItem(tocMapLayerItems.getItemAt(tocMapLayerItems.length - 1)).layer.id == layer.id)
-                        {
-                            this.moveUpGroup.enabled = true;
-                            this.moveDownGroup.enabled = false;
-                        }
-                    }
-                    // based on layer type, add Description/Download label
-                    if (layer is KMLLayer)
-                    {
-                        this.descriptionOrDownloadLabel.text = LocalizationUtil.getDefaultString("tocMapLayerDownloadLabel");
-                    }
-                    else
-                    {
-                        this.descriptionOrDownloadLabel.text = LocalizationUtil.getDefaultString("tocMapLayerDescriptionLabel");
-                    }
-
-                    if (!layer.initialExtent)
-                    {
-                        this.zoomToGroup.enabled = false;
-                    }
+                    return;
                 }
+
+                var tocMapLayerItems:ArrayCollection = _toc.dataProvider as ArrayCollection;
+                var isFirstLayer:Boolean = (TocMapLayerItem(tocMapLayerItems.getItemAt(0)).layer.id == layer.id);
+                var isLastLayer:Boolean = (TocMapLayerItem(tocMapLayerItems.getItemAt(tocMapLayerItems.length - 1)).layer.id == layer.id);
+
+                moveUpOption.enabled = !isFirstLayer;
+                moveDownOption.enabled = !isLastLayer;
+
+                var descriptionOrDownloadResourceName:String =
+                    (layer is KMLLayer) ? 'tocMapLayerDownloadLabel' : 'tocMapLayerDescriptionLabel';
+
+                showDescriptionOrDownloadOption.label =
+                    LocalizationUtil.getDefaultString(descriptionOrDownloadResourceName);
+
+                var hasExtent:Boolean = layer.initialExtent;
+                layerZoomOption.enabled = hasExtent;
             }
 
             public function remove():void
@@ -385,26 +366,14 @@
                 }
             }
 
-            private function bordercontainer1_rollOverHandler(event:MouseEvent):void
+            private function this_rollOverHandler(event:MouseEvent):void
             {
                 AppEvent.dispatch(AppEvent.SUSPEND_TOC_HIDE_TIMER, "true");
             }
 
-            private function bordercontainer1_rollOutHandler(event:MouseEvent):void
+            private function this_rollOutHandler(event:MouseEvent):void
             {
                 AppEvent.dispatch(AppEvent.SUSPEND_TOC_HIDE_TIMER, null);
-            }
-
-            private function label_rollOverHandler(event:MouseEvent):void
-            {
-                var label:Label = Label(event.target);
-                label.setStyle("textDecoration", "underline");
-            }
-
-            private function label_rollOutHandler(event:MouseEvent):void
-            {
-                var label:Label = Label(event.target);
-                label.setStyle("textDecoration", "");
             }
 
             private function newLayerMenuLaunching(event:AppEvent):void
@@ -413,125 +382,46 @@
             }
         ]]>
     </fx:Script>
+
     <fx:Declarations>
         <esri:GeometryService id="geometryService" projectComplete="geometryService_projectCompleteHandler(event)"/>
+
+        <s:ArrayList id="options">
+            <s:DataItem id="layerZoomOption"
+                        clickHandler="{zoomToLabel_clickHandler}"
+                        enabled="true"
+                        icon="assets/images/LayerZoomTo16.png"
+                        label="{LocalizationUtil.getDefaultString('tocMapLayerZoomToLabel')}"/>
+
+            <s:DataItem id="transparencyOption"
+                        clickHandler="{transparencyLabel_clickHandler}"
+                        enabled="true"
+                        icon="assets/images/EffectsTransparency16.png"
+                        label="{LocalizationUtil.getDefaultString('tocMapLayerTransparencyLabel')}"/>
+
+            <s:DataItem id="moveUpOption"
+                        clickHandler="{moveUpLabel_clickHandler}"
+                        enabled="true"
+                        icon="assets/images/LayerUp16.png"
+                        label="{LocalizationUtil.getDefaultString('tocMapLayerMoveUpLabel')}"
+                        showDivider="true"/>
+
+            <s:DataItem id="moveDownOption"
+                        clickHandler="{moveDownLabel_clickHandler}"
+                        enabled="true"
+                        icon="assets/images/LayerDown16.png"
+                        label="{LocalizationUtil.getDefaultString('tocMapLayerMoveDownLabel')}"/>
+
+            <!--label added dynamically for description/download option-->
+            <s:DataItem id="showDescriptionOrDownloadOption"
+                        clickHandler="{descriptionOrDownloadLabel_clickHandler}"
+                        enabled="true"
+                        icon="assets/images/GenericSpatialFile16.png"
+                        showDivider="true"/>
+        </s:ArrayList>
     </fx:Declarations>
+
     <s:layout>
         <s:VerticalLayout gap="0"/>
     </s:layout>
-    <s:VGroup id="topGroup"
-              width="100%"
-              gap="2"
-              paddingBottom="2"
-              paddingLeft="10"
-              paddingRight="10"
-              paddingTop="2">
-        <s:HGroup id="zoomToGroup"
-                  width="100%"
-                  buttonMode="true"
-                  verticalAlign="bottom">
-            <s:Image width="16"
-                     click="zoomToLabel_clickHandler(event)"
-                     source="assets/images/LayerZoomTo16.png"/>
-            <s:Label id="zoomToLabel"
-                     width="100%"
-                     click="zoomToLabel_clickHandler(event)"
-                     maxDisplayedLines="1"
-                     rollOut="label_rollOutHandler(event)"
-                     rollOver="label_rollOverHandler(event)"
-                     showTruncationTip="true"
-                     text="{LocalizationUtil.getDefaultString('tocMapLayerZoomToLabel')}"/>
-        </s:HGroup>
-        <s:HGroup verticalAlign="bottom">
-            <s:Image width="16"
-                     buttonMode="true"
-                     click="transparencyLabel_clickHandler(event)"
-                     source="assets/images/EffectsTransparency16.png"/>
-            <s:Label id="transparencyLabel"
-                     width="100%"
-                     buttonMode="true"
-                     click="transparencyLabel_clickHandler(event)"
-                     maxDisplayedLines="1"
-                     rollOut="label_rollOutHandler(event)"
-                     rollOver="label_rollOverHandler(event)"
-                     showTruncationTip="true"
-                     text="{LocalizationUtil.getDefaultString('tocMapLayerTransparencyLabel')}"/>
-        </s:HGroup>
-    </s:VGroup>
-    <s:Line width="100%" visible="{topGroup.visible}">
-        <s:stroke>
-            <s:SolidColorStroke color="{getStyle('accentColor')}"/>
-        </s:stroke>
-    </s:Line>
-    <s:VGroup id="midGroup"
-              width="100%"
-              gap="2"
-              paddingBottom="2"
-              paddingLeft="10"
-              paddingRight="10"
-              paddingTop="2">
-        <s:HGroup id="moveUpGroup"
-                  width="100%"
-                  buttonMode="true"
-                  verticalAlign="bottom">
-            <s:Image id="moveUpImage"
-                     width="16"
-                     click="moveUpLabel_clickHandler(event)"
-                     source="assets/images/LayerUp16.png"/>
-            <s:Label id="moveUpLabel"
-                     width="100%"
-                     click="moveUpLabel_clickHandler(event)"
-                     maxDisplayedLines="1"
-                     rollOut="label_rollOutHandler(event)"
-                     rollOver="label_rollOverHandler(event)"
-                     showTruncationTip="true"
-                     text="{LocalizationUtil.getDefaultString('tocMapLayerMoveUpLabel')}"/>
-        </s:HGroup>
-        <s:HGroup id="moveDownGroup"
-                  width="100%"
-                  buttonMode="true"
-                  verticalAlign="bottom">
-            <s:Image id="moveDownImage"
-                     width="16"
-                     click="moveDownLabel_clickHandler(event)"
-                     source="assets/images/LayerDown16.png"/>
-            <s:Label id="moveDownLabel"
-                     width="100%"
-                     click="moveDownLabel_clickHandler(event)"
-                     maxDisplayedLines="1"
-                     rollOut="label_rollOutHandler(event)"
-                     rollOver="label_rollOverHandler(event)"
-                     showTruncationTip="true"
-                     text="{LocalizationUtil.getDefaultString('tocMapLayerMoveDownLabel')}"/>
-        </s:HGroup>
-    </s:VGroup>
-
-    <s:Line width="100%" visible="{midGroup.visible}">
-        <s:stroke>
-            <s:SolidColorStroke color="{getStyle('accentColor')}"/>
-        </s:stroke>
-    </s:Line>
-
-    <s:VGroup id="bottomGroup"
-              width="100%"
-              gap="2"
-              paddingBottom="2"
-              paddingLeft="10"
-              paddingRight="10"
-              paddingTop="2">
-        <s:HGroup width="100%"
-                  buttonMode="true"
-                  verticalAlign="bottom">
-            <s:Image width="16"
-                     click="descriptionOrDownloadLabel_clickHandler(event)"
-                     source="assets/images/GenericSpatialFile16.png"/>
-            <s:Label id="descriptionOrDownloadLabel"
-                     width="100%"
-                     click="descriptionOrDownloadLabel_clickHandler(event)"
-                     maxDisplayedLines="1"
-                     rollOut="label_rollOutHandler(event)"
-                     rollOver="label_rollOverHandler(event)"
-                     showTruncationTip="true"/>
-        </s:HGroup>
-    </s:VGroup>
-</s:BorderContainer>
+</s:List>
