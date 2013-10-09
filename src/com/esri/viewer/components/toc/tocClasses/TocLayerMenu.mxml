@@ -22,7 +22,9 @@
 <s:List xmlns:fx="http://ns.adobe.com/mxml/2009"
         xmlns:s="library://ns.adobe.com/flex/spark"
         xmlns:esri="http://www.esri.com/2008/ags"
+        dataProvider="{options}"
         initialize="this_initializeHandler(event)"
+        itemRenderer="com.esri.viewer.components.toc.tocClasses.TocLayerMenuOptionRenderer"
         rollOut="this_rollOutHandler(event)"
         rollOver="this_rollOverHandler(event)">
     <fx:Script>
@@ -422,12 +424,4 @@
     <s:layout>
         <s:VerticalLayout gap="0"/>
     </s:layout>
-
-    <s:itemRenderer>
-        com.esri.viewer.components.toc.tocClasses.TocLayerMenuOptionRenderer
-    </s:itemRenderer>
-
-    <s:dataProvider>
-        {options}
-    </s:dataProvider>
 </s:List>
