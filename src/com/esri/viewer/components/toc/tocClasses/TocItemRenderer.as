@@ -31,6 +31,7 @@ import mx.controls.treeClasses.TreeItemRenderer;
 import mx.controls.treeClasses.TreeListData;
 import mx.core.FlexGlobals;
 import mx.core.UIComponent;
+import mx.skins.halo.CheckBoxIcon;
 
 import spark.components.Group;
 import spark.primitives.BitmapImage;
@@ -133,6 +134,7 @@ public class TocItemRenderer extends TreeItemRenderer
         if (!_checkbox)
         {
             _checkbox = new CheckBox();
+            _checkbox.setStyle("icon", CheckBoxIcon);
             _checkbox.addEventListener(MouseEvent.CLICK, onCheckBoxClick);
             _checkbox.addEventListener(MouseEvent.DOUBLE_CLICK, onCheckBoxDoubleClick);
             _checkbox.addEventListener(MouseEvent.MOUSE_DOWN, onCheckBoxMouseDown);
