@@ -367,12 +367,12 @@
 
             private function this_rollOverHandler(event:MouseEvent):void
             {
-                AppEvent.dispatch(AppEvent.SUSPEND_TOC_HIDE_TIMER, "true");
+                AppEvent.dispatch(AppEvent.RESET_TOC_HIDE_TIMER);
             }
 
             private function this_rollOutHandler(event:MouseEvent):void
             {
-                AppEvent.dispatch(AppEvent.SUSPEND_TOC_HIDE_TIMER, null);
+                AppEvent.dispatch(AppEvent.START_TOC_HIDE_TIMER);
             }
 
             private function newLayerMenuLaunching(event:AppEvent):void

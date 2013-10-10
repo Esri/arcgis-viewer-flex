@@ -38,7 +38,6 @@
 
             private var hideOpLayersTimer:Timer = new Timer(250, 1);
             private var hideBasemapsTimer:Timer = new Timer(250, 1);
-            private var hideSuspended:Boolean = false;
 
             private var expandLayerItems:Boolean;
             private var includeLegendItems:Boolean = true; // include legend items in the TOC
@@ -82,12 +81,23 @@
                     {
                         initTOC(expandLayerItems);
                         hideOpLayersTimer.addEventListener(TimerEvent.TIMER, hideOpLayersTimer_timerHandler, false, 0, true);
-                        AppEvent.addListener(AppEvent.SUSPEND_TOC_HIDE_TIMER, suspendHideListener);
+                        AppEvent.addListener(AppEvent.RESET_TOC_HIDE_TIMER, resetTOCHideListener);
+                        AppEvent.addListener(AppEvent.START_TOC_HIDE_TIMER, startTOCHideListener);
                     }
                     showThumbnails = (configXML.showthumbnails[0] != "false");
                 }
 
                 initBasemaps(showThumbnails);
+            }
+
+            private function startTOCHideListener(event:AppEvent):void
+            {
+                startHideTimer();
+            }
+
+            private function resetTOCHideListener(event:AppEvent):void
+            {
+                hideOpLayersTimer.reset();
             }
 
             private function initBasemaps(showThumbnails:Boolean):void
@@ -155,21 +165,13 @@
 
             private function hideOpLayersTimer_timerHandler(event:TimerEvent):void
             {
-                if (!hideSuspended)
-                {
-                    AppEvent.dispatch(AppEvent.TOC_HIDDEN);
-                    shouldShowOpLayers = false;
-                }
+                AppEvent.dispatch(AppEvent.TOC_HIDDEN);
+                shouldShowOpLayers = false;
             }
 
             private function hideBasemapsTimer_timerHandler(event:TimerEvent):void
             {
                 shouldShowBasemaps = false;
-            }
-
-            private function suspendHideListener(event:AppEvent):void
-            {
-                hideSuspended = (event.data != null);
             }
 
             private function initTOC(expandLayerItems:Boolean = false):void
