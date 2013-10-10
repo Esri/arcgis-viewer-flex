@@ -104,8 +104,7 @@
                 showDescriptionOrDownloadOption.label =
                     LocalizationUtil.getDefaultString(descriptionOrDownloadResourceName);
 
-                var hasExtent:Boolean = layer.initialExtent;
-                layerZoomOption.enabled = hasExtent;
+                layerZoomOption.enabled = layer.initialExtent != null;
             }
 
             public function remove():void
@@ -387,34 +386,36 @@
         <esri:GeometryService id="geometryService" projectComplete="geometryService_projectCompleteHandler(event)"/>
 
         <s:ArrayList id="options">
+            <!-- using this.handler to mitigate warnings where the compiler
+                 thinks we're calling the handlers and not referencing them -->
             <s:DataItem id="layerZoomOption"
-                        clickHandler="{zoomToLabel_clickHandler}"
+                        clickHandler="{this.zoomToLabel_clickHandler}"
                         enabled="true"
                         icon="assets/images/LayerZoomTo16.png"
                         label="{LocalizationUtil.getDefaultString('tocMapLayerZoomToLabel')}"/>
 
             <s:DataItem id="transparencyOption"
-                        clickHandler="{transparencyLabel_clickHandler}"
+                        clickHandler="{this.transparencyLabel_clickHandler}"
                         enabled="true"
                         icon="assets/images/EffectsTransparency16.png"
                         label="{LocalizationUtil.getDefaultString('tocMapLayerTransparencyLabel')}"/>
 
             <s:DataItem id="moveUpOption"
-                        clickHandler="{moveUpLabel_clickHandler}"
+                        clickHandler="{this.moveUpLabel_clickHandler}"
                         enabled="true"
                         icon="assets/images/LayerUp16.png"
                         label="{LocalizationUtil.getDefaultString('tocMapLayerMoveUpLabel')}"
                         showDivider="true"/>
 
             <s:DataItem id="moveDownOption"
-                        clickHandler="{moveDownLabel_clickHandler}"
+                        clickHandler="{this.moveDownLabel_clickHandler}"
                         enabled="true"
                         icon="assets/images/LayerDown16.png"
                         label="{LocalizationUtil.getDefaultString('tocMapLayerMoveDownLabel')}"/>
 
             <!--label added dynamically for description/download option-->
             <s:DataItem id="showDescriptionOrDownloadOption"
-                        clickHandler="{descriptionOrDownloadLabel_clickHandler}"
+                        clickHandler="{this.descriptionOrDownloadLabel_clickHandler}"
                         enabled="true"
                         icon="assets/images/GenericSpatialFile16.png"
                         showDivider="true"/>
