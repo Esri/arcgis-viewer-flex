@@ -18,7 +18,6 @@
 -->
 <viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
                    xmlns:s="library://ns.adobe.com/flex/spark"
-                   xmlns:mx="library://ns.adobe.com/flex/mx"
                    xmlns:viewer="com.esri.viewer.*"
                    xmlns:toc="com.esri.viewer.components.toc.*"
                    widgetConfigLoaded="widgetConfigLoadedHandler()">
@@ -28,7 +27,6 @@
 
             import mx.collections.ArrayCollection;
             import mx.collections.ArrayList;
-            import mx.core.FlexGlobals;
             import mx.core.LayoutDirection;
             import mx.core.UIComponent;
             import mx.events.CollectionEvent;
