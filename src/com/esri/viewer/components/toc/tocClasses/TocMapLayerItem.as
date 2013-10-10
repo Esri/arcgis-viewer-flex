@@ -165,20 +165,6 @@ public class TocMapLayerItem extends TocItem
     /**
      * @private
      */
-    override internal function updateIndeterminateState(calledFromChild:Boolean = false):void
-    {
-        indeterminate = DEFAULT_INDETERMINATE;
-
-        // Recurse up the tree
-        if (parent)
-        {
-            parent.updateIndeterminateState(true);
-        }
-    }
-
-    /**
-     * @private
-     */
     override internal function refreshLayer():void
     {
         layer.visible = visible;

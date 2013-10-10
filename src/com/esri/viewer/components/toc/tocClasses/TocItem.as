@@ -169,7 +169,6 @@ public class TocItem extends EventDispatcher
             var oldValue:Object = _visible;
             _visible = value;
 
-            updateIndeterminateState();
             if (layerRefresh)
             {
                 refreshLayer();
@@ -209,39 +208,6 @@ public class TocItem extends EventDispatcher
 
             // Dispatch a property change event to notify the item renderer
             dispatchEvent(PropertyChangeEvent.createUpdateEvent(this, "visible", oldValue, value));
-        }
-    }
-
-    //--------------------------------------------------------------------------
-    //  indeterminate
-    //--------------------------------------------------------------------------
-
-    internal static const DEFAULT_INDETERMINATE:Boolean = false;
-
-    private var _indeterminate:Boolean = DEFAULT_INDETERMINATE;
-
-    [Bindable("propertyChange")]
-    /**
-     * Whether the visibility of this TOC item is in a mixed state,
-     * based on child item visibility or other criteria.
-     */
-    public function get indeterminate():Boolean
-    {
-        return _indeterminate;
-    }
-
-    /**
-     * @private
-     */
-    public function set indeterminate(value:Boolean):void
-    {
-        if (value != _indeterminate)
-        {
-            var oldValue:Object = _indeterminate;
-            _indeterminate = value;
-
-            // Dispatch a property change event to notify the item renderer
-            dispatchEvent(PropertyChangeEvent.createUpdateEvent(this, "indeterminate", oldValue, value));
         }
     }
 
@@ -292,18 +258,6 @@ public class TocItem extends EventDispatcher
             currentTocItem = currentTocItem.parent;
         }
         return topMostTocItem;
-    }
-
-    /**
-     * Updates the indeterminate visibility state of this TOC item.
-     */
-    internal function updateIndeterminateState(calledFromChild:Boolean = false):void
-    {
-        // Recurse up the tree
-        if (parent)
-        {
-            parent.updateIndeterminateState(true);
-        }
     }
 
     /**

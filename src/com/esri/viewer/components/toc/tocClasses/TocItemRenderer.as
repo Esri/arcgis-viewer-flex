@@ -21,11 +21,11 @@ import com.esri.ags.layers.TiledMapServiceLayer;
 import com.esri.ags.layers.supportClasses.LegendItemInfo;
 import com.esri.viewer.AppEvent;
 import com.esri.viewer.components.toc.TOC;
-import com.esri.viewer.components.toc.controls.CheckBoxIndeterminate;
 
 import flash.events.MouseEvent;
 import flash.geom.Point;
 
+import mx.controls.CheckBox;
 import mx.controls.Image;
 import mx.controls.treeClasses.TreeItemRenderer;
 import mx.controls.treeClasses.TreeListData;
@@ -50,7 +50,7 @@ public class TocItemRenderer extends TreeItemRenderer
     //--------------------------------------------------------------------------
 
     // Renderer UI components
-    private var _checkbox:CheckBoxIndeterminate;
+    private var _checkbox:CheckBox;
 
     // UI component spacing
     private static const PRE_CHECKBOX_GAP:Number = 5;
@@ -132,7 +132,7 @@ public class TocItemRenderer extends TreeItemRenderer
         // Create a checkbox child component for toggling layer visibility.
         if (!_checkbox)
         {
-            _checkbox = new CheckBoxIndeterminate();
+            _checkbox = new CheckBox();
             _checkbox.addEventListener(MouseEvent.CLICK, onCheckBoxClick);
             _checkbox.addEventListener(MouseEvent.DOUBLE_CLICK, onCheckBoxDoubleClick);
             _checkbox.addEventListener(MouseEvent.MOUSE_DOWN, onCheckBoxMouseDown);
@@ -171,11 +171,7 @@ public class TocItemRenderer extends TreeItemRenderer
         {
             var item:TocItem = TocItem(data);
 
-            // Set the checkbox state
-            _checkbox.indeterminate = item.indeterminate;
-            // The indeterminate state has visual priority over the selected state
-            _checkbox.selected = item.visible && !item.indeterminate;
-
+            _checkbox.selected = item.visible;
             // Hide the checkbox for child items of tiled map services
             var checkboxVisible:Boolean = true;
             if (isTiledLayerChild(item) || (item is TocLegendItem) || (item is TocWMSLayerInfoItem))
