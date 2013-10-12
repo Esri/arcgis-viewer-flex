@@ -75,11 +75,21 @@
                 {
                     _layer = TocMapLayerItem(_item).layer;
                     _map = map;
-                    this.x = atX;
-                    this.y = atY;
+                    positionAt(atX, atY);
                     PopUpManager.addPopUp(this, parent);
                     addOptionsForLayerByType(_layer, parent);
                     typicalItem = LabelUtil.findLongestLabelItem(options.source, "label");
+                }
+            }
+
+            internal function positionAt(atX:Number, atY:Number):void
+            {
+                this.x = atX;
+                this.y = atY;
+
+                if (_transparencyMenuItem)
+                {
+                    updateTransparencyMenuPosition();
                 }
             }
 
@@ -173,9 +183,7 @@
                 if (!_transparencyMenuItem)
                 {
                     _transparencyMenuItem = new TransparencyMenuItem();
-
-                    _transparencyMenuItem.x = this.x < _transparencyMenuItem.width ? this.x + this.width : this.x - _transparencyMenuItem.width;
-                    _transparencyMenuItem.y = this.y; // align with the layer option popup
+                    updateTransparencyMenuPosition();
                     _transparencyMenuItem.layer = _layer;
                     PopUpManager.addPopUp(_transparencyMenuItem, this.parent);
                 }
@@ -184,6 +192,12 @@
                     PopUpManager.removePopUp(_transparencyMenuItem);
                     _transparencyMenuItem = null;
                 }
+            }
+
+            private function updateTransparencyMenuPosition():void
+            {
+                _transparencyMenuItem.x = this.x < _transparencyMenuItem.width ? this.x + this.width : this.x - _transparencyMenuItem.width;
+                _transparencyMenuItem.y = this.y; // align with the layer option popup
             }
 
             private function moveUpLabel_clickHandler(event:MouseEvent):void
@@ -367,12 +381,12 @@
 
             private function this_rollOverHandler(event:MouseEvent):void
             {
-                AppEvent.dispatch(AppEvent.SUSPEND_TOC_HIDE_TIMER, "true");
+                AppEvent.dispatch(AppEvent.RESET_TOC_HIDE_TIMER);
             }
 
             private function this_rollOutHandler(event:MouseEvent):void
             {
-                AppEvent.dispatch(AppEvent.SUSPEND_TOC_HIDE_TIMER, null);
+                AppEvent.dispatch(AppEvent.START_TOC_HIDE_TIMER);
             }
 
             private function newLayerMenuLaunching(event:AppEvent):void
