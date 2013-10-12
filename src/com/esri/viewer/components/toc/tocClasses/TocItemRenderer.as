@@ -22,6 +22,7 @@ import com.esri.ags.layers.supportClasses.LegendItemInfo;
 import com.esri.viewer.AppEvent;
 import com.esri.viewer.components.toc.TOC;
 
+import flash.events.Event;
 import flash.events.MouseEvent;
 import flash.geom.Point;
 
@@ -293,9 +294,16 @@ public class TocItemRenderer extends TreeItemRenderer
 
     private function onRemovalFromStage(event:AppEvent):void
     {
-        AppEvent.removeListener(AppEvent.TOC_HIDDEN, onRemovalFromStage);
+        hideLayerMenu();
+    }
+
+    private function hideLayerMenu():void
+    {
         if (_tocLayerMenu)
         {
+            // need to show/hide pop-up with information.
+            AppEvent.removeListener(AppEvent.TOC_HIDDEN, onRemovalFromStage);
+            systemManager.removeEventListener(Event.RESIZE, systemManager_resizeHandler);
             _tocLayerMenu.remove();
             _tocLayerMenu = null;
         }
@@ -305,22 +313,18 @@ public class TocItemRenderer extends TreeItemRenderer
     {
         event.stopPropagation();
 
-        // need to show/hide pop-up with information.
-        AppEvent.removeListener(AppEvent.TOC_HIDDEN, onRemovalFromStage);
-
         if (_tocLayerMenu && _tocLayerMenu.isPopUp)
         {
-            _tocLayerMenu.remove();
-            _tocLayerMenu = null;
+            hideLayerMenu();
         }
         else
         {
             // let any other popups know a popup is about to be created and opened
             AppEvent.dispatch(AppEvent.LAUNCHING_TOC_LAYER_MENU);
             _tocLayerMenu = new TocLayerMenu();
-            var originPoint:Point = new Point(this.x + this.width, this.label.y);
+            var originPoint:Point = new Point(this.x + this.width, this.label.y + this.height);
             var globalPoint:Point = localToGlobal(originPoint);
-            _tocLayerMenu.popUpForItem(this.parent.parent, data, TOC(this.parent.parent).map, globalPoint.x, globalPoint.y + this.height);
+            _tocLayerMenu.popUpForItem(this.parent.parent, data, TOC(this.parent.parent).map, globalPoint.x, globalPoint.y);
             if (FlexGlobals.topLevelApplication.layoutDirection != "rtl") // fix for RTL
             {
                 _tocLayerMenu.validateNow();
@@ -328,6 +332,21 @@ public class TocItemRenderer extends TreeItemRenderer
             }
 
             AppEvent.addListener(AppEvent.TOC_HIDDEN, onRemovalFromStage);
+            systemManager.addEventListener(Event.RESIZE, systemManager_resizeHandler, false, 0, true);
+        }
+    }
+
+    private function systemManager_resizeHandler(event:Event):void
+    {
+        if (_tocLayerMenu && _tocLayerMenu.isPopUp)
+        {
+            var originPoint:Point = new Point(this.x + this.width, this.label.y + this.height);
+            var globalPoint:Point = localToGlobal(originPoint);
+            if (FlexGlobals.topLevelApplication.layoutDirection != "rtl") // fix for RTL
+            {
+                globalPoint.x -= _tocLayerMenu.width;
+            }
+            _tocLayerMenu.positionAt(globalPoint.x, globalPoint.y);
         }
     }
 
