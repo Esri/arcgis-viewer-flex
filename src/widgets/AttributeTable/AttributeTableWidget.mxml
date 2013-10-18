@@ -383,7 +383,6 @@
                         }
                         else
                         {
-                            // listen for load
                             layer.addEventListener(LayerEvent.LOAD, featureLayer_loadHandler);
                             layer.addEventListener(LayerEvent.LOAD_ERROR, featureLayer_loadErrorHandler);
                         }
@@ -997,11 +996,15 @@
 
             private function featureLayer_loadHandler(event:LayerEvent):void
             {
+                event.layer.removeEventListener(LayerEvent.LOAD, featureLayer_loadHandler);
+                event.layer.removeEventListener(LayerEvent.LOAD_ERROR, featureLayer_loadErrorHandler);
                 getAllFeatureLayers(layersUsedInAttributeTable.indexOf(event.layer), featureLayers);
             }
 
             private function featureLayer_loadErrorHandler(event:LayerEvent):void
             {
+                event.layer.removeEventListener(LayerEvent.LOAD, featureLayer_loadHandler);
+                event.layer.removeEventListener(LayerEvent.LOAD_ERROR, featureLayer_loadErrorHandler);
                 getAllFeatureLayers(layersUsedInAttributeTable.indexOf(event.layer), featureLayers);
             }
 
