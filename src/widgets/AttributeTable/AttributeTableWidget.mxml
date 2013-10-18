@@ -438,6 +438,7 @@
                         getAllFeatureLayers(index, featureLayers);
                     }
                 }
+
                 function jsonTask_faultHandler(fault:Fault, token:Object = null):void
                 {
                     var layers:Array = [];
@@ -461,8 +462,7 @@
                 }
             }
 
-            private function createFeatureLayersFromDynamicMapService2(arcGISDynamicMapServiceLayer:ArcGISDynamicMapServiceLayer, featureServiceURL:String, layers:Array,
-                                                                       gdbVersion:String, index:int, onMapLayerAdd:Boolean):void
+            private function createFeatureLayersFromDynamicMapService2(arcGISDynamicMapServiceLayer:ArcGISDynamicMapServiceLayer, featureServiceURL:String, layers:Array, gdbVersion:String, index:int, onMapLayerAdd:Boolean):void
             {
                 var atleastOneFeatureLayerAlreadyIncluded:Boolean;
                 var candidateFeatureLayers:Array = [];
@@ -510,6 +510,7 @@
                     parseCandidateFeatureLayers(index1, candidateFeatureLayers);
 
                     var fLayerObject:Object;
+
                     function parseCandidateFeatureLayers(index1:int, candidateFeatureLayers:Array):void
                     {
                         if (index1 < candidateFeatureLayers.length)
