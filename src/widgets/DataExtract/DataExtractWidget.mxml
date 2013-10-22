@@ -77,6 +77,8 @@
             [Bindable]
             private var spatialReferenceChoiceListVisible:Boolean;
             [Bindable]
+            private var emailInputVisible:Boolean;
+            [Bindable]
             private var gpURL:String;
             [Bindable]
             private var layers:ArrayList;
@@ -117,11 +119,15 @@
             [Bindable]
             private var step5Label:String;
             [Bindable]
+            private var step6Label:String;
+            [Bindable]
             private var extractButtonLabel:String;
             private var step1ErrorLabel:String;
             private var step2ErrorLabel:String;
             private var emptyResultsLabel:String;
             private var saveDataFileLabel:String;
+            private var successfulEmailLabel:String;
+            private var unsuccessfulEmailLabel:String;
 
             private function basewidget_initializeHandler():void
             {
@@ -204,6 +210,7 @@
                     step3Label = configXML.labels.step3label[0] || getDefaultString("step3Label");
                     step4Label = configXML.labels.step4label[0] || getDefaultString("step4Label");
                     step5Label = configXML.labels.step5label[0] || getDefaultString("step5Label");
+                    step6Label = configXML.labels.step6label[0] || getDefaultString("step6Label");
                     extractButtonLabel = configXML.labels.extractbuttonlabel[0] || getDefaultString("extractButtonLabel");
                     step1ErrorLabel = configXML.labels.step1errorlabel[0] || getDefaultString("step1ErrorLabel");
                     step2ErrorLabel = configXML.labels.step2errorlabel[0] || getDefaultString("step2ErrorLabel");
@@ -211,6 +218,8 @@
                     saveDataFileLabel = configXML.labels.savedatafilelabel[0] || getDefaultString("saveDataFileLabel");
                     selectAllLabel = configXML.labels.selectalllabel[0] || getDefaultString("selectAllLabel");
                     deselectAllLabel = configXML.labels.deselectalllabel[0] || getDefaultString("deselectAllLabel");
+                    successfulEmailLabel = configXML.labels.successfulemaillabel[0] || getDefaultString("successfulEmailLabel");
+                    unsuccessfulEmailLabel = configXML.labels.unsuccessfulemaillabel[0] || getDefaultString("unsuccessfulEmailLabel");
 
                     initGraphicContextMenu();
                 }
@@ -367,6 +376,11 @@
                     {
                         gpParams["Spatial_Reference"] = spatialReferenceDDL.selectedItem.data;
                     }
+                }
+
+                if (emailInputVisible)
+                {
+                    gpParams["To"] = emailInput.text;
                 }
 
                 return gpParams;
@@ -572,8 +586,8 @@
                 swfMessage.visible = false;
                 if (event.jobInfo.jobStatus == JobInfo.STATUS_SUCCEEDED)
                 {
-                    gp.getResultData(gp.submitJobLastResult.jobId,
-                                     "Output_Zip_File"); // parameterName
+                    var parameterName:String = emailInputVisible ? "Sent" : "Output_Zip_File";
+                    gp.getResultData(gp.submitJobLastResult.jobId, parameterName);
                 }
                 else
                 {
@@ -590,14 +604,23 @@
             {
                 if (event.parameterValue)
                 {
-                    dataUrl = String(event.parameterValue.value.url);
-                    if (!dataUrl)
+                    if (event.parameterValue.paramName == "Sent")
                     {
-                        showError(emptyResultsLabel);
-                        return;
+                        var successfullySent:Boolean = Boolean(event.parameterValue.value);
+                        var emailSentMessage:String = successfullySent ? successfulEmailLabel : unsuccessfulEmailLabel;
+                        Alert.show(emailSentMessage, wTemplate.widgetTitle, Alert.OK);
                     }
+                    else
+                    {
+                        dataUrl = String(event.parameterValue.value.url);
+                        if (!dataUrl)
+                        {
+                            showError(emptyResultsLabel);
+                            return;
+                        }
 
-                    Alert.show(saveDataFileLabel, wTemplate.widgetTitle, Alert.YES | Alert.NO, null, alert_ClickHandler);
+                        Alert.show(saveDataFileLabel, wTemplate.widgetTitle, Alert.YES | Alert.NO, null, alert_ClickHandler);
+                    }
                 }
                 else
                 {
@@ -681,12 +704,18 @@
                             spatialReferenceChoiceList.addItem({ data: spatialReferenceString, label: spatialReferenceString });
                         }
                     }
+                    if (params[i].name == "To")
+                    {
+                        var email:String = params[i].defaultValue;
+                        emailInputVisible = true;
+                    }
                 }
 
                 checkBoxDG.dataProvider = layers;
                 formatDDL.dataProvider = formatChoiceList;
                 rasterFormatDDL.dataProvider = rasterFormatChoiceList;
                 spatialReferenceDDL.dataProvider = spatialReferenceChoiceList;
+                emailInput.text = email;
             }
 
             private function gpService_faultHandler(fault:Fault, token:Object = null):void
@@ -918,6 +947,16 @@
                                     includeInLayout="{spatialReferenceChoiceListVisible}"
                                     requireSelection="true"
                                     visible="{spatialReferenceChoiceListVisible}"/>
+
+                    <s:Label includeInLayout="{emailInputVisible}"
+                             paddingTop="4"
+                             text="{step6Label}"
+                             visible="{emailInputVisible}"/>
+
+                    <s:TextInput id="emailInput"
+                                 width="100%"
+                                 includeInLayout="{emailInputVisible}"
+                                 visible="{emailInputVisible}"/>
 
                     <s:HGroup width="100%" verticalAlign="middle">
                         <s:Button id="extract"
