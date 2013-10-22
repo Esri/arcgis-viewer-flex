@@ -54,7 +54,6 @@
 
             import mx.binding.utils.ChangeWatcher;
             import mx.collections.ArrayCollection;
-            import mx.containers.ViewStack;
             import mx.controls.Alert;
             import mx.events.CollectionEvent;
             import mx.events.FlexEvent;
@@ -62,7 +61,6 @@
             import mx.rpc.Fault;
 
             import spark.components.NavigatorContent;
-            import spark.components.TabBar;
 
             [Bindable]
             private var featureLayers:Array;
@@ -385,8 +383,8 @@
                         }
                         else
                         {
-                            // listen for load
                             layer.addEventListener(LayerEvent.LOAD, featureLayer_loadHandler);
+                            layer.addEventListener(LayerEvent.LOAD_ERROR, featureLayer_loadErrorHandler);
                         }
                     }
                     else
@@ -438,6 +436,7 @@
                         getAllFeatureLayers(index, featureLayers);
                     }
                 }
+
                 function jsonTask_faultHandler(fault:Fault, token:Object = null):void
                 {
                     var layers:Array = [];
@@ -461,8 +460,7 @@
                 }
             }
 
-            private function createFeatureLayersFromDynamicMapService2(arcGISDynamicMapServiceLayer:ArcGISDynamicMapServiceLayer, featureServiceURL:String, layers:Array,
-                                                                       gdbVersion:String, index:int, onMapLayerAdd:Boolean):void
+            private function createFeatureLayersFromDynamicMapService2(arcGISDynamicMapServiceLayer:ArcGISDynamicMapServiceLayer, featureServiceURL:String, layers:Array, gdbVersion:String, index:int, onMapLayerAdd:Boolean):void
             {
                 var atleastOneFeatureLayerAlreadyIncluded:Boolean;
                 var candidateFeatureLayers:Array = [];
@@ -510,6 +508,7 @@
                     parseCandidateFeatureLayers(index1, candidateFeatureLayers);
 
                     var fLayerObject:Object;
+
                     function parseCandidateFeatureLayers(index1:int, candidateFeatureLayers:Array):void
                     {
                         if (index1 < candidateFeatureLayers.length)
@@ -997,6 +996,15 @@
 
             private function featureLayer_loadHandler(event:LayerEvent):void
             {
+                event.layer.removeEventListener(LayerEvent.LOAD, featureLayer_loadHandler);
+                event.layer.removeEventListener(LayerEvent.LOAD_ERROR, featureLayer_loadErrorHandler);
+                getAllFeatureLayers(layersUsedInAttributeTable.indexOf(event.layer), featureLayers);
+            }
+
+            private function featureLayer_loadErrorHandler(event:LayerEvent):void
+            {
+                event.layer.removeEventListener(LayerEvent.LOAD, featureLayer_loadHandler);
+                event.layer.removeEventListener(LayerEvent.LOAD_ERROR, featureLayer_loadErrorHandler);
                 getAllFeatureLayers(layersUsedInAttributeTable.indexOf(event.layer), featureLayers);
             }
 
