@@ -65,23 +65,19 @@
             private var graphicContextMenu:ContextMenu;
             private var gpService:JSONTask;
             private var selectedDrawingIcon:FocusableImage;
+            private var layerChoices:Array;
 
             private var drawSymbol:Symbol;
             [Bindable]
             private var exposeLayers:Boolean = true; //later set to FALSE!!
-            private var formatChoiceList:ArrayList;
-            private var rasterFormatChoiceList:ArrayList;
             [Bindable]
             private var rasterFormatChoiceListVisible:Boolean;
-            private var spatialReferenceChoiceList:ArrayList;
             [Bindable]
             private var spatialReferenceChoiceListVisible:Boolean;
             [Bindable]
             private var emailInputVisible:Boolean;
             [Bindable]
             private var gpURL:String;
-            [Bindable]
-            private var layers:ArrayList;
             private var excludeLayers:Array = [];
             [Bindable]
             private var useCurrentExtentAsAIO:Boolean = false;
@@ -328,11 +324,11 @@
                 if (exposeLayers)
                 {
                     var layersToClip:Array = [];
-                    for (var i:int = 0; i < layers.length; i++)
+                    for each (var choice:Object in layerChoices)
                     {
-                        if (layers.getItemAt(i).selected)
+                        if (choice.selected)
                         {
-                            layersToClip.push(layers.getItemAt(i).label);
+                            layersToClip.push(choice.label);
                         }
                     }
                     if (layersToClip.length > 0)
@@ -662,60 +658,60 @@
                 {
                     if (params[i].name == "Layers_to_Clip")
                     {
-                        layers = new ArrayList();
                         exposeLayers = true;
-                        for each (var layer:Object in params[i].choiceList)
+                        layerChoices = [];
+                        for each (var layerName:String in params[i].choiceList)
                         {
-                            if (excludeLayers.indexOf(layer) == -1)
+                            if (excludeLayers.indexOf(layerName) == -1)
                             {
-                                var obj:ObjectProxy = new ObjectProxy({ label: layer, selected: false });
-                                layers.addItem(obj);
+                                layerChoices.push(new ObjectProxy({ label: layerName, selected: false }));
                             }
                         }
+                        checkBoxDG.dataProvider = new ArrayList(layerChoices);
                     }
+
                     if (params[i].name == "Feature_Format")
                     {
-                        formatChoiceList = new ArrayList();
+                        var formats:Array = [];
                         for each (var format:String in params[i].choiceList)
                         {
                             const fileLabel:String = format.substring(0, format.indexOf("-") - 1);
                             const fileExtension:String = format.substring(format.lastIndexOf("."), format.length);
-                            formatChoiceList.addItem({ data: format, label: fileLabel + " (" + fileExtension + ")" });
+                            formats.push({ data: format, label: fileLabel + " (" + fileExtension + ")" });
                         }
+                        formatDDL.dataProvider = new ArrayList(formats);
                     }
 
                     if (params[i].name == "Raster_Format")
                     {
                         rasterFormatChoiceListVisible = true;
-                        rasterFormatChoiceList = new ArrayList();
+                        var rasterFormats:Array = [];
                         for each (var rasterFormat:String in params[i].choiceList)
                         {
                             const fileLabel1:String = rasterFormat.substring(0, rasterFormat.indexOf("-") - 1);
                             const fileExtension1:String = rasterFormat.substring(rasterFormat.lastIndexOf("."), rasterFormat.length);
-                            rasterFormatChoiceList.addItem({ data: rasterFormat, label: fileLabel1 + " (" + fileExtension1 + ")" });
+                            rasterFormats.push({ data: rasterFormat, label: fileLabel1 + " (" + fileExtension1 + ")" });
                         }
+                        rasterFormatDDL.dataProvider = new ArrayList(rasterFormats);
                     }
+
                     if (params[i].name == "Spatial_Reference")
                     {
                         spatialReferenceChoiceListVisible = true;
-                        spatialReferenceChoiceList = new ArrayList();
+                        var spatialReferences:Array = [];
                         for each (var spatialReferenceString:String in params[i].choiceList)
                         {
-                            spatialReferenceChoiceList.addItem({ data: spatialReferenceString, label: spatialReferenceString });
+                            spatialReferences.push({ data: spatialReferenceString, label: spatialReferenceString });
                         }
+                        spatialReferenceDDL.dataProvider = new ArrayList(spatialReferences);
                     }
+
                     if (params[i].name == "To")
                     {
-                        var email:String = params[i].defaultValue;
                         emailInputVisible = true;
+                        emailInput.text = params[i].defaultValue;
                     }
                 }
-
-                checkBoxDG.dataProvider = layers;
-                formatDDL.dataProvider = formatChoiceList;
-                rasterFormatDDL.dataProvider = rasterFormatChoiceList;
-                spatialReferenceDDL.dataProvider = spatialReferenceChoiceList;
-                emailInput.text = email;
             }
 
             private function gpService_faultHandler(fault:Fault, token:Object = null):void
@@ -740,10 +736,9 @@
 
             private function toggleLayerSelection(value:Boolean):void
             {
-                var allLayers:Array = layers.source;
-                for each (var layerObject:Object in allLayers)
+                for each (var choice:Object in layerChoices)
                 {
-                    layerObject.selected = value;
+                    choice.selected = value;
                 }
             }
         ]]>
@@ -881,7 +876,7 @@
                     <s:Label paddingTop="4" text="{step2Label}"/>
 
                     <s:Scroller width="100%" height="100%">
-                        <s:DataGroup id="checkBoxDG" dataProvider="{layers}">
+                        <s:DataGroup id="checkBoxDG">
                             <s:layout>
                                 <s:VerticalLayout gap="2"
                                                   horizontalAlign="left"
