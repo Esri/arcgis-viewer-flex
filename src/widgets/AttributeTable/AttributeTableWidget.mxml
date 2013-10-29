@@ -76,6 +76,7 @@
             private var featureLayerToDynamicMapService:Dictionary = new Dictionary;
             private var featureLayerToSettings:Dictionary = new Dictionary;
             private var hiddenFeatureLayerToSettingsName:Dictionary = new Dictionary;
+            private var defaultExportLocation:String;
 
             private function basewidget_initializeHandler():void
             {
@@ -96,6 +97,7 @@
             {
                 if (configXML)
                 {
+                    defaultExportLocation = configXML.exportlocation[0];
                     // non-mapped layers
                     var nonMappedLayers:Array = [];
                     var players:XMLList = configXML.layer as XMLList;
@@ -862,6 +864,7 @@
                     var attributeTable:AttributeTable = new AttributeTable(featureLayer);
                     attributeTable.addEventListener(AttributeTableEvent.UPDATE_FEATURE, attributeTable_updateFeatureHandler);
                     attributeTable.addEventListener(AttributeTableEvent.DELETE_FEATURES, attributeTable_deleteFeaturesHandler);
+                    attributeTable.exportLocation = defaultExportLocation != "false";
 
                     var settingsKey:String = featureLayer.name;
                     if (settingsKey.indexOf("hiddenLayer_") != -1)
