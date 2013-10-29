@@ -17,8 +17,6 @@
 ///////////////////////////////////////////////////////////////////////////
 -->
 <viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
-                   xmlns:s="library://ns.adobe.com/flex/spark"
-                   xmlns:mx="library://ns.adobe.com/flex/mx"
                    xmlns:viewer="com.esri.viewer.*"
                    xmlns:esri="http://www.esri.com/2008/ags"
                    initialize="basewidget_initializeHandler(event)"
@@ -37,13 +35,12 @@
             import com.esri.viewer.components.toc.utils.MapUtil;
             import com.esri.viewer.utils.ErrorMessageUtil;
 
-            import mx.collections.*;
             import mx.events.FlexEvent;
             import mx.rpc.Fault;
 
             protected function basewidget_initializeHandler(event:FlexEvent):void
             {
-                if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
+                if (isPartOfPanel)
                 {
                     this.percentWidth = this.percentHeight = 100;
                     wTemplate.percentWidth = wTemplate.percentHeight = 100;
@@ -57,7 +54,6 @@
 
             private function basewidget_widgetConfigLoaded():void
             {
-                // hide map infowindow if any               
                 map.infoWindow.hide();
                 if (configXML)
                 {
@@ -86,7 +82,6 @@
                     var directionsGeocoderOptions:DirectionsGeocoderOptions = new DirectionsGeocoderOptions();
                     directionsGeocoderOptions.locatorOptions = new GeocoderLocatorOptions();
 
-                    // geocoder options
                     if (configXML.geocoderoptions.length() > 0)
                     {
                         var locatorDisabled:Boolean = (configXML.geocoderoptions.usemapservicesonly[0] == "true");
@@ -102,19 +97,19 @@
 
                         directionsGeocoderOptions.autoComplete = geocoderOptionsXML.autocomplete != "false";
 
-                        const configMaxLocations:int = parseInt(geocoderOptionsXML.maxlocations[0])
+                        const configMaxLocations:int = parseInt(geocoderOptionsXML.maxlocations[0]);
                         if (!isNaN(configMaxLocations) && configMaxLocations > 0)
                         {
                             directionsGeocoderOptions.maxLocations = configMaxLocations;
                         }
 
-                        const configMinChars:int = parseInt(geocoderOptionsXML.minchars[0])
+                        const configMinChars:int = parseInt(geocoderOptionsXML.minchars[0]);
                         if (configMinChars && configMinChars > 0)
                         {
                             directionsGeocoderOptions.minCharacters = configMinChars;
                         }
 
-                        const configSearchDelay:int = parseInt(geocoderOptionsXML.searchdelay[0])
+                        const configSearchDelay:int = parseInt(geocoderOptionsXML.searchdelay[0]);
                         if (configSearchDelay && configSearchDelay > 0)
                         {
                             directionsGeocoderOptions.searchDelay = configSearchDelay;
@@ -137,8 +132,8 @@
                     directions.geocoderOptions = directionsGeocoderOptions;
 
                     var directionsRouteOptions:DirectionsRouteOptions = new DirectionsRouteOptions;
-                    directionsRouteOptions.directionsLanguage = resourceManager.localeChain[0]; // always set directionsLanguage     
-                    //route options
+                    directionsRouteOptions.directionsLanguage = resourceManager.localeChain[0];
+
                     if (configXML.routeoptions.length() > 0)
                     {
                         var routeOptionsXML:XMLList = configXML.routeoptions;
@@ -259,7 +254,6 @@
 
                 var mapService:GeocoderMapService;
                 var useMapServiceProxy:Boolean;
-                var mapServiceProxyURL:String;
 
                 for each (var mapServiceXML:XML in mapServicesXMLList.mapservice)
                 {
