@@ -132,8 +132,8 @@
                 }
                 else
                 {
-                    wTemplate.width;
-                    wTemplate.height;
+                    wTemplate.width = 320;
+                    wTemplate.height = 300;
                 }
             }
 
