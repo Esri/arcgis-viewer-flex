@@ -33,7 +33,6 @@
             import com.esri.ags.events.GeoprocessorEvent;
             import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.Geometry;
-            import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.geometry.Polygon;
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.symbols.Symbol;
@@ -52,7 +51,6 @@
             import mx.collections.ArrayList;
             import mx.controls.Alert;
             import mx.events.CloseEvent;
-            import mx.rpc.AsyncResponder;
             import mx.rpc.Fault;
             import mx.rpc.events.FaultEvent;
             import mx.utils.ObjectProxy;
@@ -61,7 +59,6 @@
             private static const OUTPUT_ZIP_FILE_PARAM_NAME:String = "Output_Zip_File";
 
             private var outputFileName:String;
-            private var finishDrawing:Boolean;
             private var graphicsLayer:GraphicsLayer;
             private var graphicContextMenu:ContextMenu;
             private var gpService:JSONTask;
@@ -128,7 +125,7 @@
 
             private function basewidget_initializeHandler():void
             {
-                if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
+                if (isPartOfPanel)
                 {
                     this.percentWidth = this.percentHeight = 100;
                     wTemplate.percentWidth = wTemplate.percentHeight = 100;
@@ -151,17 +148,9 @@
                     geometryService.token = GeometryServiceSingleton.instance.token;
                     geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
 
-                    // TODO: check for non-existence
-                    gpURL = String(configXML.dataextractionservice);
-                    if (String(configXML.aioselectionmethod) == "extent")
-                    {
-                        useCurrentExtentAsAIO = true;
-                    }
-                    else
-                    {
-                        useCurrentExtentAsAIO = false;
-                    }
-                    //useproxy
+                    gpURL = configXML.dataextractionservice[0];
+                    useCurrentExtentAsAIO = (configXML.aioselectionmethod[0] == "extent");
+
                     if (configXML.useproxy.length() > 0)
                     {
                         useProxy = configXML.useproxy == "true";
@@ -179,9 +168,8 @@
                     urlVars.f = "json";
 
                     //Call gpService to get service properties
-                    gpService.execute(urlVars, new AsyncResponder(gpService_resultHandler, gpService_faultHandler));
+                    gpService.execute(urlVars, new mx.rpc.Responder(gpService_resultHandler, gpService_faultHandler));
 
-                    // exclude these layers
                     var excludeLayersXML:XMLList = configXML.excludelayer as XMLList;
                     for (var i:int = 0; i < excludeLayersXML.length(); i++)
                     {
@@ -193,7 +181,6 @@
 
                     graphicsLayer.name = configXML.layername || widgetTitle;
 
-                    //labels
                     descLabel = configXML.labels.desclabel[0] || getDefaultString("descLabel");
                     step1Label = configXML.labels.step1label[0] || getDefaultString("step1Label");
                     polygonLabel = configXML.labels.polygonlabel[0] || getDefaultString("drawPolygonLabel");
@@ -302,7 +289,7 @@
 
                 if (useCurrentExtentAsAIO)
                 {
-                    geometries = [ getMapExtentEnvelope()];
+                    geometries = [ map.extent.toPolygon() ];
                 }
                 else if (graphicsLayer.numGraphics > 0)
                 {
@@ -378,21 +365,6 @@
                 return clipFS;
             }
 
-            private function getMapExtentEnvelope():Polygon
-            {
-                //create the extent as a polygon
-                var mapExtentEnvelope:Polygon = new Polygon(null, map.spatialReference);
-                mapExtentEnvelope.rings =
-                    [[
-                     new MapPoint(map.extent.xmin, map.extent.ymin),
-                     new MapPoint(map.extent.xmax, map.extent.ymin),
-                     new MapPoint(map.extent.xmax, map.extent.ymax),
-                     new MapPoint(map.extent.xmin, map.extent.ymax),
-                     new MapPoint(map.extent.xmin, map.extent.ymin)
-                     ]];
-                return mapExtentEnvelope;
-            }
-
             //
             // Draw functions
             //
@@ -404,8 +376,6 @@
                 selectedDrawingIcon = FocusableImage(event.currentTarget);
                 clearSelectionFilter();
                 selectedDrawingIcon.filters = [ glowFilter ];
-
-                finishDrawing = false;
 
                 var status:String;
                 var value:String = selectedDrawingIcon.name;
@@ -524,9 +494,6 @@
 
             private function map_drawEndHandler(event:DrawEvent):void
             {
-                // deactivate the draw tool
-                finishDrawing = true;
-
                 selectedDrawingIcon = null;
                 clearSelectionFilter();
 
@@ -535,23 +502,13 @@
                 var graphic:Graphic = event.graphic;
                 graphic.contextMenu = graphicContextMenu;
 
-                if (graphic.geometry is Extent)
+                const extent:Extent = graphic.geometry as Extent;
+                if (extent)
                 {
-                    // convert extent to a polygon
-                    const extent:Extent = Extent(graphic.geometry);
-                    var extentPolygon:Polygon = new Polygon(null, map.spatialReference);
-                    extentPolygon.rings = [[
-                                           new MapPoint(extent.xmin, extent.ymin),
-                                           new MapPoint(extent.xmax, extent.ymin),
-                                           new MapPoint(extent.xmax, extent.ymax),
-                                           new MapPoint(extent.xmin, extent.ymax),
-                                           new MapPoint(extent.xmin, extent.ymin)
-                                           ]];
-                    graphic.geometry = extentPolygon;
+                    graphic.geometry = extent.toPolygon();
                 }
                 graphic.symbol = drawSymbol;
 
-                // add graphic to the graphics layer
                 graphicsLayer.add(graphic);
             }
 
@@ -636,7 +593,7 @@
                 showError(msg);
             }
 
-            private function gpService_resultHandler(serviceProperties:Object, token:Object = null):void
+            private function gpService_resultHandler(serviceProperties:Object):void
             {
                 var params:Array = serviceProperties.parameters;
                 rasterFormatChoiceListVisible = false;
@@ -701,7 +658,7 @@
                 }
             }
 
-            private function gpService_faultHandler(fault:Fault, token:Object = null):void
+            private function gpService_faultHandler(fault:Fault):void
             {
                 var msg:String = getDefaultString("gpServiceConnectionError",
                                                   gp.url,
