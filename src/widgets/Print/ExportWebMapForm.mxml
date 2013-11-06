@@ -181,7 +181,8 @@
                                     const layerInfos:Array = layer is ArcGISDynamicMapServiceLayer ? ArcGISDynamicMapServiceLayer(layer).layerInfos : ArcGISTiledMapServiceLayer(layer).layerInfos;
                                     for each (var layerInfo:LayerInfo in layerInfos)
                                     {
-                                        if (excludedSublayers.indexOf(layerInfo.layerId) == -1)
+                                        if (!layerInfo.subLayerIds // skip group layers
+                                            && excludedSublayers.indexOf(layerInfo.layerId) == -1)
                                         {
                                             includedSublayers.push(layerInfo.layerId);
                                         }
