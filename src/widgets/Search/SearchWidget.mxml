@@ -72,6 +72,7 @@
             import com.esri.viewer.utils.ClustererParser;
             import com.esri.viewer.utils.ErrorMessageUtil;
             import com.esri.viewer.utils.LabelUtil;
+            import com.esri.viewer.utils.SymbolParser;
 
             import mx.collections.ArrayCollection;
             import mx.collections.ArrayList;
@@ -102,6 +103,7 @@
             private var queryTitleField:String;
             private var queryLinkField:String;
             private var queryLinkAlias:String;
+            private var querySymbol:Symbol;
             private var resultsLabel:String;
             private var selectionLabel:String;
             private var selectedDrawingIcon:FocusableImage;
@@ -189,6 +191,8 @@
 
                     shareResults = configXML.shareresults[0] && configXML.shareresults == "true";
 
+                    var symbolParser:SymbolParser = new SymbolParser();
+
                     configSearchGraphical = [];
                     configSearchText = [];
                     var lyrList:XMLList = configXML..layer;
@@ -202,6 +206,7 @@
                         var lyrFields:XMLList = lyrList[i].fields;
                         var lyrTitleField:String = lyrList[i].titlefield;
                         var lyrLinkField:String = lyrList[i].linkfield;
+                        var lyrSymbol:Symbol = symbolParser.parseSymbol(lyrList[i].symbol[0]);
                         var linkAlias:String = lyrList[i].linkfield.@alias[0];
                         var useAMF:String = lyrList[i].useamf;
                         var useProxy:Boolean = lyrList[i].useproxy[0] && lyrList[i].useproxy == "true";
@@ -255,7 +260,8 @@
                                 orderbyfields: lyrOrderByFields,
                                 titlefield: lyrTitleField,
                                 linkfield: lyrLinkField,
-                                linkalias: linkAlias
+                                linkalias: linkAlias,
+                                symbol: lyrSymbol
                             };
                         configSearchGraphical.push(searchLayer);
                         if (lyrExpr)
@@ -568,6 +574,7 @@
                 queryTitleField = searchLayer.titlefield;
                 queryLinkField = searchLayer.linkfield;
                 queryLinkAlias = searchLayer.linkalias;
+                querySymbol = searchLayer.symbol;
 
                 if (queryLayer && txtSearch.text)
                 {
@@ -681,6 +688,7 @@
                 queryTitleField = searchLayer.titlefield;
                 queryLinkField = searchLayer.linkfield;
                 queryLinkAlias = searchLayer.linkalias;
+                querySymbol = searchLayer.symbol;
 
                 if (queryLayer)
                 {
@@ -725,7 +733,7 @@
                     queryTitleField = featureSet.displayFieldName;
                 }
 
-                var defaultSymbol:Symbol = getMatchingDefaultSymbol(featureSet.geometryType);
+                var defaultSymbol:Symbol = querySymbol ? querySymbol : getMatchingDefaultSymbol(featureSet.geometryType);
                 var resultAttributes:ResultAttributes;
                 var infoWindowRenderer:ClassFactory;
 
