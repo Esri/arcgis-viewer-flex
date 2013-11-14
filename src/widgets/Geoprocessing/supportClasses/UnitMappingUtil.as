@@ -17,6 +17,7 @@ package widgets.Geoprocessing.supportClasses
 {
 
 import com.esri.ags.Units;
+import com.esri.viewer.utils.LocalizationUtil;
 
 public final class UnitMappingUtil
 {
@@ -28,27 +29,27 @@ public final class UnitMappingUtil
         {
             case Units.FEET:
             {
-                prettyUnits = "Feet";
+                prettyUnits = LocalizationUtil.getDefaultString("unitsFeet");
                 break;
             }
             case Units.MILES:
             {
-                prettyUnits = "Miles";
+                prettyUnits = LocalizationUtil.getDefaultString("unitsMiles");
                 break;
             }
             case Units.NAUTICAL_MILES:
             {
-                prettyUnits = "Nautical Miles";
+                prettyUnits = LocalizationUtil.getDefaultString("unitsNauticalMiles");
                 break;
             }
             case Units.METERS:
             {
-                prettyUnits = "Meters";
+                prettyUnits = LocalizationUtil.getDefaultString("unitsMeters");
                 break;
             }
             case Units.KILOMETERS:
             {
-                prettyUnits = "Kilometers";
+                prettyUnits = LocalizationUtil.getDefaultString("unitsKilometers");
                 break;
             }
         }
