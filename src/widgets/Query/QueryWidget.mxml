@@ -454,7 +454,10 @@
                     }
                     case Geometry.POLYGON:
                     {
-                        defaultSymbol = resultFillSymbol;
+                        var shouldFallBackOnLineSymbol:Boolean =
+                            configXML.symbols.simplelinesymbol[0] &&
+                            configXML.symbols.simplefillsymbol[0] == null;
+                        defaultSymbol = shouldFallBackOnLineSymbol ? resultLineSymbol : resultFillSymbol;
                         break;
                     }
                 }
