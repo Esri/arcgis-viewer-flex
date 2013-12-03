@@ -230,7 +230,7 @@
                             var length:Number = widgetList[i].groupLength;
                             for (var k:int = 0; k < length; k++)
                             {
-                                widgetArray.push({ widget: widgetList[i + k], open: (widgetList[i].preload && (widgetList[i].preload == "open" || widgetList[i].preload == "minimized")) ? true : false });
+                                widgetArray.push({ widget: widgetList[i + k], open: (widgetList[i + k].preload && (widgetList[i + k].preload == "open" || widgetList[i + k].preload == "minimized")) ? true : false });
                             }
                             widgetItem = new WidgetItem();
                             widgetItem.isGroup = true;
