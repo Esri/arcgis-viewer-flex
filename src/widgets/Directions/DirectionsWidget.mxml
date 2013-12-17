@@ -17,8 +17,6 @@
 ///////////////////////////////////////////////////////////////////////////
 -->
 <viewer:BaseWidget xmlns:fx="http://ns.adobe.com/mxml/2009"
-                   xmlns:s="library://ns.adobe.com/flex/spark"
-                   xmlns:mx="library://ns.adobe.com/flex/mx"
                    xmlns:viewer="com.esri.viewer.*"
                    xmlns:esri="http://www.esri.com/2008/ags"
                    initialize="basewidget_initializeHandler(event)"
@@ -32,15 +30,17 @@
             import com.esri.ags.components.supportClasses.GeocoderLocatorOptions;
             import com.esri.ags.components.supportClasses.GeocoderMapService;
             import com.esri.ags.geometry.Extent;
+            import com.esri.ags.tasks.JSONTask;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.components.toc.utils.MapUtil;
+            import com.esri.viewer.utils.ErrorMessageUtil;
 
-            import mx.collections.*;
             import mx.events.FlexEvent;
+            import mx.rpc.Fault;
 
             protected function basewidget_initializeHandler(event:FlexEvent):void
             {
-                if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
+                if (isPartOfPanel)
                 {
                     this.percentWidth = this.percentHeight = 100;
                     wTemplate.percentWidth = wTemplate.percentHeight = 100;
@@ -54,7 +54,6 @@
 
             private function basewidget_widgetConfigLoaded():void
             {
-                // hide map infowindow if any               
                 map.infoWindow.hide();
                 if (configXML)
                 {
@@ -80,7 +79,9 @@
                         directions.locatorProxyURL = configData.proxyUrl;
                     }
 
-                    // geocoder options
+                    var directionsGeocoderOptions:DirectionsGeocoderOptions = new DirectionsGeocoderOptions();
+                    directionsGeocoderOptions.locatorOptions = new GeocoderLocatorOptions();
+
                     if (configXML.geocoderoptions.length() > 0)
                     {
                         var locatorDisabled:Boolean = (configXML.geocoderoptions.usemapservicesonly[0] == "true");
@@ -90,45 +91,49 @@
                         }
 
                         var geocoderOptionsXML:XMLList = configXML.geocoderoptions as XMLList;
-                        var directionsGeocoderOptions:DirectionsGeocoderOptions = new DirectionsGeocoderOptions;
 
                         const configMinScore:Number = parseFloat(geocoderOptionsXML.minscore[0]);
                         directionsGeocoderOptions.minScore = (configMinScore > 0) ? configMinScore : 40;
 
                         directionsGeocoderOptions.autoComplete = geocoderOptionsXML.autocomplete != "false";
 
-                        const configMaxLocations:int = parseInt(geocoderOptionsXML.maxlocations[0])
+                        const configMaxLocations:int = parseInt(geocoderOptionsXML.maxlocations[0]);
                         if (!isNaN(configMaxLocations) && configMaxLocations > 0)
                         {
                             directionsGeocoderOptions.maxLocations = configMaxLocations;
                         }
 
-                        const configMinChars:int = parseInt(geocoderOptionsXML.minchars[0])
+                        const configMinChars:int = parseInt(geocoderOptionsXML.minchars[0]);
                         if (configMinChars && configMinChars > 0)
                         {
                             directionsGeocoderOptions.minCharacters = configMinChars;
                         }
 
-                        const configSearchDelay:int = parseInt(geocoderOptionsXML.searchdelay[0])
+                        const configSearchDelay:int = parseInt(geocoderOptionsXML.searchdelay[0]);
                         if (configSearchDelay && configSearchDelay > 0)
                         {
                             directionsGeocoderOptions.searchDelay = configSearchDelay;
                         }
                         if (geocoderOptionsXML.locatoroptions.length() > 0 && !locatorDisabled)
-                        {       
+                        {
                             directionsGeocoderOptions.locatorOptions = parseLocatorOptions(geocoderOptionsXML.locatoroptions[0]);
                         }
+
                         if (geocoderOptionsXML.mapservices.length() > 0 && geocoderOptionsXML.mapservices.@enabled != "false")
                         {
                             directionsGeocoderOptions.mapServices = configureMapServices(geocoderOptionsXML.mapservices);
                         }
-
-                        directions.geocoderOptions = directionsGeocoderOptions;
                     }
 
+                    ensureSingleLineAddressFieldName(directions.locatorURL,
+                                                     directionsGeocoderOptions.locatorOptions,
+                                                     directions.locatorProxyURL);
+
+                    directions.geocoderOptions = directionsGeocoderOptions;
+
                     var directionsRouteOptions:DirectionsRouteOptions = new DirectionsRouteOptions;
-                    directionsRouteOptions.directionsLanguage = resourceManager.localeChain[0]; // always set directionsLanguage     
-                    //route options
+                    directionsRouteOptions.directionsLanguage = resourceManager.localeChain[0];
+
                     if (configXML.routeoptions.length() > 0)
                     {
                         var routeOptionsXML:XMLList = configXML.routeoptions;
@@ -199,13 +204,56 @@
                 return locatorOptions;
             }
 
+            private function ensureSingleLineAddressFieldName(locatorURL:String, locatorOptions:GeocoderLocatorOptions, locatorProxyURL:String = null):void
+            {
+                var needToFetchSingleLineAddressFieldName:Boolean = locatorURL
+                    && locatorOptions && !locatorOptions.singleLineAddressFieldName;
+
+                if (needToFetchSingleLineAddressFieldName)
+                {
+                    const locatorInfoRequest:JSONTask = new JSONTask();
+                    locatorInfoRequest.url = locatorURL;
+                    if (locatorProxyURL)
+                    {
+                        locatorInfoRequest.proxyURL = locatorProxyURL;
+                    }
+
+                    var urlVars:URLVariables = new URLVariables();
+                    urlVars.f = "json";
+
+                    locatorInfoRequest.execute(urlVars,
+                                               new mx.rpc.Responder(locatorInfoRequest_resultHandler,
+                                                                    locatorInfoRequest_faultHandler));
+
+                    function locatorInfoRequest_resultHandler(locatorInfo:Object):void
+                    {
+                        if (locatorInfo.singleLineAddressField)
+                        {
+                            locatorOptions.singleLineAddressFieldName = locatorInfo.singleLineAddressField.name;
+                        }
+                        else
+                        {
+                            showError(getDefaultString("singleLineGeocodingNotSupportedError"));
+                        }
+                    }
+
+                    function locatorInfoRequest_faultHandler(fault:Fault):void
+                    {
+                        const errorMessage:String = getDefaultString("locatorServiceConnectionError",
+                                                                     locatorInfoRequest.url,
+                                                                     ErrorMessageUtil.getKnownErrorCauseMessage(fault),
+                                                                     ErrorMessageUtil.makeHTMLSafe(fault.toString()));
+                        showError(errorMessage);
+                    }
+                }
+            }
+
             private function configureMapServices(mapServicesXMLList:XMLList):Array
             {
                 var mapServices:Array = [];
 
                 var mapService:GeocoderMapService;
                 var useMapServiceProxy:Boolean;
-                var mapServiceProxyURL:String;
 
                 for each (var mapServiceXML:XML in mapServicesXMLList.mapservice)
                 {

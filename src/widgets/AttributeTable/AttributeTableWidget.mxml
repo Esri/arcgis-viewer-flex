@@ -54,7 +54,6 @@
 
             import mx.binding.utils.ChangeWatcher;
             import mx.collections.ArrayCollection;
-            import mx.containers.ViewStack;
             import mx.controls.Alert;
             import mx.events.CollectionEvent;
             import mx.events.FlexEvent;
@@ -62,7 +61,6 @@
             import mx.rpc.Fault;
 
             import spark.components.NavigatorContent;
-            import spark.components.TabBar;
 
             [Bindable]
             private var featureLayers:Array;
@@ -78,6 +76,7 @@
             private var featureLayerToDynamicMapService:Dictionary = new Dictionary;
             private var featureLayerToSettings:Dictionary = new Dictionary;
             private var hiddenFeatureLayerToSettingsName:Dictionary = new Dictionary;
+            private var defaultExportLocation:String;
 
             private function basewidget_initializeHandler():void
             {
@@ -98,6 +97,7 @@
             {
                 if (configXML)
                 {
+                    defaultExportLocation = configXML.exportlocation[0];
                     // non-mapped layers
                     var nonMappedLayers:Array = [];
                     var players:XMLList = configXML.layer as XMLList;
@@ -359,10 +359,10 @@
                             {
                                 layer.removeEventListener(FlexEvent.HIDE, featureLayer_hideShowHandler);
                                 layer.removeEventListener(FlexEvent.SHOW, featureLayer_hideShowHandler);
-    
+
                                 layer.addEventListener(FlexEvent.HIDE, featureLayer_hideShowHandler);
                                 layer.addEventListener(FlexEvent.SHOW, featureLayer_hideShowHandler);
-    
+
                                 arrFinalLayers.push(layer);
                                 featureLayers.push(layer);
                                 index++;
@@ -385,8 +385,8 @@
                         }
                         else
                         {
-                            // listen for load
                             layer.addEventListener(LayerEvent.LOAD, featureLayer_loadHandler);
+                            layer.addEventListener(LayerEvent.LOAD_ERROR, featureLayer_loadErrorHandler);
                         }
                     }
                     else
@@ -438,6 +438,7 @@
                         getAllFeatureLayers(index, featureLayers);
                     }
                 }
+
                 function jsonTask_faultHandler(fault:Fault, token:Object = null):void
                 {
                     var layers:Array = [];
@@ -461,8 +462,7 @@
                 }
             }
 
-            private function createFeatureLayersFromDynamicMapService2(arcGISDynamicMapServiceLayer:ArcGISDynamicMapServiceLayer, featureServiceURL:String, layers:Array,
-                                                                       gdbVersion:String, index:int, onMapLayerAdd:Boolean):void
+            private function createFeatureLayersFromDynamicMapService2(arcGISDynamicMapServiceLayer:ArcGISDynamicMapServiceLayer, featureServiceURL:String, layers:Array, gdbVersion:String, index:int, onMapLayerAdd:Boolean):void
             {
                 var atleastOneFeatureLayerAlreadyIncluded:Boolean;
                 var candidateFeatureLayers:Array = [];
@@ -510,6 +510,7 @@
                     parseCandidateFeatureLayers(index1, candidateFeatureLayers);
 
                     var fLayerObject:Object;
+
                     function parseCandidateFeatureLayers(index1:int, candidateFeatureLayers:Array):void
                     {
                         if (index1 < candidateFeatureLayers.length)
@@ -863,6 +864,7 @@
                     var attributeTable:AttributeTable = new AttributeTable(featureLayer);
                     attributeTable.addEventListener(AttributeTableEvent.UPDATE_FEATURE, attributeTable_updateFeatureHandler);
                     attributeTable.addEventListener(AttributeTableEvent.DELETE_FEATURES, attributeTable_deleteFeaturesHandler);
+                    attributeTable.exportLocation = defaultExportLocation != "false";
 
                     var settingsKey:String = featureLayer.name;
                     if (settingsKey.indexOf("hiddenLayer_") != -1)
@@ -997,6 +999,15 @@
 
             private function featureLayer_loadHandler(event:LayerEvent):void
             {
+                event.layer.removeEventListener(LayerEvent.LOAD, featureLayer_loadHandler);
+                event.layer.removeEventListener(LayerEvent.LOAD_ERROR, featureLayer_loadErrorHandler);
+                getAllFeatureLayers(layersUsedInAttributeTable.indexOf(event.layer), featureLayers);
+            }
+
+            private function featureLayer_loadErrorHandler(event:LayerEvent):void
+            {
+                event.layer.removeEventListener(LayerEvent.LOAD, featureLayer_loadHandler);
+                event.layer.removeEventListener(LayerEvent.LOAD_ERROR, featureLayer_loadErrorHandler);
                 getAllFeatureLayers(layersUsedInAttributeTable.indexOf(event.layer), featureLayers);
             }
 

@@ -33,7 +33,6 @@
             import com.esri.ags.events.GeoprocessorEvent;
             import com.esri.ags.geometry.Extent;
             import com.esri.ags.geometry.Geometry;
-            import com.esri.ags.geometry.MapPoint;
             import com.esri.ags.geometry.Polygon;
             import com.esri.ags.layers.GraphicsLayer;
             import com.esri.ags.symbols.Symbol;
@@ -52,34 +51,31 @@
             import mx.collections.ArrayList;
             import mx.controls.Alert;
             import mx.events.CloseEvent;
-            import mx.rpc.AsyncResponder;
             import mx.rpc.Fault;
             import mx.rpc.events.FaultEvent;
             import mx.utils.ObjectProxy;
 
-            private var dataUrl:String = "";
-            private var file:FileReference;
+            private static const SENT_PARAM_NAME:String = "Sent";
+            private static const OUTPUT_ZIP_FILE_PARAM_NAME:String = "Output_Zip_File";
+
             private var outputFileName:String;
-            private var finishDrawing:Boolean;
             private var graphicsLayer:GraphicsLayer;
             private var graphicContextMenu:ContextMenu;
             private var gpService:JSONTask;
             private var selectedDrawingIcon:FocusableImage;
+            private var layerChoices:Array;
 
             private var drawSymbol:Symbol;
             [Bindable]
             private var exposeLayers:Boolean = true; //later set to FALSE!!
-            private var formatChoiceList:ArrayList;
-            private var rasterFormatChoiceList:ArrayList;
             [Bindable]
             private var rasterFormatChoiceListVisible:Boolean;
-            private var spatialReferenceChoiceList:ArrayList;
             [Bindable]
             private var spatialReferenceChoiceListVisible:Boolean;
             [Bindable]
-            private var gpURL:String;
+            private var emailInputVisible:Boolean;
             [Bindable]
-            private var layers:ArrayList;
+            private var gpURL:String;
             private var excludeLayers:Array = [];
             [Bindable]
             private var useCurrentExtentAsAIO:Boolean = false;
@@ -117,23 +113,27 @@
             [Bindable]
             private var step5Label:String;
             [Bindable]
+            private var step6Label:String;
+            [Bindable]
             private var extractButtonLabel:String;
             private var step1ErrorLabel:String;
             private var step2ErrorLabel:String;
             private var emptyResultsLabel:String;
             private var saveDataFileLabel:String;
+            private var successfulEmailLabel:String;
+            private var unsuccessfulEmailLabel:String;
 
             private function basewidget_initializeHandler():void
             {
-                if (isPartOfPanel) // if widget is part of "left", "right" or "bottom" panel
+                if (isPartOfPanel)
                 {
                     this.percentWidth = this.percentHeight = 100;
                     wTemplate.percentWidth = wTemplate.percentHeight = 100;
                 }
                 else
                 {
-                    wTemplate.width;
-                    wTemplate.height;
+                    wTemplate.width = 320;
+                    wTemplate.height = 300;
                 }
             }
 
@@ -148,17 +148,9 @@
                     geometryService.token = GeometryServiceSingleton.instance.token;
                     geometryService.proxyURL = GeometryServiceSingleton.instance.proxyURL;
 
-                    // TODO: check for non-existence
-                    gpURL = String(configXML.dataextractionservice);
-                    if (String(configXML.aioselectionmethod) == "extent")
-                    {
-                        useCurrentExtentAsAIO = true;
-                    }
-                    else
-                    {
-                        useCurrentExtentAsAIO = false;
-                    }
-                    //useproxy
+                    gpURL = configXML.dataextractionservice[0];
+                    useCurrentExtentAsAIO = (configXML.aioselectionmethod[0] == "extent");
+
                     if (configXML.useproxy.length() > 0)
                     {
                         useProxy = configXML.useproxy == "true";
@@ -176,9 +168,8 @@
                     urlVars.f = "json";
 
                     //Call gpService to get service properties
-                    gpService.execute(urlVars, new AsyncResponder(gpService_resultHandler, gpService_faultHandler));
+                    gpService.execute(urlVars, new mx.rpc.Responder(gpService_resultHandler, gpService_faultHandler));
 
-                    // exclude these layers
                     var excludeLayersXML:XMLList = configXML.excludelayer as XMLList;
                     for (var i:int = 0; i < excludeLayersXML.length(); i++)
                     {
@@ -190,7 +181,6 @@
 
                     graphicsLayer.name = configXML.layername || widgetTitle;
 
-                    //labels
                     descLabel = configXML.labels.desclabel[0] || getDefaultString("descLabel");
                     step1Label = configXML.labels.step1label[0] || getDefaultString("step1Label");
                     polygonLabel = configXML.labels.polygonlabel[0] || getDefaultString("drawPolygonLabel");
@@ -204,6 +194,7 @@
                     step3Label = configXML.labels.step3label[0] || getDefaultString("step3Label");
                     step4Label = configXML.labels.step4label[0] || getDefaultString("step4Label");
                     step5Label = configXML.labels.step5label[0] || getDefaultString("step5Label");
+                    step6Label = configXML.labels.step6label[0] || getDefaultString("step6Label");
                     extractButtonLabel = configXML.labels.extractbuttonlabel[0] || getDefaultString("extractButtonLabel");
                     step1ErrorLabel = configXML.labels.step1errorlabel[0] || getDefaultString("step1ErrorLabel");
                     step2ErrorLabel = configXML.labels.step2errorlabel[0] || getDefaultString("step2ErrorLabel");
@@ -211,6 +202,8 @@
                     saveDataFileLabel = configXML.labels.savedatafilelabel[0] || getDefaultString("saveDataFileLabel");
                     selectAllLabel = configXML.labels.selectalllabel[0] || getDefaultString("selectAllLabel");
                     deselectAllLabel = configXML.labels.deselectalllabel[0] || getDefaultString("deselectAllLabel");
+                    successfulEmailLabel = configXML.labels.successfulemaillabel[0] || getDefaultString("successfulEmailLabel");
+                    unsuccessfulEmailLabel = configXML.labels.unsuccessfulemaillabel[0] || getDefaultString("unsuccessfulEmailLabel");
 
                     initGraphicContextMenu();
                 }
@@ -236,22 +229,58 @@
             private function callGPService():void
             {
                 var geometries:Array = getInputGeometries();
-
-                if (geometries)
+                if (!geometries)
                 {
-                    if (needToSimplifyPolygons(geometries))
-                    {
-                        geometryService.simplify(geometries);
-                    }
-                    else
-                    {
-                        createGPParamsAndExtract(geometries);
-                    }
+                    showError(step1ErrorLabel);
+                    return;
+                }
+
+                var layersToClip:Array = getLayersToClip();
+                if (exposeLayers && layersToClip.length == 0)
+                {
+                    showError(step2ErrorLabel);
+                    return;
+                }
+
+                if (needToSimplifyPolygons(geometries))
+                {
+                    geometryService.simplify(geometries);
                 }
                 else
                 {
-                    showError(step1ErrorLabel);
+                    createGPParamsAndExtract(geometries);
                 }
+            }
+
+            private function geometryService_simplifyHandler(event:GeometryServiceEvent):void
+            {
+                createGPParamsAndExtract(event.result as Array);
+            }
+
+            private function geometryService_faultHandler(event:FaultEvent):void
+            {
+                showError(event.fault.toString());
+            }
+
+            private function createGPParamsAndExtract(areaOfInterestGeometries:Array):void
+            {
+                var areaOfInterest:FeatureSet = createClipFeatureSet(areaOfInterestGeometries);
+                var featureFormat:String = formatDDL.selectedItem.data;
+                var layersToClip:Array = exposeLayers ? getLayersToClip() : null;
+                var rasterFormat:String = rasterFormatChoiceListVisible ? rasterFormatDDL.selectedItem.data : null;
+                var spatialReference:String = spatialReferenceChoiceListVisible ? spatialReferenceDDL.selectedItem.data : null;
+                var recipientEmail:String = emailInputVisible ? emailInput.text : null;
+
+                var params:Object = createGPParams(areaOfInterest, featureFormat,
+                                                   layersToClip, rasterFormat,
+                                                   spatialReference, recipientEmail);
+
+                setMapNavigation(null, null);
+                swfMessage.visible = true;
+
+                gp.processSpatialReference = map.spatialReference;
+                gp.outSpatialReference = map.spatialReference;
+                gp.submitJob(params);
             }
 
             private function getInputGeometries():Array
@@ -260,7 +289,7 @@
 
                 if (useCurrentExtentAsAIO)
                 {
-                    geometries = [ getMapExtentEnvelope()];
+                    geometries = [ map.extent.toPolygon() ];
                 }
                 else if (graphicsLayer.numGraphics > 0)
                 {
@@ -269,28 +298,6 @@
                 }
 
                 return geometries;
-            }
-
-            private function createGPParamsAndExtract(geometries:Array):void
-            {
-                var clipFS:FeatureSet = createClipFeatureSet(geometries);
-
-                if (clipFS)
-                {
-                    var params:Object;
-                    params = createGPParams(clipFS);
-
-                    if (params)
-                    {
-                        setMapNavigation(null, null);
-
-                        swfMessage.visible = true;
-                        gp.processSpatialReference = map.spatialReference;
-                        gp.outSpatialReference = map.spatialReference;
-
-                        gp.submitJob(params);
-                    }
-                }
             }
 
             private function needToSimplifyPolygons(geometries:Array):Boolean
@@ -312,61 +319,31 @@
                 return hasSelfIntersectingPolygons;
             }
 
-            private function createGPParams(clipFS:FeatureSet):Object
+            private function createGPParams(areaOfInterest:FeatureSet, featureFormat:String, layersToClip:Array = null, rasterFormat:String = null, spatialReference:String = null, recipientEmail:String = null):Object
             {
-                var gpParams:Object;
+                var gpParams:Object = {};
 
-                if (exposeLayers)
+                gpParams["Area_of_Interest"] = areaOfInterest;
+                gpParams["Feature_Format"] = featureFormat;
+
+                if (layersToClip && layersToClip.length > 0)
                 {
-                    var layersToClip:Array = [];
-                    for (var i:int = 0; i < layers.length; i++)
-                    {
-                        if (layers.getItemAt(i).selected)
-                        {
-                            layersToClip.push(layers.getItemAt(i).label);
-                        }
-                    }
-                    if (layersToClip.length > 0)
-                    {
-                        gpParams =
-                            {
-                                "Area_of_Interest": clipFS,
-                                "Feature_Format": formatDDL.selectedItem.data,
-                                "Layers_to_Clip": layersToClip
-                            };
-
-                        // add if necessary
-                        if (rasterFormatDDL.visible)
-                        {
-                            gpParams["Raster_Format"] = rasterFormatDDL.selectedItem.data;
-                        }
-                        if (spatialReferenceDDL.visible)
-                        {
-                            gpParams["Spatial_Reference"] = spatialReferenceDDL.selectedItem.data;
-                        }
-                    }
-                    else
-                    {
-                        showError(step2ErrorLabel);
-                    }
+                    gpParams["Layers_to_Clip"] = layersToClip;
                 }
-                else
-                {
-                    gpParams =
-                        {
-                            "Area_of_Interest": clipFS,
-                            "Feature_Format": formatDDL.selectedItem.data
-                        };
 
-                    // add if necessary
-                    if (rasterFormatChoiceListVisible)
-                    {
-                        gpParams["Raster_Format"] = rasterFormatDDL.selectedItem.data;
-                    }
-                    if (spatialReferenceChoiceListVisible)
-                    {
-                        gpParams["Spatial_Reference"] = spatialReferenceDDL.selectedItem.data;
-                    }
+                if (rasterFormat)
+                {
+                    gpParams["Raster_Format"] = rasterFormat;
+                }
+
+                if (spatialReference)
+                {
+                    gpParams["Spatial_Reference"] = spatialReference;
+                }
+
+                if (recipientEmail)
+                {
+                    gpParams["To"] = recipientEmail;
                 }
 
                 return gpParams;
@@ -382,26 +359,10 @@
                     features.push({ geometry: geometry });
                 }
 
-                clipFS = new FeatureSet();
+                clipFS = new FeatureSet(features);
                 clipFS.spatialReference = map.spatialReference;
-                clipFS.features = features;
 
                 return clipFS;
-            }
-
-            private function getMapExtentEnvelope():Polygon
-            {
-                //create the extent as a polygon
-                var mapExtentEnvelope:Polygon = new Polygon(null, map.spatialReference);
-                mapExtentEnvelope.rings =
-                    [[
-                     new MapPoint(map.extent.xmin, map.extent.ymin),
-                     new MapPoint(map.extent.xmax, map.extent.ymin),
-                     new MapPoint(map.extent.xmax, map.extent.ymax),
-                     new MapPoint(map.extent.xmin, map.extent.ymax),
-                     new MapPoint(map.extent.xmin, map.extent.ymin)
-                     ]];
-                return mapExtentEnvelope;
             }
 
             //
@@ -416,9 +377,6 @@
                 clearSelectionFilter();
                 selectedDrawingIcon.filters = [ glowFilter ];
 
-                finishDrawing = false;
-
-                dataUrl = "";
                 var status:String;
                 var value:String = selectedDrawingIcon.name;
                 switch (value)
@@ -536,9 +494,6 @@
 
             private function map_drawEndHandler(event:DrawEvent):void
             {
-                // deactivate the draw tool
-                finishDrawing = true;
-
                 selectedDrawingIcon = null;
                 clearSelectionFilter();
 
@@ -547,23 +502,13 @@
                 var graphic:Graphic = event.graphic;
                 graphic.contextMenu = graphicContextMenu;
 
-                if (graphic.geometry is Extent)
+                const extent:Extent = graphic.geometry as Extent;
+                if (extent)
                 {
-                    // convert extent to a polygon
-                    const extent:Extent = Extent(graphic.geometry);
-                    var extentPolygon:Polygon = new Polygon(null, map.spatialReference);
-                    extentPolygon.rings = [[
-                                           new MapPoint(extent.xmin, extent.ymin),
-                                           new MapPoint(extent.xmax, extent.ymin),
-                                           new MapPoint(extent.xmax, extent.ymax),
-                                           new MapPoint(extent.xmin, extent.ymax),
-                                           new MapPoint(extent.xmin, extent.ymin)
-                                           ]];
-                    graphic.geometry = extentPolygon;
+                    graphic.geometry = extent.toPolygon();
                 }
                 graphic.symbol = drawSymbol;
 
-                // add graphic to the graphics layer
                 graphicsLayer.add(graphic);
             }
 
@@ -572,8 +517,8 @@
                 swfMessage.visible = false;
                 if (event.jobInfo.jobStatus == JobInfo.STATUS_SUCCEEDED)
                 {
-                    gp.getResultData(gp.submitJobLastResult.jobId,
-                                     "Output_Zip_File"); // parameterName
+                    var paramName:String = emailInputVisible ? SENT_PARAM_NAME : OUTPUT_ZIP_FILE_PARAM_NAME;
+                    gp.getResultData(gp.submitJobLastResult.jobId, paramName);
                 }
                 else
                 {
@@ -590,14 +535,16 @@
             {
                 if (event.parameterValue)
                 {
-                    dataUrl = String(event.parameterValue.value.url);
-                    if (!dataUrl)
+                    if (event.parameterValue.paramName == SENT_PARAM_NAME)
                     {
-                        showError(emptyResultsLabel);
-                        return;
+                        var successfullySent:Boolean = event.parameterValue.value as Boolean;
+                        promptEmailStatus(successfullySent);
                     }
-
-                    Alert.show(saveDataFileLabel, wTemplate.widgetTitle, Alert.YES | Alert.NO, null, alert_ClickHandler);
+                    else
+                    {
+                        var dataURL:String = event.parameterValue.value.url as String;
+                        prepareResultDownload(dataURL);
+                    }
                 }
                 else
                 {
@@ -605,20 +552,36 @@
                 }
             }
 
-            // Event handler function for displaying the selected Alert button.
-            private function alert_ClickHandler(event:CloseEvent):void
+            private function promptEmailStatus(successfullySent:Boolean):void
             {
-                if (event.detail == Alert.YES)
+                var emailSentMessage:String = successfullySent ? successfulEmailLabel : unsuccessfulEmailLabel;
+                Alert.show(emailSentMessage, wTemplate.widgetTitle, Alert.OK);
+            }
+
+            private function prepareResultDownload(dataUrl:String):void
+            {
+                if (!dataUrl)
                 {
-                    downloadFile(dataUrl);
+                    showError(emptyResultsLabel);
+                    return;
+                }
+
+                Alert.show(saveDataFileLabel, wTemplate.widgetTitle,
+                           Alert.YES | Alert.NO, null, alert_closeHandler);
+
+                function alert_closeHandler(event:CloseEvent):void
+                {
+                    if (event.detail == Alert.YES)
+                    {
+                        downloadFile(dataUrl);
+                    }
                 }
             }
 
             private function downloadFile(url:String):void
             {
-                var downloadURL:URLRequest = new URLRequest();
-                downloadURL.url = url;
-                file = new FileReference();
+                var downloadURL:URLRequest = new URLRequest(url);
+                var file:FileReference = new FileReference();
                 // TODO: can we be smarter with the name of the zip file? For example, for single layers, using a modified layer name?
                 file.download(downloadURL, outputFileName);
             }
@@ -630,7 +593,7 @@
                 showError(msg);
             }
 
-            private function gpService_resultHandler(serviceProperties:Object, token:Object = null):void
+            private function gpService_resultHandler(serviceProperties:Object):void
             {
                 var params:Array = serviceProperties.parameters;
                 rasterFormatChoiceListVisible = false;
@@ -639,57 +602,63 @@
                 {
                     if (params[i].name == "Layers_to_Clip")
                     {
-                        layers = new ArrayList();
                         exposeLayers = true;
-                        for each (var layer:Object in params[i].choiceList)
+                        layerChoices = [];
+                        for each (var layerName:String in params[i].choiceList)
                         {
-                            if (excludeLayers.indexOf(layer) == -1)
+                            if (excludeLayers.indexOf(layerName) == -1)
                             {
-                                var obj:ObjectProxy = new ObjectProxy({ label: layer, selected: false });
-                                layers.addItem(obj);
+                                layerChoices.push(new ObjectProxy({ label: layerName, selected: false }));
                             }
                         }
+                        checkBoxDG.dataProvider = new ArrayList(layerChoices);
                     }
+
                     if (params[i].name == "Feature_Format")
                     {
-                        formatChoiceList = new ArrayList();
+                        var formats:Array = [];
                         for each (var format:String in params[i].choiceList)
                         {
                             const fileLabel:String = format.substring(0, format.indexOf("-") - 1);
                             const fileExtension:String = format.substring(format.lastIndexOf("."), format.length);
-                            formatChoiceList.addItem({ data: format, label: fileLabel + " (" + fileExtension + ")" });
+                            formats.push({ data: format, label: fileLabel + " (" + fileExtension + ")" });
                         }
+                        formatDDL.dataProvider = new ArrayList(formats);
                     }
 
                     if (params[i].name == "Raster_Format")
                     {
                         rasterFormatChoiceListVisible = true;
-                        rasterFormatChoiceList = new ArrayList();
+                        var rasterFormats:Array = [];
                         for each (var rasterFormat:String in params[i].choiceList)
                         {
                             const fileLabel1:String = rasterFormat.substring(0, rasterFormat.indexOf("-") - 1);
                             const fileExtension1:String = rasterFormat.substring(rasterFormat.lastIndexOf("."), rasterFormat.length);
-                            rasterFormatChoiceList.addItem({ data: rasterFormat, label: fileLabel1 + " (" + fileExtension1 + ")" });
+                            rasterFormats.push({ data: rasterFormat, label: fileLabel1 + " (" + fileExtension1 + ")" });
                         }
+                        rasterFormatDDL.dataProvider = new ArrayList(rasterFormats);
                     }
+
                     if (params[i].name == "Spatial_Reference")
                     {
                         spatialReferenceChoiceListVisible = true;
-                        spatialReferenceChoiceList = new ArrayList();
+                        var spatialReferences:Array = [];
                         for each (var spatialReferenceString:String in params[i].choiceList)
                         {
-                            spatialReferenceChoiceList.addItem({ data: spatialReferenceString, label: spatialReferenceString });
+                            spatialReferences.push({ data: spatialReferenceString, label: spatialReferenceString });
                         }
+                        spatialReferenceDDL.dataProvider = new ArrayList(spatialReferences);
+                    }
+
+                    if (params[i].name == "To")
+                    {
+                        emailInputVisible = true;
+                        emailInput.text = params[i].defaultValue;
                     }
                 }
-
-                checkBoxDG.dataProvider = layers;
-                formatDDL.dataProvider = formatChoiceList;
-                rasterFormatDDL.dataProvider = rasterFormatChoiceList;
-                spatialReferenceDDL.dataProvider = spatialReferenceChoiceList;
             }
 
-            private function gpService_faultHandler(fault:Fault, token:Object = null):void
+            private function gpService_faultHandler(fault:Fault):void
             {
                 var msg:String = getDefaultString("gpServiceConnectionError",
                                                   gp.url,
@@ -699,23 +668,25 @@
                 widgetVBox.enabled = false;
             }
 
-            private function geometryService_faultHandler(event:FaultEvent):void
-            {
-                showError(event.fault.toString());
-            }
-
-            private function geometryService_simplifyHandler(event:GeometryServiceEvent):void
-            {
-                createGPParamsAndExtract(event.result as Array);
-            }
-
             private function toggleLayerSelection(value:Boolean):void
             {
-                var allLayers:Array = layers.source;
-                for each (var layerObject:Object in allLayers)
+                for each (var choice:Object in layerChoices)
                 {
-                    layerObject.selected = value;
+                    choice.selected = value;
                 }
+            }
+
+            private function getLayersToClip():Array
+            {
+                var layersToClip:Array = [];
+                for each (var choice:Object in layerChoices)
+                {
+                    if (choice.selected)
+                    {
+                        layersToClip.push(choice.label);
+                    }
+                }
+                return layersToClip;
             }
         ]]>
     </fx:Script>
@@ -852,7 +823,7 @@
                     <s:Label paddingTop="4" text="{step2Label}"/>
 
                     <s:Scroller width="100%" height="100%">
-                        <s:DataGroup id="checkBoxDG" dataProvider="{layers}">
+                        <s:DataGroup id="checkBoxDG">
                             <s:layout>
                                 <s:VerticalLayout gap="2"
                                                   horizontalAlign="left"
@@ -869,7 +840,7 @@
                         </s:DataGroup>
                     </s:Scroller>
 
-                    <s:HGroup paddingTop="4" id="layerToggleGroup">
+                    <s:HGroup id="layerToggleGroup" paddingTop="4">
                         <s:Label buttonMode="true"
                                  click="toggleLayerSelection(true)"
                                  text="{selectAllLabel}"
@@ -918,6 +889,16 @@
                                     includeInLayout="{spatialReferenceChoiceListVisible}"
                                     requireSelection="true"
                                     visible="{spatialReferenceChoiceListVisible}"/>
+
+                    <s:Label includeInLayout="{emailInputVisible}"
+                             paddingTop="4"
+                             text="{step6Label}"
+                             visible="{emailInputVisible}"/>
+
+                    <s:TextInput id="emailInput"
+                                 width="100%"
+                                 includeInLayout="{emailInputVisible}"
+                                 visible="{emailInputVisible}"/>
 
                     <s:HGroup width="100%" verticalAlign="middle">
                         <s:Button id="extract"

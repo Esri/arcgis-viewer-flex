@@ -21,16 +21,18 @@ import com.esri.ags.layers.TiledMapServiceLayer;
 import com.esri.ags.layers.supportClasses.LegendItemInfo;
 import com.esri.viewer.AppEvent;
 import com.esri.viewer.components.toc.TOC;
-import com.esri.viewer.components.toc.controls.CheckBoxIndeterminate;
 
+import flash.events.Event;
 import flash.events.MouseEvent;
 import flash.geom.Point;
 
+import mx.controls.CheckBox;
 import mx.controls.Image;
 import mx.controls.treeClasses.TreeItemRenderer;
 import mx.controls.treeClasses.TreeListData;
 import mx.core.FlexGlobals;
 import mx.core.UIComponent;
+import mx.skins.halo.CheckBoxIcon;
 
 import spark.components.Group;
 import spark.primitives.BitmapImage;
@@ -50,7 +52,7 @@ public class TocItemRenderer extends TreeItemRenderer
     //--------------------------------------------------------------------------
 
     // Renderer UI components
-    private var _checkbox:CheckBoxIndeterminate;
+    private var _checkbox:CheckBox;
 
     // UI component spacing
     private static const PRE_CHECKBOX_GAP:Number = 5;
@@ -97,22 +99,22 @@ public class TocItemRenderer extends TreeItemRenderer
         if (value is TocLegendItem)
         {
             _legendSwatchContainer.removeAllElements();
-            
+
             var legendItemInfo:LegendItemInfo = TocLegendItem(value).legendItemInfo;
             if (legendItemInfo.imageURL) // WMS
             {
                 var legendImg:BitmapImage = new BitmapImage();
-                legendImg.source = legendItemInfo.imageURL;                
-                _legendSwatchContainer.addElement(legendImg);              
+                legendImg.source = legendItemInfo.imageURL;
+                _legendSwatchContainer.addElement(legendImg);
             }
             else if (legendItemInfo.symbol)
-            {   
+            {
                 var swatch:UIComponent = legendItemInfo.symbol.createSwatch(LEGEND_SWATCH_SIZE, LEGEND_SWATCH_SIZE);
                 if (swatch)
                 {
                     _legendSwatchContainer.addElement(swatch);
                 }
-            }            
+            }
         }
     }
 
@@ -132,7 +134,8 @@ public class TocItemRenderer extends TreeItemRenderer
         // Create a checkbox child component for toggling layer visibility.
         if (!_checkbox)
         {
-            _checkbox = new CheckBoxIndeterminate();
+            _checkbox = new CheckBox();
+            _checkbox.setStyle("icon", CheckBoxIcon);
             _checkbox.addEventListener(MouseEvent.CLICK, onCheckBoxClick);
             _checkbox.addEventListener(MouseEvent.DOUBLE_CLICK, onCheckBoxDoubleClick);
             _checkbox.addEventListener(MouseEvent.MOUSE_DOWN, onCheckBoxMouseDown);
@@ -171,11 +174,7 @@ public class TocItemRenderer extends TreeItemRenderer
         {
             var item:TocItem = TocItem(data);
 
-            // Set the checkbox state
-            _checkbox.indeterminate = item.indeterminate;
-            // The indeterminate state has visual priority over the selected state
-            _checkbox.selected = item.visible && !item.indeterminate;
-
+            _checkbox.selected = item.visible;
             // Hide the checkbox for child items of tiled map services
             var checkboxVisible:Boolean = true;
             if (isTiledLayerChild(item) || (item is TocLegendItem) || (item is TocWMSLayerInfoItem))
@@ -295,9 +294,16 @@ public class TocItemRenderer extends TreeItemRenderer
 
     private function onRemovalFromStage(event:AppEvent):void
     {
-        AppEvent.removeListener(AppEvent.TOC_HIDDEN, onRemovalFromStage);
+        hideLayerMenu();
+    }
+
+    private function hideLayerMenu():void
+    {
         if (_tocLayerMenu)
         {
+            // need to show/hide pop-up with information.
+            AppEvent.removeListener(AppEvent.TOC_HIDDEN, onRemovalFromStage);
+            systemManager.removeEventListener(Event.RESIZE, systemManager_resizeHandler);
             _tocLayerMenu.remove();
             _tocLayerMenu = null;
         }
@@ -307,28 +313,40 @@ public class TocItemRenderer extends TreeItemRenderer
     {
         event.stopPropagation();
 
-        // need to show/hide pop-up with information.
-        AppEvent.removeListener(AppEvent.TOC_HIDDEN, onRemovalFromStage);
-
         if (_tocLayerMenu && _tocLayerMenu.isPopUp)
         {
-            _tocLayerMenu.remove();
-            _tocLayerMenu = null;
+            hideLayerMenu();
         }
         else
         {
             // let any other popups know a popup is about to be created and opened
             AppEvent.dispatch(AppEvent.LAUNCHING_TOC_LAYER_MENU);
             _tocLayerMenu = new TocLayerMenu();
-            var originPoint:Point = new Point(this.x + this.width, this.label.y);
+            var originPoint:Point = new Point(this.x + this.width, this.label.y + this.height);
+            var globalPoint:Point = localToGlobal(originPoint);
+            _tocLayerMenu.popUpForItem(this.parent.parent, data, TOC(this.parent.parent).map, globalPoint.x, globalPoint.y);
             if (FlexGlobals.topLevelApplication.layoutDirection != "rtl") // fix for RTL
             {
-                originPoint.x -= _tocLayerMenu.width;
+                _tocLayerMenu.validateNow();
+                _tocLayerMenu.x -= _tocLayerMenu.width;
             }
-            var globalPoint:Point = localToGlobal(originPoint);
-            _tocLayerMenu.popUpForItem(this.parent.parent, data, TOC(this.parent.parent).map, globalPoint.x, globalPoint.y + this.height);
 
             AppEvent.addListener(AppEvent.TOC_HIDDEN, onRemovalFromStage);
+            systemManager.addEventListener(Event.RESIZE, systemManager_resizeHandler, false, 0, true);
+        }
+    }
+
+    private function systemManager_resizeHandler(event:Event):void
+    {
+        if (_tocLayerMenu && _tocLayerMenu.isPopUp)
+        {
+            var originPoint:Point = new Point(this.x + this.width, this.label.y + this.height);
+            var globalPoint:Point = localToGlobal(originPoint);
+            if (FlexGlobals.topLevelApplication.layoutDirection != "rtl") // fix for RTL
+            {
+                globalPoint.x -= _tocLayerMenu.width;
+            }
+            _tocLayerMenu.positionAt(globalPoint.x, globalPoint.y);
         }
     }
 

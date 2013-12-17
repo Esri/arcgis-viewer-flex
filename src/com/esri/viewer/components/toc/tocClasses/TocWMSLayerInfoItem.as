@@ -19,7 +19,7 @@ package com.esri.viewer.components.toc.tocClasses
 import com.esri.ags.layers.supportClasses.WMSLayerInfo;
 
 /**
- * A TOC item representing a member layer of a WMS service. 
+ * A TOC item representing a member layer of a WMS service.
  *
  * @private
  */

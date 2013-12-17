@@ -182,7 +182,8 @@
     <s:Spacer/>
     <s:BorderContainer width="80%" height="100%"
                        cornerRadius="3"
-                       excludeFrom="noAttachmentsState, queryAttachmentInfos, disabled">
+                       excludeFrom="noAttachmentsState, queryAttachmentInfos, disabled"
+                       minHeight="155">
         <s:borderStroke>
             <mx:SolidColorStroke weight="2"/>
         </s:borderStroke>

@@ -1,6 +1,5 @@
 <?xml version="1.0" ?>
-<configuration label="World Geocoding">
-    <locator>http://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer</locator>
+<configuration>
 </configuration>
 
 <!--

@@ -19,14 +19,14 @@
 <!---
 @private
 -->
-<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
-                   xmlns:s="library://ns.adobe.com/flex/spark"
-                   xmlns:mx="library://ns.adobe.com/flex/mx"
-                   xmlns:esri="http://www.esri.com/2008/ags"
-                   width="150" height="105"
-                   initialize="bordercontainer1_initializeHandler(event)"
-                   rollOut="bordercontainer1_rollOutHandler(event)"
-                   rollOver="bordercontainer1_rollOverHandler(event)">
+<s:List xmlns:fx="http://ns.adobe.com/mxml/2009"
+        xmlns:s="library://ns.adobe.com/flex/spark"
+        xmlns:esri="http://www.esri.com/2008/ags"
+        dataProvider="{options}"
+        initialize="this_initializeHandler(event)"
+        itemRenderer="com.esri.viewer.components.toc.tocClasses.TocLayerMenuOptionRenderer"
+        rollOut="this_rollOutHandler(event)"
+        rollOver="this_rollOverHandler(event)">
     <fx:Script>
         <![CDATA[
             import com.esri.ags.Map;
@@ -43,6 +43,7 @@
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.components.toc.TOC;
+            import com.esri.viewer.utils.LabelUtil;
             import com.esri.viewer.utils.LocalizationUtil;
 
             import mx.collections.ArrayCollection;
@@ -55,7 +56,7 @@
             private var _toc:TOC;
             private var _transparencyMenuItem:TransparencyMenuItem;
 
-            private function bordercontainer1_initializeHandler(event:FlexEvent):void
+            private function this_initializeHandler(event:FlexEvent):void
             {
                 setStyle("backgroundColor", getStyle("contentBackgroundColor"));
                 setStyle("borderColor", getStyle("accentColor"));
@@ -74,57 +75,46 @@
                 {
                     _layer = TocMapLayerItem(_item).layer;
                     _map = map;
-                    this.x = atX;
-                    this.y = atY;
+                    positionAt(atX, atY);
                     PopUpManager.addPopUp(this, parent);
+                    addOptionsForLayerByType(_layer, parent);
+                    typicalItem = LabelUtil.findLongestLabelItem(options.source, "label");
+                }
+            }
 
-                    if (_layer)
-                    {
-                        addOptionsForLayerByType(_layer, parent);
-                    }
+            internal function positionAt(atX:Number, atY:Number):void
+            {
+                this.x = atX;
+                this.y = atY;
+
+                if (_transparencyMenuItem)
+                {
+                    updateTransparencyMenuPosition();
                 }
             }
 
             private function addOptionsForLayerByType(layer:Layer, parent:DisplayObject):void
             {
-                if (parent is TOC)
+                _toc = parent as TOC;
+                if (!_toc || !layer)
                 {
-                    _toc = TOC(parent);
-                    var tocMapLayerItems:ArrayCollection = _toc.dataProvider as ArrayCollection;
-
-                    if (tocMapLayerItems.length == 1)
-                    {
-                        this.moveUpGroup.enabled = false;
-                        this.moveDownGroup.enabled = false;
-                    }
-                    else
-                    {
-                        if (TocMapLayerItem(tocMapLayerItems.getItemAt(0)).layer.id == layer.id)
-                        {
-                            this.moveDownGroup.enabled = true;
-                            this.moveUpGroup.enabled = false;
-                        }
-                        else if (TocMapLayerItem(tocMapLayerItems.getItemAt(tocMapLayerItems.length - 1)).layer.id == layer.id)
-                        {
-                            this.moveUpGroup.enabled = true;
-                            this.moveDownGroup.enabled = false;
-                        }
-                    }
-                    // based on layer type, add Description/Download label
-                    if (layer is KMLLayer)
-                    {
-                        this.descriptionOrDownloadLabel.text = LocalizationUtil.getDefaultString("tocMapLayerDownloadLabel");
-                    }
-                    else
-                    {
-                        this.descriptionOrDownloadLabel.text = LocalizationUtil.getDefaultString("tocMapLayerDescriptionLabel");
-                    }
-
-                    if (!layer.initialExtent)
-                    {
-                        this.zoomToGroup.enabled = false;
-                    }
+                    return;
                 }
+
+                var tocMapLayerItems:ArrayCollection = _toc.dataProvider as ArrayCollection;
+                var isFirstLayer:Boolean = (TocMapLayerItem(tocMapLayerItems.getItemAt(0)).layer.id == layer.id);
+                var isLastLayer:Boolean = (TocMapLayerItem(tocMapLayerItems.getItemAt(tocMapLayerItems.length - 1)).layer.id == layer.id);
+
+                moveUpOption.enabled = !isFirstLayer;
+                moveDownOption.enabled = !isLastLayer;
+
+                var descriptionOrDownloadResourceName:String =
+                    (layer is KMLLayer) ? 'tocMapLayerDownloadLabel' : 'tocMapLayerDescriptionLabel';
+
+                showDescriptionOrDownloadOption.label =
+                    LocalizationUtil.getDefaultString(descriptionOrDownloadResourceName);
+
+                layerZoomOption.enabled = layer.initialExtent != null;
             }
 
             public function remove():void
@@ -193,9 +183,7 @@
                 if (!_transparencyMenuItem)
                 {
                     _transparencyMenuItem = new TransparencyMenuItem();
-
-                    _transparencyMenuItem.x = this.x < _transparencyMenuItem.width ? this.x + this.width : this.x - _transparencyMenuItem.width;
-                    _transparencyMenuItem.y = this.y; // align with the layer option popup
+                    updateTransparencyMenuPosition();
                     _transparencyMenuItem.layer = _layer;
                     PopUpManager.addPopUp(_transparencyMenuItem, this.parent);
                 }
@@ -204,6 +192,12 @@
                     PopUpManager.removePopUp(_transparencyMenuItem);
                     _transparencyMenuItem = null;
                 }
+            }
+
+            private function updateTransparencyMenuPosition():void
+            {
+                _transparencyMenuItem.x = this.x < _transparencyMenuItem.width ? this.x + this.width : this.x - _transparencyMenuItem.width;
+                _transparencyMenuItem.y = this.y; // align with the layer option popup
             }
 
             private function moveUpLabel_clickHandler(event:MouseEvent):void
@@ -228,8 +222,8 @@
                             }
                         }
                     }
-                }  
-                var nextIndex:int = currentIndex + 1; 
+                }
+                var nextIndex:int = currentIndex + 1;
                 if (arrOfFeatureLayers && arrOfFeatureLayers.length > 0)
                 {
                     nextIndex += arrOfFeatureLayers.length;
@@ -253,15 +247,15 @@
                     nextIndex += arr.length;
                 }
                 if (arrOfFeatureLayers && arrOfFeatureLayers.length > 0)
-                {                      
+                {
                     for each (var featureLayer:FeatureLayer in arrOfFeatureLayers)
-                    {   
+                    {
                         _map.reorderLayer(featureLayer.id, nextIndex);
-                    } 
+                    }
                     _map.reorderLayer(_layer.id, nextIndex - 1);
                 }
                 else
-                {   
+                {
                     _map.reorderLayer(_layer.id, nextIndex);
                 }
                 remove();
@@ -270,15 +264,15 @@
             private function moveDownLabel_clickHandler(event:MouseEvent):void
             {
                 var mapLayers:ArrayCollection = _map.layers as ArrayCollection;
-                var currentIndex:int = mapLayers.getItemIndex(_layer);                
+                var currentIndex:int = mapLayers.getItemIndex(_layer);
                 var layer:Layer;
                 var arrOfFeatureLayers:Array;
                 if (mapLayers.getItemAt(currentIndex - 1) is FeatureLayer && FeatureLayer(mapLayers.getItemAt(currentIndex - 1)).name.indexOf("hiddenLayer_") != -1)
-                {   
+                {
                     if (_layer is ArcGISDynamicMapServiceLayer)
                     {
                         arrOfFeatureLayers = [];
-                        var dynamicMapServiceLayer:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(_layer);                      
+                        var dynamicMapServiceLayer:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(_layer);
                         for each (layer in mapLayers)
                         {
                             if (layer is FeatureLayer && layer.name.indexOf("hiddenLayer_") != -1)
@@ -292,16 +286,16 @@
                             }
                         }
                     }
-                    
+
                     var index:Number = currentIndex - 1;
                     var arr:Array = [];
-                    while(mapLayers.getItemAt(index) is FeatureLayer && FeatureLayer(mapLayers.getItemAt(index)).name.indexOf("hiddenLayer_") != -1)
+                    while (mapLayers.getItemAt(index) is FeatureLayer && FeatureLayer(mapLayers.getItemAt(index)).name.indexOf("hiddenLayer_") != -1)
                     {
                         arr.push(FeatureLayer(mapLayers.getItemAt(index)));
                         index--;
                     }
                     if (mapLayers.getItemAt(index) && mapLayers.getItemAt(index) is ArcGISDynamicMapServiceLayer)
-                    {                        
+                    {
                         var dynamicMapServiceLayer1:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(mapLayers.getItemAt(index));
                         var featureLayersAddedFromMapService:Boolean = true;
                         for each (var featureLayer:FeatureLayer in arr)
@@ -312,18 +306,18 @@
                             {
                                 featureLayersAddedFromMapService = false;
                                 break;
-                            }                           
+                            }
                         }
                         if (featureLayersAddedFromMapService)
-                        {   
+                        {
                             if (arrOfFeatureLayers && arrOfFeatureLayers.length > 0)
-                            {   
+                            {
                                 for each (var featureLayer1:FeatureLayer in arrOfFeatureLayers)
-                                {   
+                                {
                                     _map.reorderLayer(featureLayer1.id, index);
-                                }                        
-                            }   
-                            _map.reorderLayer(_layer.id, index);      
+                                }
+                            }
+                            _map.reorderLayer(_layer.id, index);
                         }
                     }
                     else
@@ -332,9 +326,9 @@
                     }
                 }
                 else if (_layer is ArcGISDynamicMapServiceLayer)
-                {   
+                {
                     arrOfFeatureLayers = [];
-                    var dynamicMapServiceLayer2:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(_layer);                      
+                    var dynamicMapServiceLayer2:ArcGISDynamicMapServiceLayer = ArcGISDynamicMapServiceLayer(_layer);
                     for each (layer in mapLayers)
                     {
                         if (layer is FeatureLayer && layer.name.indexOf("hiddenLayer_") != -1)
@@ -352,14 +346,14 @@
                         for each (var featureLayer2:FeatureLayer in arrOfFeatureLayers.reverse())
                         {
                             _map.reorderLayer(featureLayer2.id, currentIndex - 1);
-                        }                        
-                    }    
-                    _map.reorderLayer(_layer.id, currentIndex - 1);          
+                        }
+                    }
+                    _map.reorderLayer(_layer.id, currentIndex - 1);
                 }
                 else
                 {
-                    _map.reorderLayer(_layer.id, currentIndex - 1);    
-                }               
+                    _map.reorderLayer(_layer.id, currentIndex - 1);
+                }
                 remove();
             }
 
@@ -385,26 +379,14 @@
                 }
             }
 
-            private function bordercontainer1_rollOverHandler(event:MouseEvent):void
+            private function this_rollOverHandler(event:MouseEvent):void
             {
-                AppEvent.dispatch(AppEvent.SUSPEND_TOC_HIDE_TIMER, "true");
+                AppEvent.dispatch(AppEvent.RESET_TOC_HIDE_TIMER);
             }
 
-            private function bordercontainer1_rollOutHandler(event:MouseEvent):void
+            private function this_rollOutHandler(event:MouseEvent):void
             {
-                AppEvent.dispatch(AppEvent.SUSPEND_TOC_HIDE_TIMER, null);
-            }
-
-            private function label_rollOverHandler(event:MouseEvent):void
-            {
-                var label:Label = Label(event.target);
-                label.setStyle("textDecoration", "underline");
-            }
-
-            private function label_rollOutHandler(event:MouseEvent):void
-            {
-                var label:Label = Label(event.target);
-                label.setStyle("textDecoration", "");
+                AppEvent.dispatch(AppEvent.START_TOC_HIDE_TIMER);
             }
 
             private function newLayerMenuLaunching(event:AppEvent):void
@@ -413,125 +395,48 @@
             }
         ]]>
     </fx:Script>
+
     <fx:Declarations>
         <esri:GeometryService id="geometryService" projectComplete="geometryService_projectCompleteHandler(event)"/>
+
+        <s:ArrayList id="options">
+            <!-- using this.handler to mitigate warnings where the compiler
+                 thinks we're calling the handlers and not referencing them -->
+            <s:DataItem id="layerZoomOption"
+                        clickHandler="{this.zoomToLabel_clickHandler}"
+                        enabled="true"
+                        icon="assets/images/LayerZoomTo16.png"
+                        label="{LocalizationUtil.getDefaultString('tocMapLayerZoomToLabel')}"/>
+
+            <s:DataItem id="transparencyOption"
+                        clickHandler="{this.transparencyLabel_clickHandler}"
+                        enabled="true"
+                        icon="assets/images/EffectsTransparency16.png"
+                        label="{LocalizationUtil.getDefaultString('tocMapLayerTransparencyLabel')}"/>
+
+            <s:DataItem id="moveUpOption"
+                        clickHandler="{this.moveUpLabel_clickHandler}"
+                        enabled="true"
+                        icon="assets/images/LayerUp16.png"
+                        label="{LocalizationUtil.getDefaultString('tocMapLayerMoveUpLabel')}"
+                        showDivider="true"/>
+
+            <s:DataItem id="moveDownOption"
+                        clickHandler="{this.moveDownLabel_clickHandler}"
+                        enabled="true"
+                        icon="assets/images/LayerDown16.png"
+                        label="{LocalizationUtil.getDefaultString('tocMapLayerMoveDownLabel')}"/>
+
+            <!--label added dynamically for description/download option-->
+            <s:DataItem id="showDescriptionOrDownloadOption"
+                        clickHandler="{this.descriptionOrDownloadLabel_clickHandler}"
+                        enabled="true"
+                        icon="assets/images/GenericSpatialFile16.png"
+                        showDivider="true"/>
+        </s:ArrayList>
     </fx:Declarations>
+
     <s:layout>
         <s:VerticalLayout gap="0"/>
     </s:layout>
-    <s:VGroup id="topGroup"
-              width="100%"
-              gap="2"
-              paddingBottom="2"
-              paddingLeft="10"
-              paddingRight="10"
-              paddingTop="2">
-        <s:HGroup id="zoomToGroup"
-                  width="100%"
-                  buttonMode="true"
-                  verticalAlign="bottom">
-            <s:Image width="16"
-                     click="zoomToLabel_clickHandler(event)"
-                     source="assets/images/LayerZoomTo16.png"/>
-            <s:Label id="zoomToLabel"
-                     width="100%"
-                     click="zoomToLabel_clickHandler(event)"
-                     maxDisplayedLines="1"
-                     rollOut="label_rollOutHandler(event)"
-                     rollOver="label_rollOverHandler(event)"
-                     showTruncationTip="true"
-                     text="{LocalizationUtil.getDefaultString('tocMapLayerZoomToLabel')}"/>
-        </s:HGroup>
-        <s:HGroup verticalAlign="bottom">
-            <s:Image width="16"
-                     buttonMode="true"
-                     click="transparencyLabel_clickHandler(event)"
-                     source="assets/images/EffectsTransparency16.png"/>
-            <s:Label id="transparencyLabel"
-                     width="100%"
-                     buttonMode="true"
-                     click="transparencyLabel_clickHandler(event)"
-                     maxDisplayedLines="1"
-                     rollOut="label_rollOutHandler(event)"
-                     rollOver="label_rollOverHandler(event)"
-                     showTruncationTip="true"
-                     text="{LocalizationUtil.getDefaultString('tocMapLayerTransparencyLabel')}"/>
-        </s:HGroup>
-    </s:VGroup>
-    <s:Line width="100%" visible="{topGroup.visible}">
-        <s:stroke>
-            <s:SolidColorStroke color="{getStyle('accentColor')}"/>
-        </s:stroke>
-    </s:Line>
-    <s:VGroup id="midGroup"
-              width="100%"
-              gap="2"
-              paddingBottom="2"
-              paddingLeft="10"
-              paddingRight="10"
-              paddingTop="2">
-        <s:HGroup id="moveUpGroup"
-                  width="100%"
-                  buttonMode="true"
-                  verticalAlign="bottom">
-            <s:Image id="moveUpImage"
-                     width="16"
-                     click="moveUpLabel_clickHandler(event)"
-                     source="assets/images/LayerUp16.png"/>
-            <s:Label id="moveUpLabel"
-                     width="100%"
-                     click="moveUpLabel_clickHandler(event)"
-                     maxDisplayedLines="1"
-                     rollOut="label_rollOutHandler(event)"
-                     rollOver="label_rollOverHandler(event)"
-                     showTruncationTip="true"
-                     text="{LocalizationUtil.getDefaultString('tocMapLayerMoveUpLabel')}"/>
-        </s:HGroup>
-        <s:HGroup id="moveDownGroup"
-                  width="100%"
-                  buttonMode="true"
-                  verticalAlign="bottom">
-            <s:Image id="moveDownImage"
-                     width="16"
-                     click="moveDownLabel_clickHandler(event)"
-                     source="assets/images/LayerDown16.png"/>
-            <s:Label id="moveDownLabel"
-                     width="100%"
-                     click="moveDownLabel_clickHandler(event)"
-                     maxDisplayedLines="1"
-                     rollOut="label_rollOutHandler(event)"
-                     rollOver="label_rollOverHandler(event)"
-                     showTruncationTip="true"
-                     text="{LocalizationUtil.getDefaultString('tocMapLayerMoveDownLabel')}"/>
-        </s:HGroup>
-    </s:VGroup>
-
-    <s:Line width="100%" visible="{midGroup.visible}">
-        <s:stroke>
-            <s:SolidColorStroke color="{getStyle('accentColor')}"/>
-        </s:stroke>
-    </s:Line>
-
-    <s:VGroup id="bottomGroup"
-              width="100%"
-              gap="2"
-              paddingBottom="2"
-              paddingLeft="10"
-              paddingRight="10"
-              paddingTop="2">
-        <s:HGroup width="100%"
-                  buttonMode="true"
-                  verticalAlign="bottom">
-            <s:Image width="16"
-                     click="descriptionOrDownloadLabel_clickHandler(event)"
-                     source="assets/images/GenericSpatialFile16.png"/>
-            <s:Label id="descriptionOrDownloadLabel"
-                     width="100%"
-                     click="descriptionOrDownloadLabel_clickHandler(event)"
-                     maxDisplayedLines="1"
-                     rollOut="label_rollOutHandler(event)"
-                     rollOver="label_rollOverHandler(event)"
-                     showTruncationTip="true"/>
-        </s:HGroup>
-    </s:VGroup>
-</s:BorderContainer>
+</s:List>

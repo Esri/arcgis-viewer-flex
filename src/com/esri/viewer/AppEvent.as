@@ -277,7 +277,9 @@ public class AppEvent extends Event
 
     public static const TOC_HIDDEN:String = "tocHidden";
 
-    public static const SUSPEND_TOC_HIDE_TIMER:String = "suspendTOCHideTimer";
+    public static const RESET_TOC_HIDE_TIMER:String = "resetTOCHideTimer";
+
+    public static const START_TOC_HIDE_TIMER:String = "startTOCHideTimer";
 
     public static const LAUNCHING_TOC_LAYER_MENU:String = "launchingTocLayerMenu";
 

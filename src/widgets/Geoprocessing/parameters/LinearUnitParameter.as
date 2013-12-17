@@ -24,17 +24,6 @@ public class LinearUnitParameter extends BaseParameter
 {
     //--------------------------------------------------------------------------
     //
-    //  Methods
-    //
-    //--------------------------------------------------------------------------
-
-    private function linearUnitString():String
-    {
-        return _defaultValue.distance + ":" + UnitMappingUtil.toPrettyUnits(_defaultValue.units);
-    }
-
-    //--------------------------------------------------------------------------
-    //
     //  Overridden properties
     //
     //--------------------------------------------------------------------------

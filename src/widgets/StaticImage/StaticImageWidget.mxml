@@ -78,7 +78,9 @@
 
             private function img_clickHandler(event:MouseEvent):void
             {
-                navigateToURL(new URLRequest(linkURL));
+                var isMailToLink:RegExp = /^mailto:/i;
+                var targetWindow:String = isMailToLink.test(linkURL) ? "_self" : "_blank";
+                navigateToURL(new URLRequest(linkURL), targetWindow);
             }
         ]]>
     </fx:Script>

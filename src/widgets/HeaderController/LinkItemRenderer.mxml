@@ -55,7 +55,9 @@
 
             private function openLink():void
             {
-                navigateToURL(new URLRequest(link.url), '_blank');
+                var isMailToLink:RegExp = /^mailto:/i;
+                var targetWindow:String = isMailToLink.test(link.url) ? "_self" : "_blank";
+                navigateToURL(new URLRequest(link.url), targetWindow);
             }
 
             override protected function getCurrentRendererState():String

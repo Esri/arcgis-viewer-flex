@@ -165,20 +165,6 @@ public class TocMapLayerItem extends TocItem
     /**
      * @private
      */
-    override internal function updateIndeterminateState(calledFromChild:Boolean = false):void
-    {
-        indeterminate = DEFAULT_INDETERMINATE;
-
-        // Recurse up the tree
-        if (parent)
-        {
-            parent.updateIndeterminateState(true);
-        }
-    }
-
-    /**
-     * @private
-     */
     override internal function refreshLayer():void
     {
         layer.visible = visible;
@@ -479,12 +465,12 @@ public class TocMapLayerItem extends TocItem
             }
         }
         else if (wmsLayerInfos)
-        {   
-            var wmsVisibleLayers:ArrayList = WMSLayer(layer).visibleLayers as ArrayList;             
+        {
+            var wmsVisibleLayers:ArrayList = WMSLayer(layer).visibleLayers as ArrayList;
             for each (var wmsLayerInfo:WMSLayerInfo in wmsLayerInfos)
-            {   
+            {
                 if (wmsVisibleLayers.source.indexOf(wmsLayerInfo.name) !== -1)
-                {    
+                {
                     addChild(createWMSTocLayer(this, wmsLayerInfo));
                 }
             }
@@ -497,7 +483,7 @@ public class TocMapLayerItem extends TocItem
                 {
                     addChild(new TocLegendItem(this, legendItemInfo));
                 }
-            }            
+            }
         }
     }
 
@@ -662,11 +648,11 @@ public class TocMapLayerItem extends TocItem
 
         return item;
     }
-    
+
     private function createWMSTocLayer(parentItem:TocItem, wmsLayerInfo:WMSLayerInfo):TocWMSLayerInfoItem
     {
         var item:TocWMSLayerInfoItem = new TocWMSLayerInfoItem(parentItem, wmsLayerInfo);
-        
+
         var layerLegendInfo:LayerLegendInfo = getWMSLayerLegendInfo(wmsLayerInfo.name);
         if (layerLegendInfo)
         {
@@ -675,10 +661,10 @@ public class TocMapLayerItem extends TocItem
                 item.addChild(new TocLegendItem(item, legendItemInfo));
             }
         }
-        
+
         return item;
     }
-    
+
     private function getLayerLegendInfo(layerId:Number):LayerLegendInfo
     {
         var result:LayerLegendInfo;
@@ -694,11 +680,11 @@ public class TocMapLayerItem extends TocItem
 
         return result;
     }
-    
+
     private function getWMSLayerLegendInfo(wmsLayerId:String):LayerLegendInfo
     {
         var result:LayerLegendInfo;
-        
+
         for each (var layerLegendInfo:LayerLegendInfo in _layerLegendInfos)
         {
             if (layerLegendInfo.layerId == wmsLayerId)
@@ -707,7 +693,7 @@ public class TocMapLayerItem extends TocItem
                 break;
             }
         }
-        
+
         return result;
     }
 

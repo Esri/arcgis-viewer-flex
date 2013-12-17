@@ -145,10 +145,10 @@
             private function isLayerShownInLegend(layer:Layer):Boolean
             {
                 // filter layers which can't be shown in legend
-                if (!(layer.name.indexOf("hiddenLayer_") == -1 && 
-                    (layer is FeatureLayer || layer is ArcGISDynamicMapServiceLayer || 
-                     layer is ArcGISTiledMapServiceLayer || layer is KMLLayer || 
-                     layer is WMSLayer || layer is ArcGISImageServiceLayer)))
+                if (!(layer.name.indexOf("hiddenLayer_") == -1 &&
+                    (layer is FeatureLayer || layer is ArcGISDynamicMapServiceLayer ||
+                    layer is ArcGISTiledMapServiceLayer || layer is KMLLayer ||
+                    layer is WMSLayer || layer is ArcGISImageServiceLayer)))
                 {
                     return false;
                 }

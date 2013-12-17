@@ -100,9 +100,10 @@
         </mx:filters>
     </mx:Image>
 
-    <s:Label left="30" right="40"
+    <s:Label left="30" right="40" top="5" bottom="5"
              fontWeight="normal"
              text="{bookmark.name}"
+             verticalAlign="middle"
              verticalCenter="0"/>
 
     <mx:Image width="20" height="20"
