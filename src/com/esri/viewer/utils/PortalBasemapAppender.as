@@ -72,7 +72,7 @@ public class PortalBasemapAppender extends EventDispatcher
         portal.addEventListener(PortalEvent.LOAD, portal_loadHandler);
         portal.addEventListener(FaultEvent.FAULT, portal_faultHandler);
 
-        cultureCode = toCultureCode(ResourceManager.getInstance().localeChain[0]);
+        cultureCode = LayerObjectUtil.toCultureCode(ResourceManager.getInstance().localeChain[0]);
         portal.load(portalURL, cultureCode);
     }
 
@@ -534,11 +534,6 @@ public class PortalBasemapAppender extends EventDispatcher
 
         AppEvent.showError(LocalizationUtil.getDefaultString("couldNotConnectToPortal"), PORTAL_BASEMAP_APPENDER);
         dispatchComplete();
-    }
-
-    private function toCultureCode(locale:String):String
-    {
-        return locale ? locale.replace('_', '-') : locale;
     }
 }
 

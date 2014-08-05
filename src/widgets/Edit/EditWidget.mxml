@@ -111,8 +111,8 @@
                 }
                 else
                 {
-                    wTemplate.width = 310;
-                    wTemplate.height = 310;
+                    wTemplate.width = Math.max(width, 310);
+                    wTemplate.height = Math.max(height, 310);
                 }
             }
 

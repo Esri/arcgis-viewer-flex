@@ -48,7 +48,7 @@
                 else
                 {
                     wTemplate.height = map.height - map.height / 100 - Number(this.top) - Number(this.bottom);
-                    wTemplate.width = 300;
+                    wTemplate.width = Math.max(width, 300);
                 }
             }
 
