@@ -174,10 +174,13 @@
                                 }
                             }
 
-                            var showInLegendHiddenLayers:Array = layer["showInLegendHiddenLayers"];
-                            if (showInLegendHiddenLayers)
+                            if (layer is ArcGISDynamicMapServiceLayer || layer is ArcGISTiledMapServiceLayer)
                             {
-                                excludedSublayers = excludedSublayers.concat(showInLegendHiddenLayers);
+                                var showInLegendHiddenLayers:Array = layer["showInLegendHiddenLayers"];
+                                if (showInLegendHiddenLayers)
+                                {
+                                    excludedSublayers = excludedSublayers.concat(showInLegendHiddenLayers);
+                                }
                             }
 
                             if (!isExcludedLayer)
