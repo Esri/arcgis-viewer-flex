@@ -28,10 +28,12 @@ import com.esri.ags.layers.Layer;
 import com.esri.ags.layers.WMSLayer;
 import com.esri.ags.layers.supportClasses.KMLFeatureInfo;
 import com.esri.ags.layers.supportClasses.KMLFolder;
+import com.esri.ags.layers.supportClasses.LayerDetails;
 import com.esri.ags.layers.supportClasses.LayerInfo;
 import com.esri.ags.layers.supportClasses.LayerLegendInfo;
 import com.esri.ags.layers.supportClasses.LegendItemInfo;
 import com.esri.ags.layers.supportClasses.WMSLayerInfo;
+import com.esri.ags.symbols.PictureMarkerSymbol;
 import com.esri.viewer.ViewerContainer;
 import com.esri.viewer.components.toc.utils.MapUtil;
 import com.esri.viewer.utils.MapServiceUtil;
@@ -278,6 +280,17 @@ public class TocMapLayerItem extends TocItem
     private function getLegendResult(layerLegendInfos:Array, token:Object = null):void
     {
         _layerLegendInfos = [];
+
+        if (layer is ArcGISDynamicMapServiceLayer || layer is ArcGISTiledMapServiceLayer)
+        {
+            var layerInfos:Array = layer["layerInfos"];
+            if (layerInfos)
+            {
+                var layerInfosWithNoLegend:Array = stripLayerInfosWithNoLegend(layerInfos, layerLegendInfos);
+                setUpExtraIcons(layerInfosWithNoLegend, this, layer);
+            }
+        }
+
         getLayerLegendInfos(layerLegendInfos); // get all layerLegendInfos as these can be nested
 
         createChildren();
@@ -287,7 +300,7 @@ public class TocMapLayerItem extends TocItem
     {
         for each (var layerLegendInfo:LayerLegendInfo in arr)
         {
-            if (layerLegendInfo) // check if layerLegendInfo exists
+            if (layerLegendInfo)
             {
                 _layerLegendInfos.push(layerLegendInfo);
                 if (layerLegendInfo.layerLegendInfos)
@@ -296,6 +309,130 @@ public class TocMapLayerItem extends TocItem
                 }
             }
         }
+    }
+
+    private function setUpExtraIcons(layerInfos:Array, parentTocItem:TocItem, layer:Layer):void
+    {
+        for each (var layerInfo:LayerInfo in layerInfos)
+        {
+            if (layer is ArcGISDynamicMapServiceLayer || layer is ArcGISTiledMapServiceLayer)
+            {
+                layer["getDetails"](layerInfo.layerId,
+                                    new AsyncResponder(resultHandler,
+                                                       faultHandler,
+                                                       {
+                                                           parentTocItem: parentTocItem,
+                                                           layerId: layerInfo.layerId
+                                                       }));
+            }
+        }
+
+        function resultHandler(layerDetails:LayerDetails, token:Object = null):void
+        {
+            var tocItem:TocItem = getTocItemById(parentTocItem, layerDetails.id);
+            if (!tocItem)
+            {
+                return;
+            }
+
+            var resultType:String = layerDetails.type.toLowerCase();
+            var iconUrl:String;
+
+            if (resultType == "annotation sublayer") {
+                iconUrl = "assets/images/i_annotation.png";
+            } else if (resultType == "raster catalog layer") {
+                iconUrl = "assets/images/i_rastercatalog.png";
+            } else if (resultType == "dimension layer") {
+                iconUrl = "assets/images/i_dimension.png";
+            } else if (resultType == "raster layer") {
+                iconUrl = "assets/images/i_raster.png";
+            }
+
+            if (iconUrl)
+            {
+                tocItem.addChild(new TocLegendItem(tocItem, createLegendItemInfo(iconUrl)));
+            }
+        }
+
+        function createLegendItemInfo(iconUrl:String):LegendItemInfo
+        {
+            var legendItemInfo:LegendItemInfo = new LegendItemInfo();
+            legendItemInfo.symbol = new PictureMarkerSymbol(iconUrl, 20, 20);
+            return legendItemInfo;
+        }
+
+        function getTocItemById(parentTocMapItem:TocItem, id:Number):TocItem
+        {
+            var tocItemMatch:TocItem;
+            var infoItem:TocLayerInfoItem;
+
+            for each (var item:TocItem in parentTocMapItem.children) {
+                infoItem = item as TocLayerInfoItem;
+
+                if (infoItem) {
+                    if (infoItem.layerInfo.layerId == id) {
+                        tocItemMatch = infoItem;
+                        break;
+                    }
+                }
+            }
+
+            if (tocItemMatch)
+            {
+                return tocItemMatch;
+            }
+
+            for each (item in parentTocMapItem.children) {
+                if (item.children) {
+                    tocItemMatch = getTocItemById(item, id);
+                    if (tocItemMatch)
+                    {
+                        return tocItemMatch;
+                    }
+                }
+            }
+
+            return tocItemMatch;
+        }
+
+        function faultHandler(fault:Fault, token:Object = null):void
+        {
+            //do nothing
+        }
+    }
+
+    private function stripLayerInfosWithNoLegend(layerInfos:Array, layerLegendInfos:Array):Array
+    {
+        var layerInfosWithNoLegend:Array = layerInfos.concat();
+
+        for each (var layerLegendInfo:LayerLegendInfo in layerLegendInfos)
+        {
+            if (layerLegendInfo)
+            {
+                removeLayerInfoById(layerLegendInfo.layerId);
+                if (layerLegendInfo.layerLegendInfos)
+                {
+                    stripLayerInfosWithNoLegend(layerInfosWithNoLegend, layerLegendInfo.layerLegendInfos);
+                }
+            }
+        }
+
+        function removeLayerInfoById(layerId:String):void
+        {
+            var layerInfo:LayerInfo;
+            var totalLayerInfos:int = layerInfosWithNoLegend.length;
+
+            for (var i:int = 0; i < totalLayerInfos; i++) {
+                layerInfo = layerInfosWithNoLegend[i];
+
+                if (layerInfo.layerId.toString() == layerId) {
+                    layerInfosWithNoLegend.splice(i, 1);
+                    break;
+                }
+            }
+        }
+
+        return layerInfosWithNoLegend;
     }
 
     private function getLegendFault(fault:Fault, token:Object = null):void
