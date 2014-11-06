@@ -281,14 +281,26 @@ public class TocMapLayerItem extends TocItem
     {
         _layerLegendInfos = [];
 
-        if (layer is ArcGISDynamicMapServiceLayer || layer is ArcGISTiledMapServiceLayer)
+        var layerInfos:Array;
+
+        var dynamicLayer:ArcGISDynamicMapServiceLayer = layer as ArcGISDynamicMapServiceLayer;
+        if (dynamicLayer)
         {
-            var layerInfos:Array = layer["layerInfos"];
-            if (layerInfos)
+            layerInfos = dynamicLayer.layerInfos;
+        }
+        else
+        {
+            var tiledLayer:ArcGISTiledMapServiceLayer = layer as ArcGISTiledMapServiceLayer;
+            if (tiledLayer)
             {
-                var layerInfosWithNoLegend:Array = stripLayerInfosWithNoLegend(layerInfos, layerLegendInfos);
-                setUpExtraIcons(layerInfosWithNoLegend, this, layer);
+                layerInfos = tiledLayer.layerInfos;
             }
+        }
+
+        if (layerInfos)
+        {
+            var layerInfosWithNoLegend:Array = stripLayerInfosWithNoLegend(layerInfos, layerLegendInfos);
+            setUpExtraIcons(layerInfosWithNoLegend, this, layer);
         }
 
         getLayerLegendInfos(layerLegendInfos); // get all layerLegendInfos as these can be nested
