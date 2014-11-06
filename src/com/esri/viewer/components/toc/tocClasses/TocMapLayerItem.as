@@ -317,13 +317,20 @@ public class TocMapLayerItem extends TocItem
         {
             if (layer is ArcGISDynamicMapServiceLayer || layer is ArcGISTiledMapServiceLayer)
             {
-                layer["getDetails"](layerInfo.layerId,
-                                    new AsyncResponder(resultHandler,
-                                                       faultHandler,
-                                                       {
-                                                           parentTocItem: parentTocItem,
-                                                           layerId: layerInfo.layerId
-                                                       }));
+                var responder:AsyncResponder = new AsyncResponder(resultHandler, faultHandler);
+
+                var dynamicLayer:ArcGISDynamicMapServiceLayer = layer as ArcGISDynamicMapServiceLayer;
+                if(dynamicLayer)
+                {
+                    dynamicLayer.getDetails(layerInfo.layerId, responder);
+                    continue;
+                }
+
+                var tiledLayer:ArcGISTiledMapServiceLayer = layer as ArcGISTiledMapServiceLayer;
+                if(tiledLayer)
+                {
+                    tiledLayer.getDetails(layerInfo.layerId, responder);
+                }
             }
         }
 
