@@ -320,14 +320,14 @@ public class TocMapLayerItem extends TocItem
                 var responder:AsyncResponder = new AsyncResponder(resultHandler, faultHandler);
 
                 var dynamicLayer:ArcGISDynamicMapServiceLayer = layer as ArcGISDynamicMapServiceLayer;
-                if(dynamicLayer)
+                if (dynamicLayer)
                 {
                     dynamicLayer.getDetails(layerInfo.layerId, responder);
                     continue;
                 }
 
                 var tiledLayer:ArcGISTiledMapServiceLayer = layer as ArcGISTiledMapServiceLayer;
-                if(tiledLayer)
+                if (tiledLayer)
                 {
                     tiledLayer.getDetails(layerInfo.layerId, responder);
                 }
