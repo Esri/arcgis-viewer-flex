@@ -134,7 +134,9 @@
 
                 for each (var layer:Layer in hostBaseWidget.map.layers)
                 {
-                    if (layer.name.indexOf("hiddenLayer_") == -1 && !(layer is GraphicsLayer && !(layer is FeatureLayer)))
+                    if (layer.showInLegend &&
+                        layer.name.indexOf("hiddenLayer_") == -1 &&
+                        !(layer is GraphicsLayer && !(layer is FeatureLayer)))
                     {
                         var isBaseMapLayer:Boolean = false;
                         for each (var baseMapLayer:Object in hostBaseWidget.configData.basemaps)
@@ -171,6 +173,16 @@
                                     }
                                 }
                             }
+
+                            if (layer is ArcGISDynamicMapServiceLayer || layer is ArcGISTiledMapServiceLayer)
+                            {
+                                var showInLegendHiddenLayers:Array = layer["showInLegendHiddenLayers"];
+                                if (showInLegendHiddenLayers)
+                                {
+                                    excludedSublayers = excludedSublayers.concat(showInLegendHiddenLayers);
+                                }
+                            }
+
                             if (!isExcludedLayer)
                             {
                                 var legendLayer:LegendLayer = new LegendLayer();

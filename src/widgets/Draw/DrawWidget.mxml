@@ -207,8 +207,8 @@
                 }
                 else
                 {
-                    wTemplate.width = 420;
-                    wTemplate.height = 300;
+                    wTemplate.width = Math.max(width, 420);
+                    wTemplate.height = Math.max(height, 300);
                 }
             }
 
@@ -934,7 +934,7 @@
             private function map_mouseDownHandler(event:MouseEvent):void
             {
                 map.removeEventListener(MouseEvent.MOUSE_DOWN, map_mouseDownHandler);
-                map.addEventListener(MouseEvent.MOUSE_UP, map_mouseUpHandler);
+                map.addEventListener(MouseEvent.MOUSE_UP, map_mouseUpHandler, false, 1000);
                 map.addEventListener(MouseEvent.MOUSE_MOVE, map_mouseMoveHandler);
             }
 

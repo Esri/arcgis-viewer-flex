@@ -152,7 +152,7 @@ public class LayerObjectUtil
         {
             key = obj.@key[0] ? obj.@key : "";
         }
-        var culture:String = obj.@culture[0] ? obj.@culture : "";
+        var culture:String = toCultureCode(obj.@culture[0]);
 
         var showInLegend:Boolean = obj.@showinlegend[0] != "false";
 
@@ -292,6 +292,11 @@ public class LayerObjectUtil
         }
 
         return resultObject;
+    }
+
+    public static function toCultureCode(locale:String):String
+    {
+        return locale ? locale.replace('_', '-') : "";
     }
 
     private static function isSupportedImageType(filePath:String):Boolean

@@ -52,6 +52,8 @@ public class BaseWidget extends Module implements IBaseWidget
 
     private static const WIDGET_CONFIG_LOADED:String = "widgetConfigLoaded";
 
+    private static const EMPTY_TOOLTIPS:DrawTooltips = new DrawTooltips();
+
     //--------------------------------------------------------------------------
     //
     //  Constructor
@@ -466,7 +468,7 @@ public class BaseWidget extends Module implements IBaseWidget
         AppEvent.dispatch(AppEvent.SHOW_INFOWINDOW, infoData);
     }
 
-    public function setMapAction(action:String, status:String, symbol:Symbol, callback:Function, callback2:Function = null, showDrawTips:Boolean = true, enableGraphicsLayerMouseEvents:Boolean = false):void
+    public function setMapAction(action:String, status:String, symbol:Symbol, callback:Function, callback2:Function = null, showDrawTips:Boolean = true, enableGraphicsLayerMouseEvents:Boolean = false, drawTooltips:DrawTooltips = null):void
     {
         var data:Object =
             {
@@ -476,6 +478,7 @@ public class BaseWidget extends Module implements IBaseWidget
                 handler: callback,
                 showDrawTips: showDrawTips,
                 enableGraphicsLayerMouseEvents: enableGraphicsLayerMouseEvents,
+                drawTooltips: drawTooltips || EMPTY_TOOLTIPS,
                 handler2: callback2
             };
         AppEvent.dispatch(AppEvent.SET_MAP_ACTION, data);

@@ -72,6 +72,7 @@ Class used to configure the viewer map component (including layers) and handle m
             import com.esri.ags.utils.WebMercatorUtil;
             import com.esri.viewer.AppEvent;
             import com.esri.viewer.ConfigData;
+            import com.esri.viewer.DrawTooltips;
             import com.esri.viewer.IBaseWidget;
             import com.esri.viewer.IInfowindowTemplate;
             import com.esri.viewer.ViewerContainer;
@@ -1469,6 +1470,7 @@ Class used to configure the viewer map component (including layers) and handle m
                 var symbol:Symbol = data.symbol;
                 var showDrawTips:Boolean = data.showDrawTips;
                 var enableGraphicsLayerMouseEvents:Boolean = data.enableGraphicsLayerMouseEvents;
+                var drawTooltips:DrawTooltips = data.drawTooltips;
 
                 if (tool)
                 {
@@ -1480,13 +1482,22 @@ Class used to configure the viewer map component (including layers) and handle m
                     m_drawEndFunction = data.handler;
                     m_drawUpdateFunction = data.handler2;
                     m_navTool.deactivate();
-                    m_drawTool.activate(tool, enableGraphicsLayerMouseEvents);
                     // showDrawTips
                     m_drawTool.showDrawTips = showDrawTips;
+
+                    m_drawTool.toolTipStartAndLetGo = drawTooltips.toolTipStartAndLetGo;
+                    m_drawTool.toolTipPoint = drawTooltips.toolTipPoint;
+                    m_drawTool.toolTipMultipointStart = drawTooltips.toolTipMultipointStart;
+                    m_drawTool.toolTipMultipointEnd = drawTooltips.toolTipMultipointEnd;
+                    m_drawTool.toolTipPolyStart = drawTooltips.toolTipPolyStart;
+                    m_drawTool.toolTipPolyContinue = drawTooltips.toolTipPolyContinue;
+                    m_drawTool.toolTipPolyEnd = drawTooltips.toolTipPolyEnd;
+
                     // reset symbology
                     m_drawTool.markerSymbol = new SimpleMarkerSymbol;
                     m_drawTool.lineSymbol = new SimpleLineSymbol;
                     m_drawTool.fillSymbol = new SimpleFillSymbol(SimpleFillSymbol.STYLE_SOLID, 0, 0.5, new SimpleLineSymbol);
+
                     if (symbol)
                     {
                         if (symbol is TextSymbol || symbol is SimpleMarkerSymbol || symbol is PictureMarkerSymbol)
@@ -1502,6 +1513,8 @@ Class used to configure the viewer map component (including layers) and handle m
                             m_drawTool.fillSymbol = symbol;
                         }
                     }
+
+                    m_drawTool.activate(tool, enableGraphicsLayerMouseEvents);
 
                     //map.zoomSliderVisible = true;
                     AppEvent.setStatus(status);

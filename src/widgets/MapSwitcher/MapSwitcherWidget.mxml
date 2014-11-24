@@ -109,6 +109,7 @@
                 {
                     currentState = showThumbnails ? "thumbnailOptions" : "buttonOptions";
                     initBasemapSelectionComponent(showThumbnails);
+                    AppEvent.addListener(AppEvent.BASEMAP_SWITCH, checkSelectedBasemap);
                 }
             }
 
@@ -117,6 +118,20 @@
                 basemapSelectionComponent = showThumbnails ? basemapGallery : basemapsButtonBar;
                 preselectTopmostVisibleBasemap();
                 hideBasemapsTimer.addEventListener(TimerEvent.TIMER, hideBasemapsTimer_timerHandler, false, 0, true);
+            }
+
+            private function checkSelectedBasemap(event:AppEvent):void
+            {
+                var selectedBasemapId:String = event.data as String;
+
+                for each (var basemap:Basemap in basemapList.toArray())
+                {
+                    if (basemap.id == selectedBasemapId)
+                    {
+                        basemapSelectionComponent.selectedItem = basemap;
+                        break;
+                    }
+                }
             }
 
             private function initBasemapList():void

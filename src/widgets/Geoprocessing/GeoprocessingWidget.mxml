@@ -65,6 +65,7 @@
             import mx.rpc.AsyncResponder;
             import mx.rpc.Fault;
             import mx.rpc.events.FaultEvent;
+            import mx.utils.StringUtil;
 
             import widgets.Geoprocessing.parameters.GPParameterTypes;
             import widgets.Geoprocessing.parameters.IGPFeatureParameter;
@@ -109,6 +110,8 @@
 
             private var version:Number;
 
+            private var gpTaskFailureLabel:String;
+
             [Bindable]
             private var submitLabel:String;
             [Bindable]
@@ -125,8 +128,8 @@
                 }
                 else
                 {
-                    wTemplate.width = 368;
-                    wTemplate.height = 250;
+                    wTemplate.width = Math.max(width, 368);
+                    wTemplate.height = Math.max(height, 250);
                 }
             }
 
@@ -193,6 +196,7 @@
                         helpLabel = configXML.labels.helplabel || getDefaultString("helpLabel");
                         inputLabel = configXML.labels.inputlabel || getDefaultString("inputLabel");
                         outputLabel = configXML.labels.outputlabel || getDefaultString("outputLabel");
+                        gpTaskFailureLabel = configXML.labels.taskfailedlabel || getDefaultString("gpTaskFailed");
 
                         fetchGPTaskInfo();
                     }
@@ -614,7 +618,11 @@
             private function gp_faultHandler(event:FaultEvent):void
             {
                 busyAnimation.visible = false;
-                showError(ErrorMessageUtil.makeHTMLSafe(event.fault.toString()));
+
+                showError(
+                    StringUtil.substitute(gpTaskFailureLabel,
+                                          ErrorMessageUtil.makeHTMLSafe(event.fault.toString()))
+                    );
             }
 
             private function gp_resultDataCompleteHandler(event:GeoprocessorEvent):void
